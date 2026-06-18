@@ -1,0 +1,45 @@
+import api from '../api/axios';
+
+const authService = {
+  adminLogin: async (email, password) => {
+    const response = await api.post('/auth/admin/login', { email, password });
+    return response.data;
+  },
+
+  teacherLogin: async (teacherId, password) => {
+    const response = await api.post('/auth/teacher/login', { teacherId, password });
+    return response.data;
+  },
+
+  studentLogin: async (studentId, password) => {
+    const response = await api.post('/auth/student/login', { studentId, password });
+    return response.data;
+  },
+
+  logout: async () => {
+    const response = await api.post('/auth/logout');
+    return response.data;
+  },
+
+  getMe: async () => {
+    const response = await api.get('/auth/me');
+    return response.data;
+  },
+
+  adminForgotPassword: async (email) => {
+    const response = await api.post('/auth/admin/forgot-password', { email });
+    return response.data;
+  },
+
+  adminVerifyOtp: async (email, otp) => {
+    const response = await api.post('/auth/admin/verify-otp', { email, otp });
+    return response.data;
+  },
+
+  adminResetPassword: async (email, newPassword, confirmPassword) => {
+    const response = await api.post('/auth/admin/reset-password', { email, newPassword, confirmPassword });
+    return response.data;
+  },
+};
+
+export default authService;

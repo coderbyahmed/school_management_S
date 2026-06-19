@@ -1,106 +1,92 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'; // Assuming Heroicons for icons
+import { XMarkIcon, Bars3Icon } from '@heroicons/react/24/outline';
 
-const Sidebar = ({ isOpen }) => { // Accept isOpen as prop
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile drawer
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-    // When opening mobile menu, ensure the main sidebar is also considered open visually if it's not already
-    // This part of logic might need refinement based on exact UX desired
-    // For now, let's keep it simple: mobile menu toggle is separate from main sidebar collapse
-  };
-
+const Sidebar = ({ isOpen, toggleSidebar }) => {
   return (
     <>
-      {/* Mobile Hamburger Icon (controls mobile menu) */}
-      <div className="md:hidden fixed top-0 left-0 p-4 z-50">
-        <button onClick={toggleMobileMenu} className="text-gray-800 dark:text-white focus:outline-none">
-          {isMobileMenuOpen ? (
-            <XMarkIcon className="h-6 w-6" />
-          ) : (
-            <Bars3Icon className="h-6 w-6" />
-          )}
+      {!isOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-20 left-3 z-30 md:hidden p-2.5 rounded-lg bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          aria-label="Open sidebar"
+        >
+          <Bars3Icon className="h-5 w-5" />
         </button>
-      </div>
-
-      {/* Backdrop for mobile menu */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black opacity-50 z-40 md:hidden"
-          onClick={toggleMobileMenu}
-        ></div>
       )}
 
-      {/* Sidebar */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 top-16 bg-black/50 z-30 md:hidden transition-opacity"
+          onClick={toggleSidebar}
+        />
+      )}
+
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out
-          ${
-            isMobileMenuOpen
-              ? 'translate-x-0 w-64' // Mobile menu is open
-              : '-translate-x-full' // Mobile menu is closed
-          }
-          md:relative md:translate-x-0 // Always visible on desktop relative to its parent
-          ${isOpen ? 'md:w-64' : 'md:w-20'} // Desktop width controlled by isOpen prop
+        className={`
+          fixed top-16 left-0 bottom-0 z-40
+          md:relative md:top-0 md:bottom-auto md:min-h-screen md:z-0
+          bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg
+          transition-all duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}
+          flex flex-col flex-shrink-0
         `}
       >
-        <div className="p-4 flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700">
-          {(isOpen || isMobileMenuOpen) ? ( // Show full content if desktop sidebar open or mobile menu open
-            <div className="text-center">
-              {/* Circular School Logo Placeholder */}
-              <div className="w-12 h-12 rounded-full bg-blue-200 dark:bg-blue-700 mx-auto mb-2 flex items-center justify-center text-blue-800 dark:text-blue-100 font-bold text-lg">
-                S
+        <div className="h-16 flex items-center border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          {isOpen ? (
+            <div className="flex items-center justify-between w-full px-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/70 flex-shrink-0">
+                  IQ
+                </div>
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  Admin Panel
+                </span>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Admin Panel</h2>
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                aria-label="Close sidebar"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
             </div>
           ) : (
-            <div className="text-center">
-              {/* Circular School Logo Placeholder (collapsed) */}
-              <div className="w-10 h-10 rounded-full bg-blue-200 dark:bg-blue-700 flex items-center justify-center text-blue-800 dark:text-blue-100 font-bold text-md">
-                S
-              </div>
+            <div className="flex items-center justify-center w-full">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                aria-label="Open sidebar"
+              >
+                <Bars3Icon className="h-5 w-5" />
+              </button>
             </div>
           )}
         </div>
 
-        <nav className="mt-5">
-          <ul>
-            <li>
+        <nav className="flex-1 overflow-y-auto py-4">
+          <ul className="space-y-1">
+            <li className="flex justify-center">
               <NavLink
                 to="/admin"
-                end // Ensures this link is only active when path is exactly /admin
+                end
                 className={({ isActive }) =>
-                  `flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg mx-3 transition-colors duration-200 ${
-                    isActive ? 'bg-blue-500 text-white shadow-md' : ''
-                  }`
+                  `flex items-center transition-all duration-200 rounded-lg ${
+                    isActive
+                      ? 'bg-blue-500 text-white shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
                 }
-                onClick={() => isMobileMenuOpen && toggleMobileMenu()} // Close mobile menu on nav
+                onClick={() => {
+                  if (window.innerWidth < 768) toggleSidebar();
+                }}
               >
-                {/* Dashboard Icon Placeholder */}
-                <svg
-                  className={`h-6 w-6 ${isOpen || isMobileMenuOpen ? 'mr-3' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                  ></path>
+                <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                <span className={`${isOpen || isMobileMenuOpen ? 'block' : 'hidden'}`}>Dashboard</span>
+                {isOpen && (
+                  <span className="text-sm font-medium">Dashboard</span>
+                )}
               </NavLink>
-            </li>
-            {/* Space for future modules */}
-            <li className="mt-4 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              {(isOpen || isMobileMenuOpen) && 'Future Modules'}
-            </li>
-            <li className="px-4 py-2 text-gray-500 dark:text-gray-400 text-sm">
-              {(isOpen || isMobileMenuOpen) && 'Coming Soon...'}
             </li>
           </ul>
         </nav>

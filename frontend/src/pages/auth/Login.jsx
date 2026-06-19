@@ -6,6 +6,7 @@ import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { toast } from 'react-hot-toast';
+import { EnvelopeIcon, IdentificationIcon, LockClosedIcon, UserGroupIcon, AcademicCapIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 const LoginPage = () => {
   const [activeTab, setActiveTab] = useState('admin');
@@ -49,7 +50,7 @@ const LoginPage = () => {
         const role = user.role;
         login(user, role, accessToken, refreshToken);
         toast.success('Login Successful');
-        
+
         if (role === 'admin') navigate('/admin');
         else if (role === 'teacher') navigate('/teacher/dashboard');
         else navigate('/student/dashboard');
@@ -63,47 +64,60 @@ const LoginPage = () => {
     }
   };
 
+  const tabs = [
+    { id: 'admin', label: 'Admin', icon: ShieldCheckIcon },
+    { id: 'teacher', label: 'Teacher', icon: UserGroupIcon },
+    { id: 'student', label: 'Student', icon: AcademicCapIcon },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <img className="h-16 w-auto" src="/favicon.svg" alt="School Logo" />
+        <div className="flex flex-col items-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg ring-4 ring-yellow-400/50">
+            <span className="text-xl md:text-2xl font-bold text-white">IQ</span>
+          </div>
+          <h2 className="mt-3 text-xl md:text-2xl font-bold text-gray-900 text-center leading-tight">
+            Iqra Anwar-ul-Quran
+          </h2>
+          <p className="text-xs md:text-sm text-gray-500 font-medium -mt-0.5">
+            Secondary School
+          </p>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Iqra Anwar ul Quran Sec School
-        </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="flex p-1 bg-gray-100 rounded-lg mb-6">
-            {['admin', 'teacher', 'student'].map((tab) => (
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 px-5 py-6 sm:px-8">
+          <div className="flex gap-2 p-1.5 bg-gray-100/80 rounded-xl mb-4">
+            {tabs.map(({ id, label, icon: Icon }) => (
               <button
-                key={tab}
-                onClick={() => handleTabChange(tab)}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  activeTab === tab
-                    ? 'bg-white text-blue-600 shadow'
-                    : 'text-gray-500 hover:text-gray-700'
+                key={id}
+                onClick={() => handleTabChange(id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer ${
+                  activeTab === id
+                    ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-200'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 } capitalize`}
               >
-                {tab}
+                <Icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>
 
           <Alert message={error} type="error" />
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-3" onSubmit={handleSubmit}>
             {activeTab === 'admin' && (
               <Input
-                label="Email address"
+                label="Email Address"
                 name="email"
                 type="email"
                 required
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="admin@school.com"
+                icon={EnvelopeIcon}
               />
             )}
 
@@ -116,6 +130,7 @@ const LoginPage = () => {
                 value={formData.teacherId}
                 onChange={handleChange}
                 placeholder="T-12345"
+                icon={IdentificationIcon}
               />
             )}
 
@@ -128,6 +143,7 @@ const LoginPage = () => {
                 value={formData.studentId}
                 onChange={handleChange}
                 placeholder="S-12345"
+                icon={IdentificationIcon}
               />
             )}
 
@@ -139,26 +155,23 @@ const LoginPage = () => {
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
+              icon={LockClosedIcon}
             />
 
             {activeTab === 'admin' && (
               <div className="flex items-center justify-end">
-                <div className="text-sm">
-                  <Link
-                    to="/admin/forgot-password"
-                    className="font-medium text-blue-600 hover:text-blue-500"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
+                <Link
+                  to="/admin/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                >
+                  Forgot your password?
+                </Link>
               </div>
             )}
 
-            <div>
-              <Button type="submit" loading={loading}>
-                Sign in
-              </Button>
-            </div>
+            <Button type="submit" loading={loading}>
+              Sign In
+            </Button>
           </form>
         </div>
       </div>

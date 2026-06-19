@@ -55,6 +55,8 @@ const buildUserResponse = (user) => ({
   id: user._id,
   fullName: user.fullName,
   email: user.email,
+  phone: user.phone || '',
+  profileImage: user.profileImage || '',
   role: user.role,
   teacherId: user.teacherId || undefined,
   studentId: user.studentId || undefined,

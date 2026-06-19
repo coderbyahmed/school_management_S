@@ -41,6 +41,23 @@ const authService = {
     const response = await api.post('/auth/admin/reset-password', { email, newPassword, confirmPassword });
     return response.data;
   },
+
+  getProfile: async () => {
+    const response = await api.get('/profile');
+    return response.data;
+  },
+
+  updateProfile: async (formData) => {
+    const response = await api.put('/profile', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const response = await api.put('/profile/change-password', { currentPassword, newPassword });
+    return response.data;
+  },
 };
 
 export default authService;

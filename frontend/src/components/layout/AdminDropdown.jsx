@@ -2,16 +2,30 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon, UserCircleIcon, KeyIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import authService from '../../services/auth.service';
 import ProfileModal from './ProfileModal';
 import ChangePasswordModal from './ChangePasswordModal';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+const UPLOADS_BASE = API_BASE.replace('/api/v1', '');
 
 const AdminDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
+
+  const fetchProfile = async () => {
+    try {
+      const data = await authService.getProfile();
+      setProfile(data.user);
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -22,6 +36,15 @@ const AdminDropdown = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchProfile();
+  }, []);
+
+  const handleProfileUpdated = () => {
+    fetchProfile();
+  };
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
@@ -37,16 +60,29 @@ const AdminDropdown = () => {
     }
   };
 
+  const profileImageUrl = profile?.profileImage
+    ? `${UPLOADS_BASE}/${profile.profileImage}`
+    : null;
+  const initials = profile?.fullName
+    ? profile.fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'A';
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
         className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-sm ring-1 ring-yellow-400/50">
-          A
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-sm ring-1 ring-yellow-400/50 overflow-hidden">
+          {profileImageUrl ? (
+            <img src={profileImageUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            initials
+          )}
         </div>
-        <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200">Admin</span>
+        <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[100px] truncate">
+          {profile?.fullName || 'Admin'}
+        </span>
         <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -73,7 +109,7 @@ const AdminDropdown = () => {
           </button>
         </div>
       )}
-      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} onProfileUpdated={handleProfileUpdated} />
       <ChangePasswordModal isOpen={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </div>
   );

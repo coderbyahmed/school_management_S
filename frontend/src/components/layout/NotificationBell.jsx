@@ -6,10 +6,10 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
 
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New Student Registration', message: 'Ahmed Khan has been registered in Class 10-A', time: new Date(Date.now() - 2 * 60 * 1000), read: false },
-    { id: 2, title: 'Fee Payment Received', message: 'Fee payment of Rs. 5,000 received from Sara Ali', time: new Date(Date.now() - 60 * 60 * 1000), read: false },
-    { id: 3, title: 'Exam Schedule Updated', message: 'Mid-term exams have been rescheduled to next week', time: new Date(Date.now() - 3 * 60 * 60 * 1000), read: true },
-    { id: 4, title: 'Staff Meeting Reminder', message: 'Staff meeting scheduled for Friday at 2:00 PM', time: new Date(Date.now() - 24 * 60 * 60 * 1000), read: true },
+    { id: 1, title: 'New Student Registration', message: 'Ahmed Khan has been registered in Class 10-A', time: new Date('2026-06-19T10:00:00'), read: false },
+    { id: 2, title: 'Fee Payment Received', message: 'Fee payment of Rs. 5,000 received from Sara Ali', time: new Date('2026-06-19T09:00:00'), read: false },
+    { id: 3, title: 'Exam Schedule Updated', message: 'Mid-term exams have been rescheduled to next week', time: new Date('2026-06-19T07:00:00'), read: true },
+    { id: 4, title: 'Staff Meeting Reminder', message: 'Staff meeting scheduled for Friday at 2:00 PM', time: new Date('2026-06-18T14:00:00'), read: true },
   ]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;

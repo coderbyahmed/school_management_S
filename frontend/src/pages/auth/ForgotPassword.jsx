@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import authService from '../services/auth.service';
-import Input from '../components/Input';
-import Button from '../components/Button';
-import Alert from '../components/Alert';
+import authService from '../../services/auth.service';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
+import Alert from '../../components/common/Alert';
 import { toast } from 'react-hot-toast';
 
 const ForgotPasswordPage = () => {
-  const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: Reset
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [timer, setTimer] = useState(120); // 2 minutes
-  const [canResend, setCanResend] = useState(false);
-  
+  const [timer, setTimer] = useState(120);
+
   const timerRef = useRef(null);
   const navigate = useNavigate();
 
@@ -25,9 +24,6 @@ const ForgotPasswordPage = () => {
       timerRef.current = setInterval(() => {
         setTimer((prev) => prev - 1);
       }, 1000);
-    } else if (timer === 0) {
-      clearInterval(timerRef.current);
-      setCanResend(true);
     }
     return () => clearInterval(timerRef.current);
   }, [step, timer]);
@@ -47,7 +43,6 @@ const ForgotPasswordPage = () => {
       toast.success('OTP Sent Successfully');
       setStep(2);
       setTimer(120);
-      setCanResend(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP');
     } finally {
@@ -146,7 +141,7 @@ const ForgotPasswordPage = () => {
               <Button type="submit" loading={loading} disabled={timer === 0}>
                 Verify OTP
               </Button>
-              {canResend && (
+              {timer === 0 && (
                 <button
                   type="button"
                   onClick={handleSendOtp}

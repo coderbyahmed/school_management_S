@@ -1,6 +1,6 @@
-import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import Button from '../components/Button';
+
+import { useAuth } from '../../contexts/AuthContext';
+import Button from '../../components/common/Button';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();

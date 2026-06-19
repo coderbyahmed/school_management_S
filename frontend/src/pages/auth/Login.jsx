@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import authService from '../services/auth.service';
-import Input from '../components/Input';
-import Button from '../components/Button';
-import Alert from '../components/Alert';
+import { useAuth } from '../../contexts/AuthContext';
+import authService from '../../services/auth.service';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
+import Alert from '../../components/common/Alert';
 import { toast } from 'react-hot-toast';
 
 const LoginPage = () => {
@@ -50,8 +50,7 @@ const LoginPage = () => {
         login(user, role, accessToken, refreshToken);
         toast.success('Login Successful');
         
-        // Redirect based on role
-        if (role === 'admin') navigate('/admin/dashboard');
+        if (role === 'admin') navigate('/admin');
         else if (role === 'teacher') navigate('/teacher/dashboard');
         else navigate('/student/dashboard');
       }
@@ -77,7 +76,6 @@ const LoginPage = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {/* Tabs */}
           <div className="flex p-1 bg-gray-100 rounded-lg mb-6">
             {['admin', 'teacher', 'student'].map((tab) => (
               <button

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 const DateTime = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -6,9 +6,9 @@ const DateTime = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
-    }, 1000); // Update every second
+    }, 1000);
 
-    return () => clearInterval(timer); // Cleanup on component unmount
+    return () => clearInterval(timer);
   }, []);
 
   const formatDate = (date) => {

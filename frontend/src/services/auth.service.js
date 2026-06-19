@@ -17,7 +17,8 @@ const authService = {
   },
 
   logout: async () => {
-    const response = await api.post('/auth/logout');
+    const refreshToken = localStorage.getItem('refreshToken');
+    const response = await api.post('/auth/logout', { refreshToken });
     return response.data;
   },
 

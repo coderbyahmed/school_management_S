@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/auth.service';
 
 const AuthContext = createContext();
@@ -7,6 +7,18 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setUser(null);
+      setRole(null);
+      localStorage.clear();
+    }
+  };
 
   useEffect(() => {
     const initAuth = async () => {
@@ -36,18 +48,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('role', role);
   };
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      setUser(null);
-      setRole(null);
-      localStorage.clear();
-    }
-  };
-
   return (
     <AuthContext.Provider value={{ user, role, loading, login, logout }}>
       {children}
@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

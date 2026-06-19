@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const Alert = ({ message, type = 'success', className = '' }) => {
   if (!message) return null;

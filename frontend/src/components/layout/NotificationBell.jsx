@@ -1,8 +1,7 @@
-import React from 'react';
-import { BellIcon } from '@heroicons/react/24/outline'; // Assuming Heroicons for icons
+import { BellIcon } from '@heroicons/react/24/outline';
 
 const NotificationBell = () => {
-  const hasNotifications = false; // Placeholder for actual notification logic
+  const hasNotifications = false;
 
   return (
     <button className="relative p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none transition-colors duration-200">

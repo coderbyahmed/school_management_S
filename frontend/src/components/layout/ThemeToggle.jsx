@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline'; // Assuming Heroicons for icons
+import { useState, useEffect } from 'react';
+import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 const ThemeToggle = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');

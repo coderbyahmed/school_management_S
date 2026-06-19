@@ -4,11 +4,12 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
-import LoginPage from './pages/LoginPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-// import AdminDashboard from './pages/AdminDashboard'; // Removed as it will be nested under AdminLayout
-import TeacherDashboard from './pages/TeacherDashboard';
-import StudentDashboard from './pages/StudentDashboard';
+import LoginPage from './pages/auth/Login';
+import ForgotPasswordPage from './pages/auth/ForgotPassword';
+import TeacherDashboard from './pages/teacher/TeacherDashboard';
+import StudentDashboard from './pages/student/StudentDashboard';
+import AdminLayout from './layouts/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 function App() {
   return (
@@ -18,22 +19,25 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
-        
-        {/* Admin Routes - Handled by main.jsx now, no direct AdminDashboard here */}
-        {/* The '/admin' route is now defined in main.jsx and renders AdminLayout */}
-        {/* AdminLayout will contain the Dashboard */}
 
-        {/* Teacher Routes */}
+        {/* Protected Admin Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+          </Route>
+        </Route>
+
+        {/* Protected Teacher Routes */}
         <Route element={<ProtectedRoute allowedRoles={['teacher']} />}>
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
         </Route>
 
-        {/* Student Routes */}
+        {/* Protected Student Routes */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
         </Route>
 
-        {/* Default Route */}
+        {/* Fallback */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

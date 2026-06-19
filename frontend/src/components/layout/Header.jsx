@@ -1,9 +1,8 @@
-import React from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline'; // Assuming Heroicons for icons
-import DateTime from '../DateTime';
-import ThemeToggle from '../ThemeToggle';
-import NotificationBell from '../NotificationBell';
-import AdminDropdown from '../AdminDropdown'; // Import AdminDropdown component
+import DateTime from './DateTime';
+import ThemeToggle from './ThemeToggle';
+import NotificationBell from './NotificationBell';
+import AdminDropdown from './AdminDropdown';
 
 const Header = ({ toggleSidebar }) => {
   return (

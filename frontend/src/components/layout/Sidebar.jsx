@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'; // Assuming Heroicons for icons
 
-const Sidebar = ({ isOpen, toggleSidebar }) => { // Accept isOpen and toggleSidebar as props
+const Sidebar = ({ isOpen }) => { // Accept isOpen as prop
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile drawer
 
   const toggleMobileMenu = () => {

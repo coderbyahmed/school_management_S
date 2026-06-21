@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import authService from '../../services/auth.service';
 import Input from '../../components/common/Input';
@@ -18,6 +18,7 @@ const LoginPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -28,6 +29,10 @@ const LoginPage = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors({ ...fieldErrors, [e.target.name]: '' });
+    }
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -57,7 +62,20 @@ const LoginPage = () => {
       }
     } catch (err) {
       const message = err.response?.data?.message || 'Login failed. Please check your credentials.';
-      setError(message);
+      const errMap = {
+        'Email not found': 'email',
+        'Incorrect password': 'password',
+        'Teacher ID not found': 'teacherId',
+        'Student ID not found': 'studentId',
+      };
+      const targetField = errMap[message];
+      if (targetField) {
+        setFieldErrors({ [targetField]: message });
+        setError('');
+      } else {
+        setError(message);
+        setFieldErrors({});
+      }
       toast.error(message);
     } finally {
       setLoading(false);
@@ -118,6 +136,7 @@ const LoginPage = () => {
                 onChange={handleChange}
                 placeholder="admin@school.com"
                 icon={EnvelopeIcon}
+                error={fieldErrors.email}
               />
             )}
 
@@ -131,6 +150,7 @@ const LoginPage = () => {
                 onChange={handleChange}
                 placeholder="T-12345"
                 icon={IdentificationIcon}
+                error={fieldErrors.teacherId}
               />
             )}
 
@@ -144,6 +164,7 @@ const LoginPage = () => {
                 onChange={handleChange}
                 placeholder="STD-000001"
                 icon={IdentificationIcon}
+                error={fieldErrors.studentId}
               />
             )}
 
@@ -156,7 +177,19 @@ const LoginPage = () => {
               onChange={handleChange}
               placeholder="••••••••"
               icon={LockClosedIcon}
+              error={fieldErrors.password}
             />
+
+            {activeTab === 'admin' && (
+              <div className="flex items-center justify-end">
+                <Link
+                  to="/admin/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
+            )}
 
             <Button type="submit" loading={loading}>
               Sign In

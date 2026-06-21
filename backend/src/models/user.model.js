@@ -45,12 +45,44 @@ const userSchema = new mongoose.Schema(
       enum: ['admin', 'teacher', 'student'],
       required: true,
     },
+    phone: {
+      type: String,
+      default: '',
+    },
+    profileImage: {
+      type: String,
+      default: '',
+    },
     isActive: {
       type: Boolean,
       default: true,
     },
     lastLogin: {
       type: Date,
+      default: null,
+    },
+    otp: {
+      type: String,
+      default: null,
+    },
+    otpExpiry: {
+      type: Date,
+      default: null,
+    },
+    isOtpVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    otpRequestedAt: {
+      type: [Date],
+      default: [],
+    },
+    pendingEmail: {
+      type: String,
       default: null,
     },
   },

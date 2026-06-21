@@ -40,7 +40,7 @@ const StudentManagement = () => {
         </nav>
       </div>
 
-      <ActiveComponent />
+      <ActiveComponent onSuccess={() => setActiveTab('All Students')} />
     </div>
   );
 };

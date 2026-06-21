@@ -17,21 +17,6 @@ const academicYears = ['2025', '2026', '2027', '2028', '2029', '2030'];
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 
-const dummyStudents = [
-  { id: 'STU-2026-001', name: 'Ahmed Hassan', fatherName: 'Muhammad Hassan', class: 'Class 5', status: 'Active', avatar: null },
-  { id: 'STU-2026-002', name: 'Fatima Tariq', fatherName: 'Tariq Mahmood', class: 'Class 3', status: 'Active', avatar: null },
-  { id: 'STU-2026-003', name: 'Muhammad Ali', fatherName: 'Ali Raza', class: 'Montessori', status: 'Inactive', avatar: null },
-  { id: 'STU-2026-004', name: 'Ayesha Khan', fatherName: 'Imran Khan', class: 'Class 8', status: 'Active', avatar: null },
-  { id: 'STU-2026-005', name: 'Hassan Rizvi', fatherName: 'Rizvi Ahmed', class: 'Class 10', status: 'Active', avatar: null },
-  { id: 'STU-2026-006', name: 'Zainab Fatima', fatherName: 'Usman Ghani', class: 'Nursery', status: 'Active', avatar: null },
-  { id: 'STU-2026-007', name: 'Abdullah Iqbal', fatherName: 'Iqbal Hussain', class: 'KG 2', status: 'Inactive', avatar: null },
-  { id: 'STU-2026-008', name: 'Hira Batool', fatherName: 'Muhammad Aslam', class: 'Class 7', status: 'Active', avatar: null },
-  { id: 'STU-2026-009', name: 'Omar Farooq', fatherName: 'Farooq Ahmed', class: 'KG 1', status: 'Active', avatar: null },
-  { id: 'STU-2026-010', name: 'Sara Zaman', fatherName: 'Zaman Ali', class: 'Class 4', status: 'Inactive', avatar: null },
-  { id: 'STU-2026-011', name: 'Haider Abbas', fatherName: 'Abbas Hussain', class: 'Class 9', status: 'Active', avatar: null },
-  { id: 'STU-2026-012', name: 'Mahnoor Sheikh', fatherName: 'Sheikh Javed', class: 'Class 2', status: 'Active', avatar: null },
-];
-
 const promotionMap = {
   'Montessori': 'Nursery',
   'Nursery': 'KG 1',
@@ -78,7 +63,7 @@ const StudentPromotion = () => {
 
   const filteredStudents = useMemo(() => {
     if (!loaded) return [];
-    return dummyStudents.filter((s) => {
+    return [].filter((s) => {
       if (fromClass && s.class !== fromClass) return false;
       if (statusFilter !== 'All' && s.status !== statusFilter) return false;
       if (nameSearch && !s.name.toLowerCase().includes(nameSearch.toLowerCase())) return false;
@@ -295,7 +280,7 @@ const StudentPromotion = () => {
               </div>
             </div>
             <div className="max-h-60 overflow-y-auto space-y-2 pr-1 -mr-1">
-              {dummyStudents
+              {filteredStudents
                 .filter((s) => selectedIds.has(s.id))
                 .map((s) => {
                   const targetClass = toClass || promotionMap[s.class] || s.class;
@@ -318,7 +303,7 @@ const StudentPromotion = () => {
         ) : (
           <>
             <div className="space-y-4 mb-6">
-              {dummyStudents
+              {filteredStudents
                 .filter((s) => selectedIds.has(s.id))
                 .map((s) => {
                   const targetClass = toClass || promotionMap[s.class] || s.class;

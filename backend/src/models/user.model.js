@@ -21,9 +21,18 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    loginId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     studentId: {
       type: String,
       unique: true,
+      sparse: true,
+    },
+    referenceId: {
+      type: mongoose.Schema.Types.ObjectId,
       sparse: true,
     },
     password: {
@@ -35,26 +44,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['admin', 'teacher', 'student'],
       required: true,
-    },
-    otp: {
-      type: String,
-      default: null,
-    },
-    otpExpiry: {
-      type: Date,
-      default: null,
-    },
-    isOtpVerified: {
-      type: Boolean,
-      default: false,
-    },
-    phone: {
-      type: String,
-      default: '',
-    },
-    profileImage: {
-      type: String,
-      default: '',
     },
     isActive: {
       type: Boolean,

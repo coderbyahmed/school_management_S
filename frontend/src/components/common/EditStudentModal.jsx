@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import Modal from './Modal';
 import CardSection from './CardSection';
@@ -6,6 +7,7 @@ import Input from './Input';
 import SelectInput from './SelectInput';
 import DateInput from './DateInput';
 import Button from './Button';
+import Alert from './Alert';
 
 const classOptions = [
   'Montessori', 'Nursery', 'KG 1', 'KG 2',
@@ -17,39 +19,50 @@ const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
 const yearOptions = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
 
+const getImageUrl = (path) => {
+  if (!path) return null;
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
+  return `${base}/${path}`;
+};
+
 const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     fatherName: '',
     gender: '',
     dateOfBirth: '',
     status: '',
     class: '',
     academicYear: '',
-    parentPhone: '',
-    alternativePhone: '',
+    fatherPhone: '',
+    alternatePhone: '',
     city: '',
     address: '',
   });
-  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (student) {
       setFormData({
-        name: student.name || '',
+        fullName: student.fullName || '',
         fatherName: student.fatherName || '',
         gender: student.gender || '',
-        dateOfBirth: student.dateOfBirth || '',
+        dateOfBirth: student.dateOfBirth ? student.dateOfBirth.slice(0, 10) : '',
         status: student.status || '',
         class: student.class || '',
         academicYear: student.academicYear || '',
-        parentPhone: student.parentPhone || '',
-        alternativePhone: student.alternativePhone || '',
+        fatherPhone: student.fatherPhone || '',
+        alternatePhone: student.alternatePhone || '',
         city: student.city || '',
         address: student.address || '',
       });
-      setAvatarPreview(student.avatar || null);
+      setPhotoPreview(getImageUrl(student.studentImage));
+      setPhotoFile(null);
+      setError('');
     }
   }, [student]);
 
@@ -57,34 +70,63 @@ const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleAvatarChange = (e) => {
+  const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setPhotoFile(file);
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target.result;
-      setAvatarPreview(dataUrl);
-    };
+    reader.onload = (ev) => setPhotoPreview(ev.target.result);
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    onSave({ ...student, ...formData, avatar: avatarPreview });
+  const handleSave = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const fd = new FormData();
+      if (photoFile) fd.append('studentImage', photoFile);
+      if (formData.fullName) fd.append('fullName', formData.fullName.trim());
+      if (formData.fatherName) fd.append('fatherName', formData.fatherName.trim());
+      if (formData.gender) fd.append('gender', formData.gender);
+      if (formData.dateOfBirth) fd.append('dateOfBirth', formData.dateOfBirth);
+      if (formData.status) fd.append('status', formData.status);
+      if (formData.class) fd.append('class', formData.class);
+      if (formData.academicYear) fd.append('academicYear', formData.academicYear);
+      if (formData.fatherPhone) fd.append('fatherPhone', formData.fatherPhone);
+      if (formData.alternatePhone) fd.append('alternatePhone', formData.alternatePhone);
+      if (formData.city) fd.append('city', formData.city.trim());
+      if (formData.address) fd.append('address', formData.address.trim());
+
+      await onSave(student.studentId, fd);
+      toast.success('Student updated successfully');
+      onClose();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to update student';
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const initials = student?.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'ST';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Student" maxWidth="max-w-2xl">
       <div className="max-h-[70vh] overflow-y-auto pr-1 -mr-1">
+        {error && <Alert message={error} type="error" />}
+
         <CardSection title="Basic Information">
           <div className="flex flex-col items-center mb-5">
             <div
               className="relative w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xl ring-2 ring-yellow-400/50 cursor-pointer overflow-hidden group"
               onClick={() => fileInputRef.current?.click()}
             >
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="" className="w-full h-full rounded-full object-cover" />
+              {photoPreview ? (
+                <img src={photoPreview} alt="" className="w-full h-full rounded-full object-cover" />
               ) : (
-                student?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                initials
               )}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <CameraIcon className="h-6 w-6 text-white" />
@@ -95,13 +137,13 @@ const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={handleAvatarChange}
+              onChange={handlePhotoChange}
             />
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Click to change photo</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-            <Input label="Student Name" name="name" value={formData.name} onChange={handleChange('name')} placeholder="Enter student name" />
+            <Input label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange('fullName')} placeholder="Enter full name" />
             <Input label="Father Name" name="fatherName" value={formData.fatherName} onChange={handleChange('fatherName')} placeholder="Enter father name" />
             <SelectInput label="Gender" name="gender" value={formData.gender} onChange={handleChange('gender')} options={genderOptions} placeholder="Select gender" />
             <DateInput label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange('dateOfBirth')} />
@@ -121,8 +163,8 @@ const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
         <div className="mt-4">
           <CardSection title="Contact Information">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-              <Input label="Parent Phone" name="parentPhone" value={formData.parentPhone} onChange={handleChange('parentPhone')} placeholder="Enter phone number" />
-              <Input label="Alternative Phone" name="alternativePhone" value={formData.alternativePhone} onChange={handleChange('alternativePhone')} placeholder="Enter alternative phone" />
+              <Input label="Parent Phone" name="fatherPhone" value={formData.fatherPhone} onChange={handleChange('fatherPhone')} placeholder="Enter phone number" />
+              <Input label="Alternative Phone" name="alternatePhone" value={formData.alternatePhone} onChange={handleChange('alternatePhone')} placeholder="Enter alternative phone" />
               <Input label="City" name="city" value={formData.city} onChange={handleChange('city')} placeholder="Enter city" />
             </div>
             <div className="mb-4">
@@ -144,8 +186,8 @@ const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-5 mt-5 border-t border-gray-200 dark:border-gray-700">
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button variant="primary" onClick={handleSave}>Update Student</Button>
+        <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button variant="primary" onClick={handleSave} loading={loading}>Update Student</Button>
       </div>
     </Modal>
   );

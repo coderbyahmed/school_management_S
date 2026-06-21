@@ -7,20 +7,11 @@ import Table from '../../common/Table';
 import ActionButtons from '../../common/ActionButtons';
 import ConfirmationModal from '../../common/ConfirmationModal';
 
-const dummyPromotionsData = [
-  { id: 1, studentName: 'Ahmed Hassan', prevClass: 'Class 4', newClass: 'Class 5', prevYear: '2025', newYear: '2026', date: '2026-03-15', status: 'Completed' },
-  { id: 2, studentName: 'Fatima Tariq', prevClass: 'Class 2', newClass: 'Class 3', prevYear: '2025', newYear: '2026', date: '2026-03-15', status: 'Completed' },
-  { id: 3, studentName: 'Ayesha Khan', prevClass: 'Class 7', newClass: 'Class 8', prevYear: '2025', newYear: '2026', date: '2026-03-16', status: 'Completed' },
-  { id: 4, studentName: 'Hassan Rizvi', prevClass: 'Class 9', newClass: 'Class 10', prevYear: '2025', newYear: '2026', date: '2026-03-16', status: 'Completed' },
-  { id: 5, studentName: 'Hira Batool', prevClass: 'Class 6', newClass: 'Class 7', prevYear: '2025', newYear: '2026', date: '2026-03-17', status: 'Pending' },
-  { id: 6, studentName: 'Haider Abbas', prevClass: 'Class 8', newClass: 'Class 9', prevYear: '2025', newYear: '2026', date: '2026-03-17', status: 'Pending' },
-];
-
 const PromotionHistory = () => {
   const [yearFilter, setYearFilter] = useState('All');
   const [classFilter, setClassFilter] = useState('All Classes');
   const [nameSearch, setNameSearch] = useState('');
-  const [promotions, setPromotions] = useState(dummyPromotionsData);
+  const [promotions, setPromotions] = useState([]);
   const [deletingPromotion, setDeletingPromotion] = useState(null);
 
   const filteredPromotions = promotions.filter((p) => {

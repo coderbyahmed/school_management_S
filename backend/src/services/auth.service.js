@@ -1,4 +1,5 @@
 import User from '../models/user.model.js';
+import Student from '../models/student.model.js';
 import RefreshToken from '../models/refreshToken.model.js';
 import { ApiError } from '../utils/apiError.js';
 import jwt from 'jsonwebtoken';
@@ -55,8 +56,6 @@ const buildUserResponse = (user) => ({
   id: user._id,
   fullName: user.fullName,
   email: user.email,
-  phone: user.phone || '',
-  profileImage: user.profileImage || '',
   role: user.role,
   teacherId: user.teacherId || undefined,
   studentId: user.studentId || undefined,
@@ -95,82 +94,34 @@ const teacherLogin = async (teacherId, password) => {
 };
 
 const studentLogin = async (studentId, password) => {
-  const user = await User.findOne({ studentId, role: 'student' }).select('+password');
+  const user = await User.findOne({ loginId: studentId, role: 'student' }).select('+password');
   if (!user || !(await user.comparePassword(password))) {
-    throw new ApiError(401, 'Invalid student ID or password');
+    throw new ApiError(401, 'Invalid Student ID or Password');
   }
 
-  user.lastLogin = new Date();
-  await user.save();
+  const student = user.referenceId ? await Student.findById(user.referenceId) : null;
 
   const accessToken = generateAccessToken(user._id);
   const refreshToken = await createRefreshToken(user._id);
-  const loggedInUser = await User.findById(user._id);
 
-  return { user: buildUserResponse(loggedInUser), accessToken, refreshToken };
-};
-
-const forgotPassword = async (email) => {
-  const user = await User.findOne({ email, role: 'admin' });
-  if (!user) {
-    throw new ApiError(404, 'Admin with this email does not exist');
-  }
-
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpiry = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
-
-  user.otp = otp;
-  user.otpExpiry = otpExpiry;
-  user.isOtpVerified = false;
-  await user.save();
-
-  console.log(`[DEVELOPMENT] OTP for ${email}: ${otp}`);
-
-  return true;
-};
-
-const verifyOtp = async (email, otp) => {
-  const user = await User.findOne({ email, role: 'admin' });
-  if (!user) {
-    throw new ApiError(404, 'Admin with this email does not exist');
-  }
-
-  if (user.otp !== otp || user.otpExpiry < new Date()) {
-    throw new ApiError(400, 'Invalid or expired OTP');
-  }
-
-  user.isOtpVerified = true;
-  await user.save();
-
-  return true;
-};
-
-const resetPassword = async (email, newPassword) => {
-  const user = await User.findOne({ email, role: 'admin' });
-  if (!user) {
-    throw new ApiError(404, 'Admin with this email does not exist');
-  }
-
-  if (!user.isOtpVerified) {
-    throw new ApiError(400, 'OTP not verified');
-  }
-
-  user.password = newPassword;
-  user.otp = null;
-  user.otpExpiry = null;
-  user.isOtpVerified = false;
-  await user.save();
-
-  return true;
+  return {
+    user: {
+      id: user._id,
+      fullName: user.fullName,
+      loginId: user.loginId,
+      role: 'student',
+      studentId: student ? student.studentId : user.loginId,
+      student: student || null,
+    },
+    accessToken,
+    refreshToken,
+  };
 };
 
 export default {
   adminLogin,
   teacherLogin,
   studentLogin,
-  forgotPassword,
-  verifyOtp,
-  resetPassword,
   verifyRefreshToken,
   revokeRefreshToken,
   rotateRefreshToken,

@@ -27,30 +27,13 @@ const authService = {
     return response.data;
   },
 
-  adminForgotPassword: async (email) => {
-    const response = await api.post('/auth/admin/forgot-password', { email });
-    return response.data;
-  },
-
-  adminVerifyOtp: async (email, otp) => {
-    const response = await api.post('/auth/admin/verify-otp', { email, otp });
-    return response.data;
-  },
-
-  adminResetPassword: async (email, newPassword, confirmPassword) => {
-    const response = await api.post('/auth/admin/reset-password', { email, newPassword, confirmPassword });
-    return response.data;
-  },
-
   getProfile: async () => {
     const response = await api.get('/profile');
     return response.data;
   },
 
-  updateProfile: async (formData) => {
-    const response = await api.put('/profile', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  updateProfile: async (data) => {
+    const response = await api.put('/profile', data);
     return response.data;
   },
 

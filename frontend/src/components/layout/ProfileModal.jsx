@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
-import { PencilSquareIcon, CameraIcon, EnvelopeIcon, PhoneIcon, ShieldCheckIcon, UserIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, EnvelopeIcon, ShieldCheckIcon, UserIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import authService from '../../services/auth.service';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Alert from '../common/Alert';
 import { toast } from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
-const UPLOADS_BASE = API_BASE.replace('/api/v1', '');
 
 const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
   const [profile, setProfile] = useState(null);
@@ -15,9 +12,7 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
-  const [editForm, setEditForm] = useState({ fullName: '', phone: '' });
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [editForm, setEditForm] = useState({ fullName: '' });
 
   const loadProfile = async () => {
     setFetching(true);
@@ -25,9 +20,7 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     try {
       const data = await authService.getProfile();
       setProfile(data.user);
-      setEditForm({ fullName: data.user.fullName, phone: data.user.phone || '' });
-      setImagePreview(null);
-      setImageFile(null);
+      setEditForm({ fullName: data.user.fullName });
       setIsEditing(false);
     } catch {
       setError('Failed to load profile');
@@ -43,26 +36,6 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     }
   }, [isOpen]);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowed.includes(file.type)) {
-      toast.error('Only jpg, jpeg, png, webp files are allowed');
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image must be less than 2MB');
-      return;
-    }
-
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setImagePreview(ev.target.result);
-    reader.readAsDataURL(file);
-  };
-
   const handleUpdate = async () => {
     if (!editForm.fullName.trim()) {
       toast.error('Full name is required');
@@ -72,18 +45,9 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     setLoading(true);
     setError('');
     try {
-      const formData = new FormData();
-      formData.append('fullName', editForm.fullName.trim());
-      formData.append('phone', editForm.phone.trim());
-      if (imageFile) {
-        formData.append('profileImage', imageFile);
-      }
-
-      const data = await authService.updateProfile(formData);
+      const data = await authService.updateProfile({ fullName: editForm.fullName.trim() });
       setProfile(data.user);
       setIsEditing(false);
-      setImageFile(null);
-      setImagePreview(null);
       toast.success('Profile updated successfully');
       if (onProfileUpdated) onProfileUpdated();
     } catch (err) {
@@ -96,9 +60,7 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
   };
 
   const handleCancelEdit = () => {
-    setEditForm({ fullName: profile?.fullName || '', phone: profile?.phone || '' });
-    setImageFile(null);
-    setImagePreview(null);
+    setEditForm({ fullName: profile?.fullName || '' });
     setIsEditing(false);
     setError('');
   };
@@ -108,11 +70,9 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     onClose();
   };
 
-  const getProfileImageUrl = () => {
-    if (imagePreview) return imagePreview;
-    if (profile?.profileImage) return `${UPLOADS_BASE}/${profile.profileImage}`;
-    return null;
-  };
+  const initials = profile?.fullName
+    ? profile.fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'A';
 
   const roleLabel = profile?.role === 'admin' ? 'Administrator' : profile?.role?.charAt(0).toUpperCase() + profile?.role?.slice(1);
 
@@ -146,23 +106,6 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
 
               {isEditing ? (
                 <div className="space-y-5">
-                  <div className="flex flex-col items-center mb-2">
-                    <div className="relative group">
-                      <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center ring-2 ring-yellow-400/50 shadow-lg overflow-hidden">
-                        {getProfileImageUrl() ? (
-                          <img src={getProfileImageUrl()} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                          <UserIcon className="w-10 h-10 text-gray-400" />
-                        )}
-                      </div>
-                      <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-                        <CameraIcon className="h-6 w-6 text-white" />
-                        <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" className="hidden" onChange={handleImageChange} />
-                      </label>
-                    </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Click to change photo</p>
-                  </div>
-
                   <Input
                     label="Full Name"
                     name="fullName"
@@ -178,15 +121,6 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                       {profile?.email}
                     </div>
                   </div>
-
-                  <Input
-                    label="Phone Number"
-                    name="phone"
-                    type="text"
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    icon={PhoneIcon}
-                  />
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
@@ -207,12 +141,8 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-4">
-                  <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center ring-2 ring-yellow-400/50 shadow-lg overflow-hidden">
-                    {getProfileImageUrl() ? (
-                      <img src={getProfileImageUrl()} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-14 h-14 text-gray-400" />
-                    )}
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-2xl ring-2 ring-yellow-400/50 shadow-lg">
+                    {initials}
                   </div>
 
                   <div className="text-center">
@@ -233,20 +163,11 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{profile?.email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                      <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{profile?.phone || 'Not set'}</p>
-                      </div>
-                    </div>
                   </div>
 
                   <button
                     onClick={() => {
-                      setEditForm({ fullName: profile?.fullName || '', phone: profile?.phone || '' });
-                      setImagePreview(null);
-                      setImageFile(null);
+                      setEditForm({ fullName: profile?.fullName || '' });
                       setIsEditing(true);
                       setError('');
                     }}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { UsersIcon, UserGroupIcon, UserMinusIcon, UserPlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import FilterDropdown from '../../common/FilterDropdown';
@@ -11,7 +12,13 @@ import StudentCard from '../../common/StudentCard';
 import StudentViewModal from '../../common/StudentViewModal';
 import EditStudentModal from '../../common/EditStudentModal';
 import ConfirmationModal from '../../common/ConfirmationModal';
-import dummyStudentsData from '../../../data/dummyStudents';
+import studentService from '../../../services/student.service';
+
+const getImageUrl = (path) => {
+  if (!path) return null;
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
+  return `${base}/${path}`;
+};
 
 const ITEMS_PER_PAGE = 10;
 
@@ -25,42 +32,84 @@ const statusOptions = ['All', 'Active', 'Inactive'];
 
 const AllStudents = () => {
   const [view, setView] = useState('table');
-  const [studentIdSearch, setStudentIdSearch] = useState('');
+  const [search, setSearch] = useState('');
+  const [studentIdFilter, setStudentIdFilter] = useState('');
   const [classFilter, setClassFilter] = useState('All Classes');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [nameSearch, setNameSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [students, setStudents] = useState([]);
+  const [pagination, setPagination] = useState({ totalStudents: 0, totalPages: 0, currentPage: 1 });
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
   const [deletingStudent, setDeletingStudent] = useState(null);
-  const [students, setStudents] = useState(dummyStudentsData);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const debounceRef = useRef(null);
 
-  const filteredStudents = students.filter((s) => {
-    if (studentIdSearch && !s.id.toLowerCase().includes(studentIdSearch.toLowerCase())) return false;
-    if (classFilter !== 'All Classes' && s.class !== classFilter) return false;
-    if (statusFilter !== 'All' && s.status !== statusFilter) return false;
-    if (nameSearch && !s.name.toLowerCase().includes(nameSearch.toLowerCase())) return false;
-    return true;
-  });
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+
+    try {
+      const params = { page: currentPage, limit: ITEMS_PER_PAGE };
+      if (classFilter !== 'All Classes') params.class = classFilter;
+      if (statusFilter !== 'All') params.status = statusFilter;
+      if (search.trim()) params.search = search.trim();
+      if (studentIdFilter.trim()) params.studentId = studentIdFilter.trim();
+
+      const result = await studentService.getAllStudents(params);
+      setStudents(result.data.students);
+      setPagination(result.data.pagination);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to load students';
+      setFetchError(msg);
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, classFilter, statusFilter, search, studentIdFilter]);
+
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      fetchStudents();
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [currentPage, classFilter, statusFilter, search, studentIdFilter, fetchStudents]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [studentIdSearch, classFilter, statusFilter, nameSearch]);
-
-  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
-  const paginatedStudents = filteredStudents.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  }, [classFilter, statusFilter, search, studentIdFilter]);
 
   const handleReset = () => {
     setClassFilter('All Classes');
     setStatusFilter('All');
-    setNameSearch('');
+    setSearch('');
+    setStudentIdFilter('');
     setCurrentPage(1);
   };
 
-  const totalStudents = students.length;
+  const handleEditSave = async (studentId, formData) => {
+    await studentService.updateStudent(studentId, formData);
+    setEditingStudent(null);
+    fetchStudents();
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    try {
+      await studentService.deleteStudent(deletingStudent.studentId);
+      toast.success('Student deleted successfully');
+      setDeletingStudent(null);
+      fetchStudents();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete student');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const totalStudents = pagination.totalStudents;
   const activeStudents = students.filter((s) => s.status === 'Active').length;
   const inactiveStudents = students.filter((s) => s.status === 'Inactive').length;
   const newAdmissions = students.filter((s) => ['Nursery', 'Montessori', 'KG 1'].includes(s.class)).length;
@@ -79,19 +128,23 @@ const AllStudents = () => {
     <>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0">
-            {student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0 overflow-hidden">
+            {getImageUrl(student.studentImage) ? (
+              <img src={getImageUrl(student.studentImage)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+            ) : (
+              student.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+            )}
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">{student.fullName}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Son of {student.fatherName}</p>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{student.id}</td>
+      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{student.studentId}</td>
       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{student.class}</td>
       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{student.gender}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{student.parentPhone}</td>
+      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{student.fatherPhone}</td>
       <td className="px-4 py-3">
         <StatusBadge status={student.status} />
       </td>
@@ -106,32 +159,52 @@ const AllStudents = () => {
   );
 
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (pagination.totalPages <= 1) return null;
 
     const pages = [];
-    for (let i = 1; i <= totalPages; i++) {
+    const totalPages = pagination.totalPages;
+    const safeCurrentPage = pagination.currentPage;
+
+    let start = Math.max(1, safeCurrentPage - 2);
+    let end = Math.min(totalPages, safeCurrentPage + 2);
+    if (end - start < 4) {
+      if (start === 1) end = Math.min(totalPages, start + 4);
+      else start = Math.max(1, end - 4);
+    }
+
+    for (let i = start; i <= end; i++) {
       pages.push(i);
     }
+
+    const startRecord = (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1;
+    const endRecord = Math.min(safeCurrentPage * ITEMS_PER_PAGE, pagination.totalStudents);
 
     return (
       <div className="flex items-center justify-between pt-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {Math.min(filteredStudents.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length}
+          Showing {startRecord}–{endRecord} of {pagination.totalStudents}
         </p>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+            disabled={safeCurrentPage === 1 || loading}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             Previous
           </button>
+          {start > 1 && (
+            <>
+              <button onClick={() => setCurrentPage(1)} className="w-9 h-9 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">1</button>
+              {start > 2 && <span className="px-1 text-gray-400">...</span>}
+            </>
+          )}
           {pages.map((page) => (
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
+              disabled={loading}
               className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                currentPage === page
+                safeCurrentPage === page
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
@@ -139,9 +212,15 @@ const AllStudents = () => {
               {page}
             </button>
           ))}
+          {end < totalPages && (
+            <>
+              {end < totalPages - 1 && <span className="px-1 text-gray-400">...</span>}
+              <button onClick={() => setCurrentPage(totalPages)} className="w-9 h-9 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">{totalPages}</button>
+            </>
+          )}
           <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+            disabled={safeCurrentPage === totalPages || loading}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             Next
@@ -153,13 +232,19 @@ const AllStudents = () => {
 
   return (
     <div className="space-y-6">
+      {fetchError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+          {fetchError}
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Students</h1>
-        <div className="w-full sm:w-64">
+        <div className="w-full sm:w-56">
           <SearchInput
-            placeholder="Enter Student ID"
-            value={studentIdSearch}
-            onChange={setStudentIdSearch}
+            placeholder="Student ID"
+            value={studentIdFilter}
+            onChange={setStudentIdFilter}
           />
         </div>
       </div>
@@ -190,12 +275,12 @@ const AllStudents = () => {
         </div>
         <div className="w-full sm:w-56">
           <label className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">
-            Search By Name
+            Search (ID, Name, Father Name)
           </label>
           <SearchInput
-            placeholder="Search Student Name"
-            value={nameSearch}
-            onChange={setNameSearch}
+            placeholder="Search..."
+            value={search}
+            onChange={setSearch}
           />
         </div>
         <button
@@ -210,31 +295,42 @@ const AllStudents = () => {
         </div>
       </div>
 
-      {view === 'table' ? (
-        <>
-          <Table columns={tableColumns} data={paginatedStudents} renderRow={renderTableRow} />
-          {renderPagination()}
-        </>
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {paginatedStudents.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-gray-400 dark:text-gray-500">
-                No records found
+          {view === 'table' ? (
+            <>
+              <Table columns={tableColumns} data={students} renderRow={renderTableRow} />
+              {renderPagination()}
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {students.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-gray-400 dark:text-gray-500">
+                    No records found
+                  </div>
+                ) : (
+                  students.map((student) => (
+                    <StudentCard
+                      key={student.studentId}
+                      student={student}
+                      onView={() => setSelectedStudent(student)}
+                      onEdit={() => setEditingStudent(student)}
+                      onDelete={() => setDeletingStudent(student)}
+                    />
+                  ))
+                )}
               </div>
-            ) : (
-              paginatedStudents.map((student) => (
-                <StudentCard
-                  key={student.id}
-                  student={student}
-                  onView={() => setSelectedStudent(student)}
-                  onEdit={() => setEditingStudent(student)}
-                  onDelete={() => setDeletingStudent(student)}
-                />
-              ))
-            )}
-          </div>
-          {renderPagination()}
+              {renderPagination()}
+            </>
+          )}
         </>
       )}
 
@@ -245,29 +341,23 @@ const AllStudents = () => {
       />
 
       <EditStudentModal
+        key={editingStudent?.studentId || 'new'}
         student={editingStudent}
         isOpen={!!editingStudent}
         onClose={() => setEditingStudent(null)}
-        onSave={(updatedStudent) => {
-          setStudents((prev) =>
-            prev.map((s) => (s.id === updatedStudent.id ? updatedStudent : s))
-          );
-          setEditingStudent(null);
-        }}
+        onSave={handleEditSave}
       />
 
       <ConfirmationModal
         isOpen={!!deletingStudent}
         onClose={() => setDeletingStudent(null)}
         title="Delete Student"
-        message="Are you sure you want to delete this student?"
-        confirmLabel="Confirm Delete"
+        message={`Are you sure you want to delete ${deletingStudent?.fullName || 'this student'}?`}
+        confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
-        onConfirm={() => {
-          setStudents((prev) => prev.filter((s) => s.id !== deletingStudent.id));
-          setDeletingStudent(null);
-        }}
+        loading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );

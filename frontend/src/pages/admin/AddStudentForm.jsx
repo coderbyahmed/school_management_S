@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { CameraIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import CardSection from '../../components/common/CardSection';
 import Input from '../../components/common/Input';
 import SelectInput from '../../components/common/SelectInput';
 import DateInput from '../../components/common/DateInput';
+import Alert from '../../components/common/Alert';
+import studentService from '../../services/student.service';
 
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
@@ -32,9 +35,11 @@ const initialFormState = {
   password: '',
 };
 
-const AddStudentForm = () => {
+const AddStudentForm = ({ onSuccess }) => {
   const [form, setForm] = useState(initialFormState);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (field) => (e) => {
     setForm({ ...form, [field]: e.target.value });
@@ -50,17 +55,59 @@ const AddStudentForm = () => {
     }
   };
 
-  const handleCancel = () => {
-    setForm(initialFormState);
+  const resetForm = () => {
+    setForm({ ...initialFormState, admissionDate: new Date().toISOString().split('T')[0] });
     setPhotoPreview(null);
+    setError('');
   };
 
-  const handleSave = () => {
-    // UI only — no backend
+  const handleCancel = () => {
+    resetForm();
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      if (form.photo) {
+        formData.append('studentImage', form.photo);
+      }
+      formData.append('fullName', form.fullName.trim());
+      formData.append('fatherName', form.fatherName.trim());
+      formData.append('gender', form.gender);
+      formData.append('dateOfBirth', form.dob);
+      formData.append('status', form.status);
+      formData.append('admissionDate', form.admissionDate);
+      formData.append('class', form.class);
+      formData.append('academicYear', form.academicYear);
+      formData.append('fatherPhone', form.fatherPhone);
+      if (form.altPhone) {
+        formData.append('alternatePhone', form.altPhone);
+      }
+      formData.append('city', form.city.trim());
+      formData.append('address', form.address.trim());
+      formData.append('password', form.password);
+
+      await studentService.createStudent(formData);
+
+      toast.success('Student created successfully');
+      resetForm();
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to create student';
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="space-y-5">
+      {error && <Alert message={error} type="error" />}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <CardSection title="Student Information">
           <div className="flex flex-col items-center mb-4">
@@ -216,15 +263,17 @@ const AddStudentForm = () => {
       <div className="flex items-center justify-end gap-3 pt-2">
         <button
           onClick={handleCancel}
-          className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer"
+          disabled={loading}
+          className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
-          className="px-6 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
+          disabled={loading}
+          className="px-6 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save Student
+          {loading ? 'Saving Student...' : 'Save Student'}
         </button>
       </div>
     </div>

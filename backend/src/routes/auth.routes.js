@@ -6,17 +6,11 @@ import {
   refreshToken,
   logout,
   getMe,
-  forgotPassword,
-  verifyOtp,
-  resetPassword,
 } from '../controllers/auth.controller.js';
 import {
   validateAdminLogin,
   validateTeacherLogin,
   validateStudentLogin,
-  validateForgotPassword,
-  validateVerifyOtp,
-  validateResetPassword,
 } from '../validations/auth.validation.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
@@ -30,11 +24,6 @@ router.post('/student/login', validateStudentLogin, studentLogin);
 
 // Refresh token
 router.post('/refresh-token', refreshToken);
-
-// Password reset flow (admin)
-router.post('/admin/forgot-password', validateForgotPassword, forgotPassword);
-router.post('/admin/verify-otp', validateVerifyOtp, verifyOtp);
-router.post('/admin/reset-password', validateResetPassword, resetPassword);
 
 // Protected routes
 router.post('/logout', protect, logout);

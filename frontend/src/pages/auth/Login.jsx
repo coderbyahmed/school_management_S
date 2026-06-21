@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import authService from '../../services/auth.service';
 import Input from '../../components/common/Input';
@@ -142,7 +142,7 @@ const LoginPage = () => {
                 required
                 value={formData.studentId}
                 onChange={handleChange}
-                placeholder="S-12345"
+                placeholder="STD-000001"
                 icon={IdentificationIcon}
               />
             )}
@@ -157,17 +157,6 @@ const LoginPage = () => {
               placeholder="••••••••"
               icon={LockClosedIcon}
             />
-
-            {activeTab === 'admin' && (
-              <div className="flex items-center justify-end">
-                <Link
-                  to="/admin/forgot-password"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
-            )}
 
             <Button type="submit" loading={loading}>
               Sign In

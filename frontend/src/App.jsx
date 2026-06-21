@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
 import LoginPage from './pages/auth/Login';
-import ForgotPasswordPage from './pages/auth/ForgotPassword';
+
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import StudentDashboard from './pages/student/StudentDashboard';
 import AdminLayout from './layouts/AdminLayout';
@@ -19,7 +19,6 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
 
         {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

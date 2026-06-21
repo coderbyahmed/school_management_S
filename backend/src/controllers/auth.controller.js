@@ -1,6 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 import authService from '../services/auth.service.js';
+import Student from '../models/student.model.js';
 
 const adminLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -86,69 +87,27 @@ const logout = asyncHandler(async (req, res) => {
 const getMe = asyncHandler(async (req, res) => {
   const user = req.user;
 
+  let studentData = null;
+  if (user.role === 'student' && user.referenceId) {
+    studentData = await Student.findById(user.referenceId);
+  }
+
   return res.status(200).json({
     success: true,
     message: 'User profile retrieved',
     user: {
       id: user._id,
       fullName: user.fullName,
-      email: user.email,
-      phone: user.phone || '',
-      profileImage: user.profileImage || '',
+      email: user.email || undefined,
+      loginId: user.loginId || undefined,
       role: user.role,
       teacherId: user.teacherId || undefined,
-      studentId: user.studentId || undefined,
-      isActive: user.isActive,
-      lastLogin: user.lastLogin,
-      createdAt: user.createdAt,
+      studentId: studentData ? studentData.studentId : (user.studentId || undefined),
+      isActive: user.isActive !== undefined ? user.isActive : true,
+      lastLogin: user.lastLogin || undefined,
+      createdAt: user.createdAt || undefined,
+      student: studentData,
     },
-  });
-});
-
-const forgotPassword = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    throw new ApiError(400, 'Email is required');
-  }
-
-  await authService.forgotPassword(email);
-
-  return res.status(200).json({
-    success: true,
-    message: 'OTP sent to your email (check terminal)',
-  });
-});
-
-const verifyOtp = asyncHandler(async (req, res) => {
-  const { email, otp } = req.body;
-  if (!email || !otp) {
-    throw new ApiError(400, 'Email and OTP are required');
-  }
-
-  await authService.verifyOtp(email, otp);
-
-  return res.status(200).json({
-    success: true,
-    message: 'OTP verified successfully',
-  });
-});
-
-const resetPassword = asyncHandler(async (req, res) => {
-  const { email, newPassword, confirmPassword } = req.body;
-
-  if (!email || !newPassword || !confirmPassword) {
-    throw new ApiError(400, 'All fields are required');
-  }
-
-  if (newPassword !== confirmPassword) {
-    throw new ApiError(400, 'Passwords do not match');
-  }
-
-  await authService.resetPassword(email, newPassword);
-
-  return res.status(200).json({
-    success: true,
-    message: 'Password reset successfully',
   });
 });
 
@@ -159,7 +118,4 @@ export {
   refreshToken,
   logout,
   getMe,
-  forgotPassword,
-  verifyOtp,
-  resetPassword,
 };

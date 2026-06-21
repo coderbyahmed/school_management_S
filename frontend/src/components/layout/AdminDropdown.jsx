@@ -6,9 +6,6 @@ import authService from '../../services/auth.service';
 import ProfileModal from './ProfileModal';
 import ChangePasswordModal from './ChangePasswordModal';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
-const UPLOADS_BASE = API_BASE.replace('/api/v1', '');
-
 const AdminDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -60,9 +57,6 @@ const AdminDropdown = () => {
     }
   };
 
-  const profileImageUrl = profile?.profileImage
-    ? `${UPLOADS_BASE}/${profile.profileImage}`
-    : null;
   const initials = profile?.fullName
     ? profile.fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'A';
@@ -74,11 +68,7 @@ const AdminDropdown = () => {
         className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
       >
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-sm ring-1 ring-yellow-400/50 overflow-hidden">
-          {profileImageUrl ? (
-            <img src={profileImageUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            initials
-          )}
+          {initials}
         </div>
         <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[100px] truncate">
           {profile?.fullName || 'Admin'}

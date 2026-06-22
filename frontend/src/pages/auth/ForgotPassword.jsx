@@ -4,6 +4,7 @@ import authService from '../../services/auth.service';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
+import OtpInput from '../../components/common/OtpInput';
 import { toast } from 'react-hot-toast';
 import { ArrowLeftIcon, EnvelopeIcon, KeyIcon, LockClosedIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
@@ -129,44 +130,8 @@ const ForgotPasswordPage = () => {
     }
   };
 
-  const handleOtpChange = (index, value) => {
-    if (value.length > 1) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
+  const handleOtpChange = (newOtp) => {
     setOtp(newOtp);
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace') {
-      if (!otp[index] && index > 0) {
-        const newOtp = [...otp];
-        newOtp[index - 1] = '';
-        setOtp(newOtp);
-        otpRefs.current[index - 1]?.focus();
-      }
-    }
-    if (e.key === 'ArrowLeft' && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-    if (e.key === 'ArrowRight' && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text/plain').replace(/\D/g, '').slice(0, 6);
-    if (!pastedData) return;
-    const newOtp = [...otp];
-    for (let i = 0; i < pastedData.length; i++) {
-      newOtp[i] = pastedData[i];
-    }
-    setOtp(newOtp);
-    const nextIndex = Math.min(pastedData.length, 5);
-    otpRefs.current[nextIndex]?.focus();
   };
 
   const handleResendOtp = async () => {
@@ -177,7 +142,6 @@ const ForgotPasswordPage = () => {
       setTimer(OTP_EXPIRY_SEC);
       setOtp(['', '', '', '', '', '']);
       toast.success('OTP Resent Successfully');
-      otpRefs.current[0]?.focus();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to resend OTP');
     } finally {
@@ -263,24 +227,7 @@ const ForgotPasswordPage = () => {
 
           {step === 2 && (
             <form onSubmit={handleVerifyOtp} className="space-y-5">
-              <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => { otpRefs.current[index] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className={`w-10 h-11 sm:w-11 sm:h-12 text-center text-lg sm:text-xl font-bold rounded-xl border-2 transition-all duration-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white text-gray-800 ${
-                      digit ? 'border-blue-400 shadow-sm' : 'border-gray-300'
-                    }`}
-                    aria-label={`Digit ${index + 1}`}
-                  />
-                ))}
-              </div>
+              <OtpInput value={otp} onChange={handleOtpChange} />
 
               <div className="text-center">
                 {timer > 0 ? (

@@ -9,9 +9,13 @@ import {
   forgotPassword,
   verifyOtp,
   resetPassword,
+  verifyEmailPassword,
   sendChangeEmailOtp,
   verifyChangeEmailOtp,
   updatePassword,
+  initiatePasswordChange,
+  verifyPasswordChangeOtp,
+  completePasswordChange,
 } from '../controllers/auth.controller.js';
 import {
   validateAdminLogin,
@@ -42,8 +46,18 @@ router.post('/admin/reset-password', validateResetPassword, resetPassword);
 // Protected routes
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
-router.post('/send-email-otp', protect, authorize('admin'), sendChangeEmailOtp);
-router.post('/verify-email-otp', protect, authorize('admin'), verifyChangeEmailOtp);
+
+// Email change flow (admin)
+router.post('/email-change/verify-password', protect, authorize('admin'), verifyEmailPassword);
+router.post('/email-change/send-otp', protect, authorize('admin'), sendChangeEmailOtp);
+router.post('/email-change/verify-otp', protect, authorize('admin'), verifyChangeEmailOtp);
+
+// Password change flow (admin) - OTP verified
+router.post('/password-change/initiate', protect, authorize('admin'), initiatePasswordChange);
+router.post('/password-change/verify-otp', protect, authorize('admin'), verifyPasswordChangeOtp);
+router.patch('/password-change/complete', protect, authorize('admin'), completePasswordChange);
+
+// Password change (legacy - direct update)
 router.patch('/update-password', protect, authorize('admin'), updatePassword);
 
 // RBAC examples (protected + role-gated)

@@ -1,7 +1,6 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 import authService from '../services/auth.service.js';
-import User from '../models/user.model.js';
 import Student from '../models/student.model.js';
 
 const adminLogin = asyncHandler(async (req, res) => {
@@ -160,36 +159,36 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+const verifyEmailPassword = asyncHandler(async (req, res) => {
+  const { currentPassword } = req.body;
+  if (!currentPassword) {
+    throw new ApiError(400, 'Current password is required');
+  }
+
+  await authService.verifyEmailPassword(req.user._id, currentPassword);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Password verified successfully',
+  });
+});
+
 const sendChangeEmailOtp = asyncHandler(async (req, res) => {
-  const { currentPassword, newEmail } = req.body;
-  if (!currentPassword || !newEmail) {
-    throw new ApiError(400, 'Current password and new email are required');
+  const { newEmail } = req.body;
+  if (!newEmail) {
+    throw new ApiError(400, 'New email is required');
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
     throw new ApiError(400, 'Invalid email format');
   }
 
-  // Verify password and check email availability
-  const user = await User.findById(req.user._id).select('+password');
-  if (!(await user.comparePassword(currentPassword))) {
-    throw new ApiError(400, 'Current password is incorrect');
-  }
-
-  const existing = await User.findOne({ email: newEmail, _id: { $ne: req.user._id } });
-  if (existing) {
-    throw new ApiError(400, 'Email is already in use by another account');
-  }
-
-  // Store pending email before sending OTP
-  user.pendingEmail = newEmail;
-  await user.save();
-
-  const result = await authService.sendEmailOtp(req.user._id);
+  const meta = { ipAddress: req.ip, userAgent: req.headers['user-agent'] };
+  const result = await authService.sendEmailChangeOtp(req.user._id, newEmail, meta);
 
   return res.status(200).json({
     success: true,
-    message: 'OTP sent to your current email',
+    message: 'OTP sent to your new email',
     expiresAt: result.otpExpiry,
   });
 });
@@ -200,22 +199,8 @@ const verifyChangeEmailOtp = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'OTP is required');
   }
 
-  const user = await User.findById(req.user._id);
-  if (!user.pendingEmail) {
-    throw new ApiError(400, 'No email change requested');
-  }
-
-  await authService.verifyEmailOtp(req.user._id, otp);
-
-  // Update email with pending email
-  user.email = user.pendingEmail;
-  user.pendingEmail = null;
-  user.otp = null;
-  user.otpExpiry = null;
-  user.isOtpVerified = false;
-  user.otpAttempts = 0;
-  user.otpRequestedAt = [];
-  await user.save();
+  const meta = { ipAddress: req.ip, userAgent: req.headers['user-agent'] };
+  await authService.verifyEmailChangeOtp(req.user._id, otp, meta);
 
   return res.status(200).json({
     success: true,
@@ -241,6 +226,60 @@ const updatePassword = asyncHandler(async (req, res) => {
   });
 });
 
+const initiatePasswordChange = asyncHandler(async (req, res) => {
+  const { currentPassword } = req.body;
+  if (!currentPassword) {
+    throw new ApiError(400, 'Current password is required');
+  }
+
+  const meta = { ipAddress: req.ip, userAgent: req.headers['user-agent'] };
+  const result = await authService.initiatePasswordChange(req.user._id, currentPassword, meta);
+
+  return res.status(200).json({
+    success: true,
+    message: 'OTP sent to your registered email',
+    expiresAt: result.otpExpiry,
+  });
+});
+
+const verifyPasswordChangeOtp = asyncHandler(async (req, res) => {
+  const { otp } = req.body;
+  if (!otp) {
+    throw new ApiError(400, 'OTP is required');
+  }
+
+  const meta = { ipAddress: req.ip, userAgent: req.headers['user-agent'] };
+  await authService.verifyPasswordChangeOtp(req.user._id, otp, meta);
+
+  return res.status(200).json({
+    success: true,
+    message: 'OTP verified successfully',
+  });
+});
+
+const completePasswordChange = asyncHandler(async (req, res) => {
+  const { newPassword, confirmPassword } = req.body;
+  if (!newPassword || !confirmPassword) {
+    throw new ApiError(400, 'New password and confirm password are required');
+  }
+
+  if (newPassword.length < 6) {
+    throw new ApiError(400, 'New password must be at least 6 characters');
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, 'Passwords do not match');
+  }
+
+  const meta = { ipAddress: req.ip, userAgent: req.headers['user-agent'] };
+  await authService.completePasswordChange(req.user._id, newPassword, meta);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Password updated successfully',
+  });
+});
+
 export {
   adminLogin,
   teacherLogin,
@@ -251,7 +290,11 @@ export {
   forgotPassword,
   verifyOtp,
   resetPassword,
+  verifyEmailPassword,
   sendChangeEmailOtp,
   verifyChangeEmailOtp,
   updatePassword,
+  initiatePasswordChange,
+  verifyPasswordChangeOtp,
+  completePasswordChange,
 };

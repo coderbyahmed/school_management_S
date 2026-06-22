@@ -48,10 +48,11 @@ export const updateProfile = asyncHandler(async (req, res) => {
     updateData.phone = trimmed;
   }
 
+  const userToUpdate = await User.findById(req.user._id);
+
   if (req.file) {
-    const user = await User.findById(req.user._id);
-    if (user.profileImage) {
-      const oldPath = path.resolve(__dirname, '../..', user.profileImage);
+    if (userToUpdate.profileImage) {
+      const oldPath = path.resolve(__dirname, '../..', userToUpdate.profileImage);
       try {
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
@@ -63,24 +64,24 @@ export const updateProfile = asyncHandler(async (req, res) => {
     updateData.profileImage = `uploads/admin-profile/${req.file.filename}`;
   }
 
-  const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, {
-    new: true,
-    runValidators: true,
-  });
+  if (updateData.fullName) userToUpdate.fullName = updateData.fullName;
+  if (updateData.phone !== undefined) userToUpdate.phone = updateData.phone;
+  if (updateData.profileImage) userToUpdate.profileImage = updateData.profileImage;
+  await userToUpdate.save();
 
   return res.status(200).json({
     success: true,
     message: 'Profile updated successfully',
     user: {
-      id: updatedUser._id,
-      profileImage: updatedUser.profileImage || '',
-      fullName: updatedUser.fullName,
-      email: updatedUser.email,
-      phone: updatedUser.phone || '',
-      role: updatedUser.role,
-      isActive: updatedUser.isActive,
-      lastLogin: updatedUser.lastLogin || null,
-      createdAt: updatedUser.createdAt,
+      id: userToUpdate._id,
+      profileImage: userToUpdate.profileImage || '',
+      fullName: userToUpdate.fullName,
+      email: userToUpdate.email,
+      phone: userToUpdate.phone || '',
+      role: userToUpdate.role,
+      isActive: userToUpdate.isActive,
+      lastLogin: userToUpdate.lastLogin || null,
+      createdAt: userToUpdate.createdAt,
     },
   });
 });

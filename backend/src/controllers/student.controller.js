@@ -56,7 +56,7 @@ const updateStudent = asyncHandler(async (req, res) => {
 });
 
 const deleteStudent = asyncHandler(async (req, res) => {
-  const student = await studentService.deleteStudent(req.params.studentId);
+  const student = await studentService.deleteStudent(req.params.studentId, req.user._id);
 
   return res.status(200).json({
     success: true,

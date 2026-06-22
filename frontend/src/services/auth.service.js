@@ -59,18 +59,38 @@ const authService = {
     return response.data;
   },
 
-  sendChangeEmailOtp: async (currentPassword, newEmail) => {
-    const response = await api.post('/auth/send-email-otp', { currentPassword, newEmail });
+  verifyEmailPassword: async (currentPassword) => {
+    const response = await api.post('/auth/email-change/verify-password', { currentPassword });
+    return response.data;
+  },
+
+  sendChangeEmailOtp: async (newEmail) => {
+    const response = await api.post('/auth/email-change/send-otp', { newEmail });
     return response.data;
   },
 
   verifyChangeEmailOtp: async (otp) => {
-    const response = await api.post('/auth/verify-email-otp', { otp });
+    const response = await api.post('/auth/email-change/verify-otp', { otp });
     return response.data;
   },
 
   updatePassword: async (currentPassword, newPassword) => {
     const response = await api.patch('/auth/update-password', { currentPassword, newPassword });
+    return response.data;
+  },
+
+  initiatePasswordChange: async (currentPassword) => {
+    const response = await api.post('/auth/password-change/initiate', { currentPassword });
+    return response.data;
+  },
+
+  verifyPasswordChangeOtp: async (otp) => {
+    const response = await api.post('/auth/password-change/verify-otp', { otp });
+    return response.data;
+  },
+
+  completePasswordChange: async (newPassword, confirmPassword) => {
+    const response = await api.patch('/auth/password-change/complete', { newPassword, confirmPassword });
     return response.data;
   },
 };

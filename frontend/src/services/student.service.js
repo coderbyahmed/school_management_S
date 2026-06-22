@@ -29,6 +29,31 @@ const studentService = {
     const response = await api.delete(`/students/${studentId}`);
     return response.data;
   },
+
+  filterStudentsForPromotion: async (params = {}) => {
+    const response = await api.get('/students/promotion/filter', { params });
+    return response.data;
+  },
+
+  promoteStudents: async (data) => {
+    const response = await api.post('/students/promote', data);
+    return response.data;
+  },
+
+  getPromotionHistory: async (params = {}) => {
+    const response = await api.get('/students/promotion-history', { params });
+    return response.data;
+  },
+
+  getStudentPromotions: async (params = {}) => {
+    const response = await api.get('/student-promotions', { params });
+    return response.data;
+  },
+
+  deleteStudentPromotion: async (id) => {
+    const response = await api.delete(`/student-promotions/${id}`);
+    return response.data;
+  },
 };
 
 export default studentService;

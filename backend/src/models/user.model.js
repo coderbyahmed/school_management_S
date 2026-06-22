@@ -61,6 +61,7 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Admin-only OTP fields (stripped from student/teacher on save)
     otp: {
       type: String,
       default: null,
@@ -90,6 +91,22 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Strip unnecessary fields for student and teacher roles before save
+userSchema.pre('save', function () {
+  if (this.role === 'student' || this.role === 'teacher') {
+    this.phone = '';
+    this.profileImage = '';
+    this.email = undefined;
+    this.teacherId = undefined;
+    this.otp = undefined;
+    this.otpExpiry = undefined;
+    this.isOtpVerified = undefined;
+    this.otpAttempts = undefined;
+    this.otpRequestedAt = undefined;
+    this.pendingEmail = undefined;
+  }
+});
 
 // Hash password before saving
 userSchema.pre('save', async function () {

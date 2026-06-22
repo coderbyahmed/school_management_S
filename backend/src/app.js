@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import studentRoutes from './routes/student.routes.js';
+import studentPromotionRoutes from './routes/studentPromotion.routes.js';
+import studentPromotionsRoute from './routes/studentPromotions.route.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
 dotenv.config();
@@ -27,6 +29,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/students', studentRoutes);
+app.use('/api/v1/students', studentPromotionRoutes);
+app.use('/api/v1/student-promotions', studentPromotionsRoute);
 
 // Health check
 app.get('/', (req, res) => {

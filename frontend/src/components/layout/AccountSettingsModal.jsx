@@ -1,12 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import { XMarkIcon, KeyIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, KeyIcon, EnvelopeIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import authService from '../../services/auth.service';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Alert from '../common/Alert';
+import OtpInput from '../common/OtpInput';
 import { toast } from 'react-hot-toast';
 
-const COUNTDOWN_DURATION = 5 * 60;
+const OTP_EXPIRY_SEC = 300;
+
+const calcRemaining = (expiresAt) => {
+  if (!expiresAt) return OTP_EXPIRY_SEC;
+  const diff = Math.floor((expiresAt - Date.now()) / 1000);
+  return Math.max(0, diff);
+};
 
 const AccountSettingsModal = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState(null);
@@ -14,15 +21,24 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [resendDisabled, setResendDisabled] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [expiresAt, setExpiresAt] = useState(null);
   const timerRef = useRef(null);
+
+  // Email flow state
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailPassVerified, setEmailPassVerified] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailOtp, setEmailOtp] = useState(['', '', '', '', '', '']);
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+
+  // Password flow state
+  const [passCurrentPassword, setPassCurrentPassword] = useState('');
+  const [passPasswordVerified, setPassPasswordVerified] = useState(false);
+  const [passOtp, setPassOtp] = useState(['', '', '', '', '', '']);
+  const [passOtpVerified, setPassOtpVerified] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
@@ -31,28 +47,39 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   useEffect(() => {
-    if (countdown > 0) {
-      timerRef.current = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    } else {
-      setResendDisabled(false);
+    if (timer > 0) {
+      timerRef.current = setTimeout(() => {
+        setTimer((prev) => {
+          if (prev <= 1) return 0;
+          if (expiresAt) return calcRemaining(expiresAt);
+          return prev - 1;
+        });
+      }, 1000);
     }
     return () => clearTimeout(timerRef.current);
-  }, [countdown]);
+  }, [timer, expiresAt]);
 
   const resetState = () => {
     setActiveSection(null);
     setLoading(false);
     setError('');
     setSuccess('');
-    setCurrentPassword('');
-    setNewPassword('');
-    setNewEmail('');
-    setOtp('');
-    setOtpSent(false);
-    setOtpVerified(false);
-    setCountdown(0);
-    setResendDisabled(false);
+    setTimer(0);
+    setExpiresAt(null);
     clearTimeout(timerRef.current);
+
+    setEmailPassword('');
+    setEmailPassVerified(false);
+    setNewEmail('');
+    setEmailOtp(['', '', '', '', '', '']);
+    setEmailOtpSent(false);
+
+    setPassCurrentPassword('');
+    setPassPasswordVerified(false);
+    setPassOtp(['', '', '', '', '', '']);
+    setPassOtpVerified(false);
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
   const handleClose = () => {
@@ -60,102 +87,288 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const startCountdown = (expiresAt) => {
-    const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-    setCountdown(remaining);
-    setResendDisabled(remaining > 0);
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleSendOtp = async () => {
-    if (!currentPassword) {
-      setError('Please enter your current password');
-      return;
-    }
-    if (!newEmail) {
-      setError('Please enter your new email');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-      setError('Invalid email format');
-      return;
-    }
+  // Email flow handlers
 
-    setLoading(true);
-    setError('');
+  const handleEmailVerifyPassword = async () => {
+    if (!emailPassword) { setError('Current password is required'); return; }
+    setLoading(true); setError('');
     try {
-      const data = await authService.sendChangeEmailOtp(currentPassword, newEmail);
-      setOtpSent(true);
-      setSuccess('');
-      toast.success('OTP sent to your current email');
-      startCountdown(data.expiresAt);
+      await authService.verifyEmailPassword(emailPassword);
+      setEmailPassVerified(true);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Password verification failed';
+      setError(msg); toast.error(msg);
+    } finally { setLoading(false); }
+  };
+
+  const handleEmailSendOtp = async () => {
+    if (!newEmail) { setError('Please enter your new email'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { setError('Invalid email format'); return; }
+    setLoading(true); setError('');
+    try {
+      const data = await authService.sendChangeEmailOtp(newEmail);
+      setExpiresAt(data.expiresAt);
+      setTimer(calcRemaining(data.expiresAt));
+      setEmailOtp(['', '', '', '', '', '']);
+      setEmailOtpSent(true);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to send OTP';
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+      setError(msg); toast.error(msg);
+    } finally { setLoading(false); }
   };
 
-  const handleVerifyOtp = async () => {
-    if (!otp) {
-      setError('Please enter the OTP');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
+  const handleEmailVerifyOtp = async () => {
+    const otpString = emailOtp.join('');
+    if (otpString.length !== 6) { setError('Please enter all 6 digits'); return; }
+    if (timer === 0) { setError('OTP has expired. Please request a new one.'); return; }
+    setLoading(true); setError('');
     try {
-      await authService.verifyChangeEmailOtp(otp);
-      setOtpVerified(true);
-      setSuccess('Email updated successfully');
+      await authService.verifyChangeEmailOtp(otpString);
       toast.success('Email updated successfully');
-      setTimeout(() => {
-        handleClose();
-      }, 1500);
+      setSuccess('Email updated successfully');
+      setTimeout(() => handleClose(), 1500);
     } catch (err) {
       const msg = err.response?.data?.message || 'OTP verification failed';
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+      setError(msg); setEmailOtp(['', '', '', '', '', '']); toast.error(msg);
+    } finally { setLoading(false); }
   };
 
-  const handleChangePassword = async () => {
-    if (!currentPassword) {
-      setError('Current password is required');
-      return;
-    }
-    if (!newPassword || newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
-      return;
-    }
-
+  const handleEmailResendOtp = async () => {
+    if (!newEmail) return;
     setLoading(true);
-    setError('');
     try {
-      await authService.updatePassword(currentPassword, newPassword);
+      const data = await authService.sendChangeEmailOtp(newEmail);
+      setExpiresAt(data.expiresAt);
+      setTimer(OTP_EXPIRY_SEC);
+      setEmailOtp(['', '', '', '', '', '']);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend OTP');
+    } finally { setLoading(false); }
+  };
+
+  // Password flow handlers
+
+  const handlePassVerifyPassword = async () => {
+    if (!passCurrentPassword) { setError('Current password is required'); return; }
+    setLoading(true); setError('');
+    try {
+      const data = await authService.initiatePasswordChange(passCurrentPassword);
+      setPassPasswordVerified(true);
+      setExpiresAt(data.expiresAt);
+      setTimer(calcRemaining(data.expiresAt));
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Password verification failed';
+      setError(msg); toast.error(msg);
+    } finally { setLoading(false); }
+  };
+
+  const handlePassVerifyOtp = async () => {
+    const otpString = passOtp.join('');
+    if (otpString.length !== 6) { setError('Please enter all 6 digits'); return; }
+    if (timer === 0) { setError('OTP has expired. Please request a new one.'); return; }
+    setLoading(true); setError('');
+    try {
+      await authService.verifyPasswordChangeOtp(otpString);
+      setPassOtpVerified(true);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'OTP verification failed';
+      setError(msg); setPassOtp(['', '', '', '', '', '']); toast.error(msg);
+    } finally { setLoading(false); }
+  };
+
+  const handlePassResendOtp = async () => {
+    if (!passCurrentPassword) return;
+    setLoading(true);
+    try {
+      const data = await authService.initiatePasswordChange(passCurrentPassword);
+      setExpiresAt(data.expiresAt);
+      setTimer(OTP_EXPIRY_SEC);
+      setPassOtp(['', '', '', '', '', '']);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend OTP');
+    } finally { setLoading(false); }
+  };
+
+  const handlePassComplete = async () => {
+    if (!newPassword || newPassword.length < 6) { setError('New password must be at least 6 characters'); return; }
+    if (newPassword !== confirmPassword) { setError('Passwords do not match'); return; }
+    setLoading(true); setError('');
+    try {
+      await authService.completePasswordChange(newPassword, confirmPassword);
       toast.success('Password updated successfully');
-      setTimeout(() => {
-        handleClose();
-      }, 1000);
+      setSuccess('Password updated successfully');
+      setTimeout(() => handleClose(), 1500);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to update password';
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatTime = (sec) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+      setError(msg); toast.error(msg);
+    } finally { setLoading(false); }
   };
 
   if (!isOpen) return null;
+
+  // Password flow renderers
+
+  const renderPassStep1 = () => (
+    <div className="space-y-4">
+      <button onClick={() => { setActiveSection(null); setError(''); setPassCurrentPassword(''); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-blue-100 dark:bg-blue-900/30"><KeyIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Verify Identity</h3>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Enter your current password to proceed.</p>
+      <Input label="Current Password" name="currentPassword" type="password" value={passCurrentPassword} onChange={(e) => { setPassCurrentPassword(e.target.value); setError(''); }} placeholder="Enter current password" />
+      <div className="flex gap-3 pt-1">
+        <Button variant="secondary" onClick={handleClose} className="flex-1">Cancel</Button>
+        <Button onClick={handlePassVerifyPassword} loading={loading} className="flex-1">Verify</Button>
+      </div>
+    </div>
+  );
+
+  const renderPassStep2 = () => (
+    <div className="space-y-5">
+      <button onClick={() => { setPassPasswordVerified(false); setPassOtp(['', '', '', '', '', '']); setError(''); setTimer(0); setExpiresAt(null); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-blue-100 dark:bg-blue-900/30"><KeyIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Verify OTP</h3>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+        <CheckCircleIcon className="h-4 w-4" />
+        <span>Password verified</span>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">An OTP has been sent to your registered email.</p>
+      <OtpInput value={passOtp} onChange={setPassOtp} />
+      <div className="text-center">
+        {timer > 0 ? (
+          <p className="text-xs sm:text-sm text-gray-500">
+            Code expires in <span className="font-semibold text-blue-600">{formatTime(timer)}</span>
+          </p>
+        ) : (
+          <p className="text-xs sm:text-sm font-medium text-red-500">OTP has expired. Please request a new one.</p>
+        )}
+      </div>
+      <Button onClick={handlePassVerifyOtp} loading={loading} disabled={timer === 0}>Verify Code</Button>
+      <div className="text-center -mt-2">
+        {timer > 0 ? (
+          <button type="button" onClick={handlePassResendOtp} disabled={loading} className="text-xs sm:text-sm text-gray-400 hover:text-blue-600 disabled:opacity-50 transition-colors cursor-pointer">
+            {loading ? 'Resending...' : 'Resend Code'}
+          </button>
+        ) : (
+          <button type="button" onClick={handlePassResendOtp} disabled={loading} className="text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50 transition-colors cursor-pointer">
+            {loading ? 'Resending...' : 'Resend Code'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderPassStep3 = () => (
+    <div className="space-y-4">
+      <button onClick={() => { setPassOtpVerified(false); setPassOtp(['', '', '', '', '', '']); setError(''); setNewPassword(''); setConfirmPassword(''); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-blue-100 dark:bg-blue-900/30"><KeyIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">New Password</h3>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+        <CheckCircleIcon className="h-4 w-4" />
+        <span>Identity verified</span>
+      </div>
+      <Input label="New Password" name="newPassword" type="password" value={newPassword} onChange={(e) => { setNewPassword(e.target.value); setError(''); }} placeholder="Enter new password (min 6 characters)" />
+      <Input label="Confirm Password" name="confirmPassword" type="password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }} placeholder="Confirm new password" />
+      <div className="flex gap-3 pt-1">
+        <Button variant="secondary" onClick={handleClose} className="flex-1">Cancel</Button>
+        <Button onClick={handlePassComplete} loading={loading} className="flex-1">Update Password</Button>
+      </div>
+    </div>
+  );
+
+  const renderPasswordFlow = () => {
+    if (!passPasswordVerified) return renderPassStep1();
+    if (!passOtpVerified) return renderPassStep2();
+    return renderPassStep3();
+  };
+
+  // Email flow renderers
+
+  const renderEmailStep1 = () => (
+    <div className="space-y-4">
+      <button onClick={() => { setActiveSection(null); setError(''); setEmailPassword(''); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-900/30"><EnvelopeIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Verify Identity</h3>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Enter your current password to proceed.</p>
+      <Input label="Current Password" name="currentPassword" type="password" value={emailPassword} onChange={(e) => { setEmailPassword(e.target.value); setError(''); }} placeholder="Enter current password" />
+      <div className="flex gap-3 pt-1">
+        <Button variant="secondary" onClick={handleClose} className="flex-1">Cancel</Button>
+        <Button onClick={handleEmailVerifyPassword} loading={loading} className="flex-1">Verify</Button>
+      </div>
+    </div>
+  );
+
+  const renderEmailStep2 = () => (
+    <div className="space-y-4">
+      <button onClick={() => { setEmailPassVerified(false); setError(''); setNewEmail(''); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-900/30"><EnvelopeIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">New Email</h3>
+      </div>
+      <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+        <CheckCircleIcon className="h-4 w-4" />
+        <span>Password verified</span>
+      </div>
+      <Input label="New Email Address" name="newEmail" type="email" value={newEmail} onChange={(e) => { setNewEmail(e.target.value); setError(''); }} placeholder="Enter new email address" />
+      <p className="text-xs text-gray-500 dark:text-gray-400">An OTP will be sent to your new email for verification.</p>
+      <div className="flex gap-3 pt-1">
+        <Button variant="secondary" onClick={handleClose} className="flex-1">Cancel</Button>
+        <Button onClick={handleEmailSendOtp} loading={loading} className="flex-1">Send OTP</Button>
+      </div>
+    </div>
+  );
+
+  const renderEmailStep3 = () => (
+    <div className="space-y-5">
+      <button onClick={() => { setEmailOtpSent(false); setEmailOtp(['', '', '', '', '', '']); setError(''); setTimer(0); setExpiresAt(null); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-900/30"><EnvelopeIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Verify OTP</h3>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Enter the 6-digit code sent to <span className="font-medium text-gray-700 dark:text-gray-300">{newEmail}</span></p>
+      <OtpInput value={emailOtp} onChange={setEmailOtp} />
+      <div className="text-center">
+        {timer > 0 ? (
+          <p className="text-xs sm:text-sm text-gray-500">
+            Code expires in <span className="font-semibold text-blue-600">{formatTime(timer)}</span>
+          </p>
+        ) : (
+          <p className="text-xs sm:text-sm font-medium text-red-500">OTP has expired. Please request a new one.</p>
+        )}
+      </div>
+      <Button onClick={handleEmailVerifyOtp} loading={loading} disabled={timer === 0}>Verify Code</Button>
+      <div className="text-center -mt-2">
+        {timer > 0 ? (
+          <button type="button" onClick={handleEmailResendOtp} disabled={loading} className="text-xs sm:text-sm text-gray-400 hover:text-blue-600 disabled:opacity-50 transition-colors cursor-pointer">
+            {loading ? 'Resending...' : 'Resend Code'}
+          </button>
+        ) : (
+          <button type="button" onClick={handleEmailResendOtp} disabled={loading} className="text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50 transition-colors cursor-pointer">
+            {loading ? 'Resending...' : 'Resend Code'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderEmailFlow = () => {
+    if (!emailPassVerified) return renderEmailStep1();
+    if (!emailOtpSent) return renderEmailStep2();
+    return renderEmailStep3();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -163,15 +376,8 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-white">
-            Account Settings
-          </h2>
-          <button
-            onClick={handleClose}
-            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+          <h2 className="text-base font-semibold text-gray-800 dark:text-white">Account Settings</h2>
+          <button onClick={handleClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"><XMarkIcon className="h-5 w-5" /></button>
         </div>
 
         <div className="px-6 py-6">
@@ -180,25 +386,15 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
           {!activeSection && (
             <div className="space-y-3">
-              <button
-                onClick={() => { setActiveSection('password'); setError(''); setSuccess(''); }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
-              >
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <KeyIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
+              <button onClick={() => { setActiveSection('password'); setError(''); setSuccess(''); }} className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30"><KeyIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" /></div>
                 <div>
                   <p className="text-sm font-semibold text-gray-800 dark:text-white">Change Password</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Update your account password</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">OTP verified password update</p>
                 </div>
               </button>
-              <button
-                onClick={() => { setActiveSection('email'); setError(''); setSuccess(''); }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer"
-              >
-                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                  <EnvelopeIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
+              <button onClick={() => { setActiveSection('email'); setError(''); setSuccess(''); }} className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer">
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30"><EnvelopeIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" /></div>
                 <div>
                   <p className="text-sm font-semibold text-gray-800 dark:text-white">Change Email</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">OTP verified email update</p>
@@ -207,131 +403,8 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {activeSection === 'password' && (
-            <div className="space-y-4">
-              <button
-                onClick={() => { setActiveSection(null); setError(''); setSuccess(''); setCurrentPassword(''); setNewPassword(''); }}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-              >
-                &larr; Back
-              </button>
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <KeyIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Change Password</h3>
-              </div>
-              <Input
-                label="Current Password"
-                name="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-              />
-              <Input
-                label="New Password"
-                name="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min 6 characters)"
-              />
-              <div className="flex gap-3 pt-1">
-                <Button variant="secondary" onClick={handleClose} className="flex-1">Cancel</Button>
-                <Button onClick={handleChangePassword} loading={loading} className="flex-1">Update Password</Button>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'email' && !otpSent && (
-            <div className="space-y-4">
-              <button
-                onClick={() => { setActiveSection(null); setError(''); setSuccess(''); setCurrentPassword(''); setNewEmail(''); }}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-              >
-                &larr; Back
-              </button>
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                  <EnvelopeIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Change Email</h3>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Verify your identity first. An OTP will be sent to your current email.
-              </p>
-              <Input
-                label="Current Password"
-                name="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-              />
-              <Input
-                label="New Email Address"
-                name="newEmail"
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="Enter new email address"
-              />
-              <div className="flex gap-3 pt-1">
-                <Button variant="secondary" onClick={handleClose} className="flex-1">Cancel</Button>
-                <Button onClick={handleSendOtp} loading={loading} className="flex-1">Send OTP</Button>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'email' && otpSent && !otpVerified && (
-            <div className="space-y-4">
-              <button
-                onClick={() => { setOtpSent(false); setOtp(''); setError(''); }}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-              >
-                &larr; Back
-              </button>
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                  <EnvelopeIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Verify OTP</h3>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                An OTP has been sent to your current email. Enter it below.
-              </p>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500 dark:text-gray-400">New email:</span>
-                <span className="font-medium text-gray-800 dark:text-white">{newEmail}</span>
-              </div>
-              <Input
-                label="OTP Code"
-                name="otp"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="Enter 6-digit OTP"
-                maxLength={6}
-              />
-              {countdown > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  OTP expires in {formatTime(countdown)}
-                </p>
-              )}
-              <div className="flex gap-3 pt-1">
-                <Button
-                  variant="secondary"
-                  onClick={handleSendOtp}
-                  loading={loading}
-                  disabled={resendDisabled}
-                  className="flex-1"
-                >
-                  {resendDisabled ? `Resend in ${formatTime(countdown)}` : 'Resend OTP'}
-                </Button>
-                <Button onClick={handleVerifyOtp} loading={loading} className="flex-1">Verify OTP</Button>
-              </div>
-            </div>
-          )}
+          {activeSection === 'password' && renderPasswordFlow()}
+          {activeSection === 'email' && renderEmailFlow()}
         </div>
       </div>
     </div>

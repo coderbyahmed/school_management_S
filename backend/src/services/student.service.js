@@ -3,6 +3,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Student from '../models/student.model.js';
 import User from '../models/user.model.js';
+import StudentPromotion from '../models/studentPromotion.model.js';
+import RefreshToken from '../models/refreshToken.model.js';
+import AuditLog from '../models/auditLog.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -152,7 +155,7 @@ const updateStudent = async (studentId, updateData, file) => {
   return updated;
 };
 
-const deleteStudent = async (studentId) => {
+const deleteStudent = async (studentId, performedBy) => {
   const existing = await Student.findOne({ studentId });
   if (!existing) {
     throw new ApiError(404, 'Student not found');
@@ -169,10 +172,29 @@ const deleteStudent = async (studentId) => {
     }
   }
 
+  const studentUser = await User.findOne({ referenceId: existing._id, role: 'student' });
+
   await Promise.all([
     Student.deleteOne({ studentId }),
-    User.deleteOne({ referenceId: existing._id, role: 'student' }),
+    studentUser ? User.deleteOne({ _id: studentUser._id }) : Promise.resolve(),
+    StudentPromotion.deleteMany({ studentId: existing._id }),
+    studentUser ? RefreshToken.deleteMany({ user: studentUser._id }) : Promise.resolve(),
   ]);
+
+  if (performedBy) {
+    await AuditLog.create({
+      action: 'DELETE',
+      module: 'STUDENT',
+      entityId: existing.studentId,
+      entityType: 'Student',
+      performedBy,
+      details: {
+        fullName: existing.fullName,
+        class: existing.class,
+        academicYear: existing.academicYear,
+      },
+    });
+  }
 
   return existing;
 };

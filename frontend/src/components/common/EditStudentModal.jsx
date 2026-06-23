@@ -8,22 +8,11 @@ import SelectInput from './SelectInput';
 import DateInput from './DateInput';
 import Button from './Button';
 import Alert from './Alert';
-
-const classOptions = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
+import { getImageUrl } from '../../utils/imageUrl';
+import { CLASS_NAMES, ACADEMIC_YEARS } from '../../utils/classNames';
 
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
-const yearOptions = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
-
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
 
 const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
   const fileInputRef = useRef(null);
@@ -154,8 +143,8 @@ const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
         <div className="mt-4">
           <CardSection title="Academic Information">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-              <SelectInput label="Class" name="class" value={formData.class} onChange={handleChange('class')} options={classOptions} placeholder="Select class" />
-              <SelectInput label="Academic Year" name="academicYear" value={formData.academicYear} onChange={handleChange('academicYear')} options={yearOptions} placeholder="Select year" />
+              <SelectInput label="Class" name="class" value={formData.class} onChange={handleChange('class')} options={CLASS_NAMES} placeholder="Select class" />
+              <SelectInput label="Academic Year" name="academicYear" value={formData.academicYear} onChange={handleChange('academicYear')} options={ACADEMIC_YEARS} placeholder="Select year" />
             </div>
           </CardSection>
         </div>

@@ -25,8 +25,12 @@ const connectDB = async () => {
 
   try {
     await mongoose.connect(uri, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
       serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
       connectTimeoutMS: 10000,
+      family: 4,
     });
   } catch (error) {
     console.error('❌ MongoDB Connection Failed:', error.message);

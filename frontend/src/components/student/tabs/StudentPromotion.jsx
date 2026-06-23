@@ -6,14 +6,10 @@ import SearchInput from '../../common/SearchInput';
 import Table from '../../common/Table';
 import StatusBadge from '../../common/StatusBadge';
 import ConfirmationModal from '../../common/ConfirmationModal';
+import { getImageUrl } from '../../../utils/imageUrl';
 import studentService from '../../../services/student.service';
 import { toast } from 'react-hot-toast';
-
-const classOptions = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
+import { CLASS_NAMES } from '../../../utils/classNames';
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 
@@ -44,12 +40,6 @@ const safeSplitName = (fullName) => {
   return fullName;
 };
 
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
-
 const MIN_YEAR = 2025;
 const MAX_YEAR = 2035;
 const yearRange = Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i));
@@ -71,8 +61,8 @@ const StudentPromotion = () => {
 
   const toYearOptions = fromYear ? yearRange.filter((y) => Number(y) > Number(fromYear)) : [];
   const noValidToYear = fromYear && toYearOptions.length === 0;
-  const fromClassIndex = classOptions.indexOf(fromClass);
-  const toClassOptions = fromClass ? classOptions.slice(fromClassIndex + 1) : [];
+  const fromClassIndex = CLASS_NAMES.indexOf(fromClass);
+  const toClassOptions = fromClass ? CLASS_NAMES.slice(fromClassIndex + 1) : [];
 
   const handleFromYearChange = useCallback((e) => {
     const newFromYear = e?.target?.value || '';
@@ -83,8 +73,8 @@ const StudentPromotion = () => {
   const handleFromClassChange = useCallback((e) => {
     const newFromClass = e?.target?.value || '';
     setFromClass(newFromClass);
-    const idx = classOptions.indexOf(newFromClass);
-    const remaining = classOptions.slice(idx + 1);
+    const idx = CLASS_NAMES.indexOf(newFromClass);
+    const remaining = CLASS_NAMES.slice(idx + 1);
     if (remaining.length > 0 && !remaining.includes(toClass)) {
       setToClass(remaining[0]);
     } else if (remaining.length === 0) {
@@ -286,7 +276,7 @@ const StudentPromotion = () => {
             name="fromClass"
             value={fromClass}
             onChange={handleFromClassChange}
-            options={classOptions}
+            options={CLASS_NAMES}
           />
           <SelectInput
             label="To Class"

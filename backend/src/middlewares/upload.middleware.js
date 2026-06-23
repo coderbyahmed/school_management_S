@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import crypto from 'crypto';
 import { ApiError } from '../utils/apiError.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,23 +17,6 @@ export const createUploader = (
   allowedExtensions = ALLOWED_EXTENSIONS,
   maxSize = DEFAULT_MAX_SIZE,
 ) => {
-  const uploadDir = path.join(BASE_UPLOAD_DIR, subDir);
-
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-
-  const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => {
-      cb(null, uploadDir);
-    },
-    filename: (_req, file, cb) => {
-      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      const ext = path.extname(file.originalname).toLowerCase();
-      cb(null, `${uniqueSuffix}${ext}`);
-    },
-  });
-
   const fileFilter = (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowedExtensions.includes(ext)) {
@@ -42,7 +26,18 @@ export const createUploader = (
     }
   };
 
-  return multer({ storage, fileFilter, limits: { fileSize: maxSize } });
+  return multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: maxSize } });
+};
+
+export const writeUploadFile = (buffer, subDir, originalname) => {
+  const dir = path.join(BASE_UPLOAD_DIR, subDir);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const ext = path.extname(originalname).toLowerCase();
+  const filename = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`;
+  fs.writeFileSync(path.join(dir, filename), buffer);
+  return filename;
 };
 
 const adminUpload = createUploader('admin-profile');

@@ -1,28 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import CardSection from '../../common/CardSection';
 import SelectInput from '../../common/SelectInput';
 import Alert from '../../common/Alert';
+import classService from '../../../services/class.service';
+import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 
-const classOptions = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
-
-const academicYearOptions = [
-  '2025', '2026', '2027', '2028', '2029', '2030',
-  '2031', '2032', '2033', '2034', '2035',
-];
+const statusOptions = ['Active', 'Inactive'];
 
 const initialState = {
   className: '',
   academicYear: '',
+  status: 'Active',
 };
 
-const AddClass = ({ onSuccess }) => {
+const AddClass = ({ editData, onSuccess }) => {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (editData) {
+      setForm({
+        className: editData.className || '',
+        academicYear: editData.academicYear || '',
+        status: editData.status || 'Active',
+      });
+    } else {
+      setForm(initialState);
+    }
+    setError('');
+  }, [editData]);
 
   const handleChange = (field) => (e) => {
     setForm({ ...form, [field]: e.target.value });
@@ -38,19 +46,35 @@ const AddClass = ({ onSuccess }) => {
     setError('');
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      resetForm();
+      if (editData) {
+        await classService.updateClass(editData._id, form);
+        toast.success('Class updated successfully');
+      } else {
+        await classService.createClass(form);
+        toast.success('Class created successfully');
+        resetForm();
+      }
       if (onSuccess) onSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to create class';
+      const msg = err.response?.data?.message || 'Failed to save class';
       setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    resetForm();
+    if (editData) {
+      setForm({
+        className: editData.className || '',
+        academicYear: editData.academicYear || '',
+        status: editData.status || 'Active',
+      });
+      setError('');
+    } else {
+      resetForm();
+    }
   };
 
   return (
@@ -58,13 +82,13 @@ const AddClass = ({ onSuccess }) => {
       {error && <Alert message={error} type="error" />}
 
       <div className="max-w-2xl">
-        <CardSection title="Class Information">
+        <CardSection title={editData ? 'Edit Class' : 'Class Information'}>
           <SelectInput
-            label="Class"
+            label="Class Name"
             name="className"
             value={form.className}
             onChange={handleChange('className')}
-            options={classOptions}
+            options={CLASS_NAMES}
             placeholder="Select class"
           />
           <SelectInput
@@ -72,8 +96,15 @@ const AddClass = ({ onSuccess }) => {
             name="academicYear"
             value={form.academicYear}
             onChange={handleChange('academicYear')}
-            options={academicYearOptions}
+            options={ACADEMIC_YEARS}
             placeholder="Select academic year"
+          />
+          <SelectInput
+            label="Status"
+            name="status"
+            value={form.status}
+            onChange={handleChange('status')}
+            options={statusOptions}
           />
         </CardSection>
       </div>
@@ -91,7 +122,7 @@ const AddClass = ({ onSuccess }) => {
           disabled={loading}
           className="px-6 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving Class...' : 'Save Class'}
+          {loading ? 'Saving...' : editData ? 'Update Class' : 'Save Class'}
         </button>
       </div>
     </div>

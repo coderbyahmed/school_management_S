@@ -1,11 +1,6 @@
 import StatusBadge from './StatusBadge';
 import ActionButtons from './ActionButtons';
-
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
+import { getImageUrl } from '../../utils/imageUrl';
 
 const StudentCard = ({ student, onView, onEdit, onDelete }) => {
   const imgSrc = getImageUrl(student.studentImage);

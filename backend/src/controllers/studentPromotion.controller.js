@@ -1,13 +1,18 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { toFullUrl } from '../utils/imageUrl.js';
 import studentPromotionService from '../services/studentPromotion.service.js';
 
 const filterStudentsForPromotion = asyncHandler(async (req, res) => {
   const students = await studentPromotionService.filterStudentsForPromotion(req.query);
+  const mapped = students.map((s) => ({
+    ...s.toObject(),
+    studentImage: toFullUrl(req, s.studentImage),
+  }));
 
   return res.status(200).json({
     success: true,
     message: 'Students fetched for promotion',
-    data: { students },
+    data: { students: mapped },
   });
 });
 
@@ -34,21 +39,29 @@ const promoteStudents = asyncHandler(async (req, res) => {
 
 const getPromotionHistory = asyncHandler(async (req, res) => {
   const data = await studentPromotionService.getPromotionHistory(req.query);
+  const mapped = data.promotions.map((p) => ({
+    ...p,
+    studentImage: toFullUrl(req, p.studentImage),
+  }));
 
   return res.status(200).json({
     success: true,
     message: 'Promotion history fetched successfully',
-    data,
+    data: { ...data, promotions: mapped },
   });
 });
 
 const getStudentPromotions = asyncHandler(async (req, res) => {
   const data = await studentPromotionService.getStudentPromotions(req.query);
+  const promotions = data.promotions.map((p) => ({
+    ...p,
+    studentImage: toFullUrl(req, p.studentImage),
+  }));
 
   return res.status(200).json({
     success: true,
     message: 'Student promotions fetched successfully',
-    data,
+    data: { ...data, promotions },
   });
 });
 

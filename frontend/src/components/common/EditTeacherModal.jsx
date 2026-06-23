@@ -8,18 +8,13 @@ import SelectInput from './SelectInput';
 import DateInput from './DateInput';
 import Button from './Button';
 import Alert from './Alert';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
-const maritalOptions = ['Single', 'Married', 'Divorced', 'Widowed'];
+const maritalOptions = ['Single', 'Married'];
 const qualificationOptions = ['B.Ed', 'M.Ed', 'BS Education', 'MA Education', 'PhD Education', 'Other'];
 const experienceOptions = ['Fresher', '1 Year', '2 Years', '3 Years', '5 Years', '10+ Years'];
-
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
 
 const EditTeacherModal = ({ teacher, isOpen, onClose, onSave }) => {
   const fileInputRef = useRef(null);
@@ -34,8 +29,8 @@ const EditTeacherModal = ({ teacher, isOpen, onClose, onSave }) => {
     experience: '',
     joiningDate: '',
     status: '',
-    phone: '',
-    alternatePhone: '',
+    phoneNumber: '',
+    alternatePhoneNumber: '',
     email: '',
     city: '',
     address: '',
@@ -58,8 +53,8 @@ const EditTeacherModal = ({ teacher, isOpen, onClose, onSave }) => {
         experience: teacher.experience || '',
         joiningDate: teacher.joiningDate ? teacher.joiningDate.slice(0, 10) : '',
         status: teacher.status || '',
-        phone: teacher.phone || '',
-        alternatePhone: teacher.alternatePhone || '',
+        phoneNumber: teacher.phoneNumber || '',
+        alternatePhoneNumber: teacher.alternatePhoneNumber || '',
         email: teacher.email || '',
         city: teacher.city || '',
         address: teacher.address || '',
@@ -100,8 +95,8 @@ const EditTeacherModal = ({ teacher, isOpen, onClose, onSave }) => {
       if (formData.experience) fd.append('experience', formData.experience);
       if (formData.joiningDate) fd.append('joiningDate', formData.joiningDate);
       if (formData.status) fd.append('status', formData.status);
-      if (formData.phone) fd.append('phone', formData.phone.trim());
-      if (formData.alternatePhone) fd.append('alternatePhone', formData.alternatePhone.trim());
+      if (formData.phoneNumber) fd.append('phoneNumber', formData.phoneNumber.trim());
+      if (formData.alternatePhoneNumber) fd.append('alternatePhoneNumber', formData.alternatePhoneNumber.trim());
       if (formData.email) fd.append('email', formData.email.trim());
       if (formData.city) fd.append('city', formData.city.trim());
       if (formData.address) fd.append('address', formData.address.trim());
@@ -174,8 +169,8 @@ const EditTeacherModal = ({ teacher, isOpen, onClose, onSave }) => {
         <div className="mt-4">
           <CardSection title="Contact Information">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-              <Input label="Phone Number" name="phone" value={formData.phone} onChange={handleChange('phone')} placeholder="Enter phone number" />
-              <Input label="Alternate Phone" name="alternatePhone" value={formData.alternatePhone} onChange={handleChange('alternatePhone')} placeholder="Enter alternate phone" />
+              <Input label="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange('phoneNumber')} placeholder="Enter phone number" />
+              <Input label="Alternate Phone" name="alternatePhoneNumber" value={formData.alternatePhoneNumber} onChange={handleChange('alternatePhoneNumber')} placeholder="Enter alternate phone" />
               <Input label="Email" name="email" value={formData.email} onChange={handleChange('email')} placeholder="Enter email address" />
               <Input label="City" name="city" value={formData.city} onChange={handleChange('city')} placeholder="Enter city" />
             </div>

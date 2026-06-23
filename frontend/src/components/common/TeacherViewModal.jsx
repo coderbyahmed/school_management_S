@@ -1,11 +1,6 @@
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
-
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
+import { getImageUrl } from '../../utils/imageUrl';
 
 const InfoRow = ({ label, value }) => (
   <div className="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0">
@@ -41,10 +36,10 @@ const TeacherViewModal = ({ teacher, isOpen, onClose }) => {
         <InfoRow label="Father Name" value={teacher.fatherName} />
         <InfoRow label="Qualification" value={teacher.qualification} />
         <InfoRow label="Experience" value={teacher.experience} />
-        <InfoRow label="Phone Number" value={teacher.phone} />
+        <InfoRow label="Phone Number" value={teacher.phoneNumber} />
         <InfoRow label="Email" value={teacher.email} />
         <InfoRow label="City" value={teacher.city} />
-        <InfoRow label="Joining Date" value={teacher.joiningDate} />
+        <InfoRow label="Joining Date" value={teacher.joiningDate?.slice(0, 10)} />
       </div>
     </Modal>
   );

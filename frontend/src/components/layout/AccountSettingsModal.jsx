@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { XMarkIcon, KeyIcon, EnvelopeIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, KeyIcon, EnvelopeIcon, CheckCircleIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import authService from '../../services/auth.service';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -40,9 +40,22 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Security lock state
+  const [unlocked, setUnlocked] = useState(false);
+  const [hasLock, setHasLock] = useState(null); // null | true | false
+  const [lockMode, setLockMode] = useState(null); // 'setup' | 'verify' | 'change'
+  const [lockInput, setLockInput] = useState('');
+  const [newLockInput, setNewLockInput] = useState('');
+  const [confirmLockInput, setConfirmLockInput] = useState('');
+  const [verifiedOldLock, setVerifiedOldLock] = useState('');
+  const [lockStep, setLockStep] = useState('old'); // 'old' | 'new' for change flow
+  const [lockLoading, setLockLoading] = useState(false);
+
   useEffect(() => {
     if (!isOpen) {
       resetState();
+    } else {
+      checkLockStatus();
     }
   }, [isOpen]);
 
@@ -80,6 +93,16 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     setPassOtpVerified(false);
     setNewPassword('');
     setConfirmPassword('');
+
+    setUnlocked(false);
+    setHasLock(null);
+    setLockMode(null);
+    setLockInput('');
+    setNewLockInput('');
+    setConfirmLockInput('');
+    setVerifiedOldLock('');
+    setLockStep('old');
+    setLockLoading(false);
   };
 
   const handleClose = () => {
@@ -91,6 +114,114 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Security lock handlers
+
+  const checkLockStatus = async () => {
+    setLockLoading(true);
+    try {
+      const data = await authService.verifySecurityLock('');
+      setHasLock(data.hasLock);
+      setLockMode(data.hasLock ? 'verify' : 'setup');
+    } catch {
+      setHasLock(true);
+      setUnlocked(true);
+    } finally {
+      setLockLoading(false);
+    }
+  };
+
+  const handleSetLock = async () => {
+    if (!lockInput || lockInput.length < 4) {
+      setError('Security lock must be at least 4 characters');
+      return;
+    }
+    setLockLoading(true);
+    setError('');
+    try {
+      await authService.setSecurityLock(lockInput);
+      setUnlocked(true);
+      setLockMode(null);
+      setSuccess('Security lock created successfully');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to set security lock';
+      setError(msg);
+    } finally {
+      setLockLoading(false);
+    }
+  };
+
+  const handleVerifyLock = async () => {
+    if (!lockInput) {
+      setError('Please enter your security lock');
+      return;
+    }
+    setLockLoading(true);
+    setError('');
+    try {
+      const data = await authService.verifySecurityLock(lockInput);
+      if (data.verified) {
+        setUnlocked(true);
+        setLockMode(null);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid security lock';
+      setError(msg);
+      setLockInput('');
+    } finally {
+      setLockLoading(false);
+    }
+  };
+
+  const handleVerifyOldLock = async () => {
+    if (!lockInput) {
+      setError('Please enter your current security lock');
+      return;
+    }
+    setLockLoading(true);
+    setError('');
+    try {
+      const data = await authService.verifySecurityLock(lockInput);
+      if (data.verified) {
+        setVerifiedOldLock(lockInput);
+        setLockStep('new');
+        setLockInput('');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid security lock';
+      setError(msg);
+      setLockInput('');
+    } finally {
+      setLockLoading(false);
+    }
+  };
+
+  const handleChangeLockSave = async () => {
+    if (!newLockInput || newLockInput.length < 4) {
+      setError('New lock must be at least 4 characters');
+      return;
+    }
+    if (newLockInput !== confirmLockInput) {
+      setError('Locks do not match');
+      return;
+    }
+    setLockLoading(true);
+    setError('');
+    try {
+      await authService.changeSecurityLock(verifiedOldLock, newLockInput);
+      setSuccess('Security lock changed successfully');
+      setLockMode(null);
+      setLockStep('old');
+      setNewLockInput('');
+      setConfirmLockInput('');
+      setVerifiedOldLock('');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to change security lock';
+      setError(msg);
+    } finally {
+      setLockLoading(false);
+    }
   };
 
   // Email flow handlers
@@ -370,6 +501,61 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     return renderEmailStep3();
   };
 
+  // Security lock renderers
+
+  const renderSetupLock = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-yellow-100 dark:bg-yellow-900/30"><LockClosedIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Set Security Lock</h3>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Create a security lock to protect your account settings.</p>
+      <Input label="Set Security Lock" name="setLock" type="password" value={lockInput} onChange={(e) => { setLockInput(e.target.value); setError(''); }} placeholder="Enter a security lock (min 4 chars)" />
+      <Button onClick={handleSetLock} loading={lockLoading} className="w-full">Create Lock</Button>
+    </div>
+  );
+
+  const renderVerifyLock = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-yellow-100 dark:bg-yellow-900/30"><LockClosedIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Account Settings Locked</h3>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Enter your security lock to access account settings.</p>
+      <Input label="Enter Security Lock" name="verifyLock" type="password" value={lockInput} onChange={(e) => { setLockInput(e.target.value); setError(''); }} placeholder="Enter security lock" />
+      <Button onClick={handleVerifyLock} loading={lockLoading} className="w-full">Unlock</Button>
+    </div>
+  );
+
+  const renderChangeLockOld = () => (
+    <div className="space-y-4">
+      <button onClick={() => { setLockMode(null); setLockInput(''); setError(''); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-yellow-100 dark:bg-yellow-900/30"><LockClosedIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Change Security Lock</h3>
+      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Enter your current security lock to proceed.</p>
+      <Input label="Current Lock" name="oldLock" type="password" value={lockInput} onChange={(e) => { setLockInput(e.target.value); setError(''); }} placeholder="Enter current security lock" />
+      <Button onClick={handleVerifyOldLock} loading={lockLoading} className="w-full">Verify</Button>
+    </div>
+  );
+
+  const renderChangeLockNew = () => (
+    <div className="space-y-4">
+      <button onClick={() => { setLockStep('old'); setLockInput(verifiedOldLock); setError(''); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">&larr; Back</button>
+      <div className="flex items-center gap-2">
+        <div className="p-1 rounded-lg bg-yellow-100 dark:bg-yellow-900/30"><LockClosedIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></div>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white">New Security Lock</h3>
+      </div>
+      <Input label="New Lock" name="newLock" type="password" value={newLockInput} onChange={(e) => { setNewLockInput(e.target.value); setError(''); }} placeholder="Enter new lock (min 4 chars)" />
+      <Input label="Confirm Lock" name="confirmLock" type="password" value={confirmLockInput} onChange={(e) => { setConfirmLockInput(e.target.value); setError(''); }} placeholder="Confirm new lock" />
+      <div className="flex gap-3 pt-1">
+        <Button variant="secondary" onClick={handleClose} className="flex-1">Cancel</Button>
+        <Button onClick={handleChangeLockSave} loading={lockLoading} className="flex-1">Save</Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
@@ -380,32 +566,54 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
           <button onClick={handleClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"><XMarkIcon className="h-5 w-5" /></button>
         </div>
 
-        <div className="px-6 py-6">
-          <Alert message={error} type="error" onClose={() => setError('')} />
-          <Alert message={success} type="success" onClose={() => setSuccess('')} />
+          <div className="px-6 py-6">
+            <Alert message={error} type="error" onClose={() => setError('')} />
+            <Alert message={success} type="success" onClose={() => setSuccess('')} />
 
-          {!activeSection && (
-            <div className="space-y-3">
-              <button onClick={() => { setActiveSection('password'); setError(''); setSuccess(''); }} className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer">
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30"><KeyIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" /></div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-white">Change Password</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">OTP verified password update</p>
-                </div>
-              </button>
-              <button onClick={() => { setActiveSection('email'); setError(''); setSuccess(''); }} className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer">
-                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30"><EnvelopeIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" /></div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-white">Change Email</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">OTP verified email update</p>
-                </div>
-              </button>
-            </div>
-          )}
+            {hasLock === null && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            )}
 
-          {activeSection === 'password' && renderPasswordFlow()}
-          {activeSection === 'email' && renderEmailFlow()}
-        </div>
+            {/* Security lock gate — not yet unlocked */}
+            {hasLock === false && lockMode === 'setup' && !unlocked && renderSetupLock()}
+            {hasLock === true && lockMode === 'verify' && !unlocked && renderVerifyLock()}
+
+            {/* Change lock flow — accessible from unlocked menu */}
+            {unlocked && lockMode === 'change' && lockStep === 'old' && renderChangeLockOld()}
+            {unlocked && lockMode === 'change' && lockStep === 'new' && renderChangeLockNew()}
+
+            {/* Unlocked menu */}
+            {unlocked && !lockMode && !activeSection && (
+              <div className="space-y-3">
+                <button onClick={() => { setActiveSection('password'); setError(''); setSuccess(''); }} className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30"><KeyIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" /></div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-white">Change Password</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">OTP verified password update</p>
+                  </div>
+                </button>
+                <button onClick={() => { setActiveSection('email'); setError(''); setSuccess(''); }} className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30"><EnvelopeIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" /></div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-white">Change Email</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">OTP verified email update</p>
+                  </div>
+                </button>
+                <button onClick={() => { setLockMode('change'); setLockStep('old'); setLockInput(''); setNewLockInput(''); setConfirmLockInput(''); setVerifiedOldLock(''); setError(''); setSuccess(''); }} className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left cursor-pointer">
+                  <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30"><LockClosedIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400" /></div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-white">Change Security Lock</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Update your security lock</p>
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {activeSection === 'password' && renderPasswordFlow()}
+            {activeSection === 'email' && renderEmailFlow()}
+          </div>
       </div>
     </div>
   );

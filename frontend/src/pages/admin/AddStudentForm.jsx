@@ -7,15 +7,10 @@ import SelectInput from '../../components/common/SelectInput';
 import DateInput from '../../components/common/DateInput';
 import Alert from '../../components/common/Alert';
 import studentService from '../../services/student.service';
+import { CLASS_NAMES, ACADEMIC_YEARS } from '../../utils/classNames';
 
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
-const classOptions = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
-const academicYearOptions = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
 const today = new Date().toISOString().split('T')[0];
 
 const initialFormState = {
@@ -191,14 +186,14 @@ const AddStudentForm = ({ onSuccess }) => {
             name="class"
             value={form.class}
             onChange={handleChange('class')}
-            options={classOptions}
+            options={CLASS_NAMES}
           />
           <SelectInput
             label="Academic Year"
             name="academicYear"
             value={form.academicYear}
             onChange={handleChange('academicYear')}
-            options={academicYearOptions}
+            options={ACADEMIC_YEARS}
           />
         </CardSection>
       </div>

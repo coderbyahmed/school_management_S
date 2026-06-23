@@ -93,6 +93,21 @@ const authService = {
     const response = await api.patch('/auth/password-change/complete', { newPassword, confirmPassword });
     return response.data;
   },
+
+  setSecurityLock: async (lock) => {
+    const response = await api.post('/auth/security-lock/set', { lock });
+    return response.data;
+  },
+
+  verifySecurityLock: async (lock) => {
+    const response = await api.post('/auth/security-lock/verify', { lock });
+    return response.data;
+  },
+
+  changeSecurityLock: async (oldLock, newLock) => {
+    const response = await api.post('/auth/security-lock/change', { oldLock, newLock });
+    return response.data;
+  },
 };
 
 export default authService;

@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import CardSection from '../../common/CardSection';
 import Input from '../../common/Input';
 import SelectInput from '../../common/SelectInput';
 import Alert from '../../common/Alert';
+import subjectService from '../../../services/subject.service';
 
 const statusOptions = ['Active', 'Inactive'];
 
@@ -13,10 +15,24 @@ const initialState = {
   status: 'Active',
 };
 
-const AddSubject = ({ onSuccess }) => {
+const AddSubject = ({ editData, onSuccess }) => {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (editData) {
+      setForm({
+        subjectName: editData.subjectName || '',
+        subjectCode: editData.subjectCode || '',
+        description: editData.description || '',
+        status: editData.status || 'Active',
+      });
+    } else {
+      setForm(initialState);
+    }
+    setError('');
+  }, [editData]);
 
   const handleChange = (field) => (e) => {
     setForm({ ...form, [field]: e.target.value });
@@ -32,19 +48,44 @@ const AddSubject = ({ onSuccess }) => {
     setError('');
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      resetForm();
+      if (editData) {
+        await subjectService.updateSubject(editData._id, {
+          subjectName: form.subjectName,
+          description: form.description,
+          status: form.status,
+        });
+        toast.success('Subject updated successfully');
+      } else {
+        const result = await subjectService.createSubject({
+          subjectName: form.subjectName,
+          description: form.description,
+          status: form.status,
+        });
+        toast.success('Subject created successfully');
+        setForm({ ...initialState, subjectCode: result.data?.subject?.subjectCode || '' });
+      }
       if (onSuccess) onSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to create subject';
+      const msg = err.response?.data?.message || 'Failed to save subject';
       setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    resetForm();
+    if (editData) {
+      setForm({
+        subjectName: editData.subjectName || '',
+        subjectCode: editData.subjectCode || '',
+        description: editData.description || '',
+        status: editData.status || 'Active',
+      });
+      setError('');
+    } else {
+      resetForm();
+    }
   };
 
   return (
@@ -52,7 +93,7 @@ const AddSubject = ({ onSuccess }) => {
       {error && <Alert message={error} type="error" />}
 
       <div className="max-w-2xl">
-        <CardSection title="Subject Information">
+        <CardSection title={editData ? 'Edit Subject' : 'Subject Information'}>
           <Input
             label="Subject Name"
             name="subjectName"
@@ -64,8 +105,8 @@ const AddSubject = ({ onSuccess }) => {
             label="Subject Code"
             name="subjectCode"
             value={form.subjectCode}
-            onChange={handleChange('subjectCode')}
-            placeholder="Enter subject code"
+            disabled
+            placeholder="Auto-generated"
           />
           <SelectInput
             label="Status"
@@ -104,7 +145,7 @@ const AddSubject = ({ onSuccess }) => {
           disabled={loading}
           className="px-6 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving Subject...' : 'Save Subject'}
+          {loading ? 'Saving Subject...' : editData ? 'Update Subject' : 'Save Subject'}
         </button>
       </div>
     </div>

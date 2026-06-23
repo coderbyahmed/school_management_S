@@ -1,11 +1,6 @@
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
-
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
+import { getImageUrl } from '../../utils/imageUrl';
 
 const InfoRow = ({ label, value }) => (
   <div className="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0">

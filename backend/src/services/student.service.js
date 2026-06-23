@@ -7,11 +7,21 @@ import StudentPromotion from '../models/studentPromotion.model.js';
 import RefreshToken from '../models/refreshToken.model.js';
 import AuditLog from '../models/auditLog.model.js';
 import { ApiError } from '../utils/apiError.js';
+import { stripBaseUrl } from '../utils/imageUrl.js';
+import { writeUploadFile } from '../middlewares/upload.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const createStudent = async (data, file) => {
+const deleteFileAtPath = (relativePath) => {
+  if (!relativePath) return;
+  const fullPath = path.resolve(__dirname, '../..', relativePath);
+  try {
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+  } catch { /* ignore */ }
+};
+
+const createStudent = async (data, file, baseUrl = '') => {
   const { password, ...rest } = data;
 
   if (!password) {
@@ -25,37 +35,55 @@ const createStudent = async (data, file) => {
   const studentData = { ...rest };
   delete studentData.studentId;
   delete studentData.admissionNumber;
+  delete studentData.loginId;
 
-  studentData.studentImage = `uploads/student-images/${file.filename}`;
+  const filename = writeUploadFile(file.buffer, 'student-images', file.originalname);
+  const imagePath = `uploads/student-images/${filename}`;
+  studentData.studentImage = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
 
-  try {
-    const student = await Student.create(studentData);
+  let savedStudent;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      savedStudent = await Student.create(studentData);
 
-    await User.create({
-      loginId: student.studentId,
-      fullName: student.fullName,
-      password,
-      role: 'student',
-      referenceId: student._id,
-      isActive: true,
-    });
+      await User.create({
+        loginId: savedStudent.studentId,
+        fullName: savedStudent.fullName,
+        password,
+        role: 'student',
+        referenceId: savedStudent._id,
+        isActive: true,
+      });
 
-    const created = await Student.findById(student._id);
+      return await Student.findById(savedStudent._id);
+    } catch (error) {
+      if (error.code === 11000 && error.keyPattern?.loginId && savedStudent) {
+        await Student.deleteOne({ _id: savedStudent._id }).catch(() => {});
+        savedStudent = null;
+        continue;
+      }
 
-    return created;
-  } catch (error) {
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      throw new ApiError(409, `Student with this ${field} already exists`);
+      deleteFileAtPath(imagePath);
+      if (savedStudent) {
+        await Student.deleteOne({ _id: savedStudent._id }).catch(() => {});
+      }
+
+      if (error.code === 11000) {
+        const field = Object.keys(error.keyPattern)[0];
+        const fieldLabel = { loginId: 'Login ID', studentId: 'Student ID', admissionNumber: 'Admission Number' };
+        throw new ApiError(409, `${fieldLabel[field] || field} already exists`);
+      }
+
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map((e) => e.message);
+        throw new ApiError(400, messages.join('. '));
+      }
+
+      throw error;
     }
-
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      throw new ApiError(400, messages.join('. '));
-    }
-
-    throw error;
   }
+  deleteFileAtPath(imagePath);
+  throw new ApiError(409, 'Login ID conflict. Please try again.');
 };
 
 const getAllStudents = async (query) => {
@@ -108,7 +136,7 @@ const getStudentById = async (studentId) => {
   return await Student.findOne({ studentId });
 };
 
-const updateStudent = async (studentId, updateData, file) => {
+const updateStudent = async (studentId, updateData, file, baseUrl = '') => {
   const existing = await Student.findOne({ studentId });
   if (!existing) {
     throw new ApiError(404, 'Student not found');
@@ -124,22 +152,17 @@ const updateStudent = async (studentId, updateData, file) => {
 
   if (file) {
     if (existing.studentImage) {
-      const oldPath = path.resolve(__dirname, '../..', existing.studentImage);
-      try {
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      } catch {
-        // silently ignore
-      }
+      deleteFileAtPath(stripBaseUrl(existing.studentImage));
     }
-    cleanData.studentImage = `uploads/student-images/${file.filename}`;
+    const filename = writeUploadFile(file.buffer, 'student-images', file.originalname);
+    const imagePath = `uploads/student-images/${filename}`;
+    cleanData.studentImage = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
   }
 
   const updated = await Student.findOneAndUpdate(
     { studentId },
     { $set: cleanData },
-    { new: true, runValidators: true },
+    { returnDocument: "after", runValidators: true },
   );
 
   if (cleanData.fullName || cleanData.status) {
@@ -162,14 +185,7 @@ const deleteStudent = async (studentId, performedBy) => {
   }
 
   if (existing.studentImage) {
-    const imagePath = path.resolve(__dirname, '../..', existing.studentImage);
-    try {
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
-    } catch {
-      // silently ignore
-    }
+    deleteFileAtPath(stripBaseUrl(existing.studentImage));
   }
 
   const studentUser = await User.findOne({ referenceId: existing._id, role: 'student' });

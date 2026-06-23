@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { BookOpenIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import FilterDropdown from '../../common/FilterDropdown';
@@ -9,22 +10,38 @@ import StatusBadge from '../../common/StatusBadge';
 import ActionButtons from '../../common/ActionButtons';
 import SubjectCard from '../../common/SubjectCard';
 import SubjectViewModal from '../../common/SubjectViewModal';
-import EditSubjectModal from '../../common/EditSubjectModal';
 import ConfirmationModal from '../../common/ConfirmationModal';
+import subjectService from '../../../services/subject.service';
 
 const ITEMS_PER_PAGE = 10;
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 
-const AllSubjects = () => {
+const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseView }) => {
   const [view, setView] = useState('table');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const [subjects, setSubjects] = useState([]);
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [editingSubject, setEditingSubject] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [deletingSubject, setDeletingSubject] = useState(null);
+
+  const fetchSubjects = async () => {
+    setLoading(true);
+    try {
+      const result = await subjectService.getAllSubjects();
+      setSubjects(result.data?.subjects || []);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to load subjects';
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   const filteredSubjects = subjects.filter((s) => {
     if (search && !s.subjectName?.toLowerCase().includes(search.toLowerCase())) return false;
@@ -48,6 +65,20 @@ const AllSubjects = () => {
     setCurrentPage(1);
   };
 
+  const handleDelete = async () => {
+    if (!deletingSubject) return;
+
+    try {
+      await subjectService.deleteSubject(deletingSubject._id);
+      toast.success('Subject deleted successfully');
+      setDeletingSubject(null);
+      await fetchSubjects();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to delete subject';
+      toast.error(msg);
+    }
+  };
+
   const totalSubjects = subjects.length;
   const activeSubjects = subjects.filter((s) => s.status === 'Active').length;
   const inactiveSubjects = subjects.filter((s) => s.status === 'Inactive').length;
@@ -55,7 +86,8 @@ const AllSubjects = () => {
   const tableColumns = [
     { key: 'subjectName', label: 'Subject Name' },
     { key: 'subjectCode', label: 'Subject Code' },
-    { key: 'classes', label: 'Class Assigned' },
+    { key: 'classes', label: 'Assigned Classes' },
+    { key: 'teachers', label: 'Assigned Teachers' },
     { key: 'status', label: 'Status' },
     { key: 'actions', label: 'Actions', className: 'text-right' },
   ];
@@ -71,18 +103,15 @@ const AllSubjects = () => {
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{subject.subjectCode}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-        {(subject.assignedClasses?.length || 0) > 0
-          ? subject.assignedClasses.slice(0, 2).join(', ') + ((subject.assignedClasses?.length || 0) > 2 ? '...' : '')
-          : '-'}
-      </td>
+      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{subject.assignedClassesCount || 0}</td>
+      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{subject.assignedTeachersCount || 0}</td>
       <td className="px-4 py-3">
         <StatusBadge status={subject.status} />
       </td>
       <td className="px-4 py-3 text-right">
         <ActionButtons
-          onView={() => setSelectedSubject(subject)}
-          onEdit={() => setEditingSubject(subject)}
+          onView={() => onViewDetails(subject)}
+          onEdit={() => onEditSubject(subject)}
           onDelete={() => setDeletingSubject(subject)}
         />
       </td>
@@ -134,6 +163,14 @@ const AllSubjects = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+        <p className="text-sm">Loading subjects...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -199,10 +236,10 @@ const AllSubjects = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {paginatedSubjects.map((subject) => (
                   <SubjectCard
-                    key={subject.subjectCode}
+                    key={subject._id}
                     subject={subject}
-                    onView={() => setSelectedSubject(subject)}
-                    onEdit={() => setEditingSubject(subject)}
+                    onView={() => onViewDetails(subject)}
+                    onEdit={() => onEditSubject(subject)}
                     onDelete={() => setDeletingSubject(subject)}
                   />
                 ))}
@@ -216,31 +253,18 @@ const AllSubjects = () => {
       <SubjectViewModal
         subject={selectedSubject}
         isOpen={!!selectedSubject}
-        onClose={() => setSelectedSubject(null)}
-      />
-
-      <EditSubjectModal
-        key={editingSubject?.subjectCode || 'new'}
-        subject={editingSubject}
-        isOpen={!!editingSubject}
-        onClose={() => setEditingSubject(null)}
-        onSave={(subjectCode, formData) => {
-          return Promise.resolve();
-        }}
+        onClose={onCloseView}
       />
 
       <ConfirmationModal
         isOpen={!!deletingSubject}
         onClose={() => setDeletingSubject(null)}
         title="Delete Subject"
-        message="Are you sure you want to delete this subject?"
+        message="Are you sure you want to delete this subject? It will also be removed from all class and teacher assignments."
         confirmLabel="Confirm Delete"
         cancelLabel="Cancel"
         variant="danger"
-        onConfirm={() => {
-          setSubjects((prev) => prev.filter((s) => s.subjectCode !== deletingSubject.subjectCode));
-          setDeletingSubject(null);
-        }}
+        onConfirm={handleDelete}
       />
     </div>
   );

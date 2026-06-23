@@ -12,21 +12,13 @@ import StudentCard from '../../common/StudentCard';
 import StudentViewModal from '../../common/StudentViewModal';
 import EditStudentModal from '../../common/EditStudentModal';
 import ConfirmationModal from '../../common/ConfirmationModal';
+import { getImageUrl } from '../../../utils/imageUrl';
 import studentService from '../../../services/student.service';
-
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
+import { CLASS_NAMES } from '../../../utils/classNames';
 
 const ITEMS_PER_PAGE = 10;
 
-const classOptions = [
-  'All Classes', 'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
+const classOptions = ['All Classes', ...CLASS_NAMES];
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 

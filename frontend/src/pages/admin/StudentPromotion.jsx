@@ -7,12 +7,7 @@ import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import studentService from '../../services/student.service.js';
-
-const classOptions = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
+import { CLASS_NAMES } from '../../utils/classNames';
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 
@@ -58,14 +53,14 @@ const StudentPromotion = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const toYearOptions = ['2025', '2026', '2027', '2028', '2029', '2030'].filter((y) => y !== fromYear);
-  const fromClassIndex = classOptions.indexOf(fromClass);
-  const toClassOptions = fromClass ? classOptions.slice(fromClassIndex + 1) : [];
+  const fromClassIndex = CLASS_NAMES.indexOf(fromClass);
+  const toClassOptions = fromClass ? CLASS_NAMES.slice(fromClassIndex + 1) : [];
 
   const handleFromClassChange = useCallback((e) => {
     const newFromClass = e?.target?.value || '';
     setFromClass(newFromClass);
-    const idx = classOptions.indexOf(newFromClass);
-    const remaining = classOptions.slice(idx + 1);
+    const idx = CLASS_NAMES.indexOf(newFromClass);
+    const remaining = CLASS_NAMES.slice(idx + 1);
     if (remaining.length > 0 && !remaining.includes(toClass)) {
       setToClass(remaining[0]);
     } else if (remaining.length === 0) {
@@ -224,7 +219,7 @@ const StudentPromotion = () => {
             name="fromClass"
             value={fromClass}
             onChange={handleFromClassChange}
-            options={classOptions}
+            options={CLASS_NAMES}
           />
           <SelectInput
             label="To Class"

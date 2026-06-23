@@ -7,7 +7,9 @@ import SearchInput from '../../common/SearchInput';
 import Table from '../../common/Table';
 import Button from '../../common/Button';
 import ConfirmationModal from '../../common/ConfirmationModal';
+import { getImageUrl } from '../../../utils/imageUrl';
 import studentService from '../../../services/student.service';
+import { CLASS_NAMES } from '../../../utils/classNames';
 
 const PromotionHistory = () => {
   const [yearFilter, setYearFilter] = useState('All');
@@ -131,12 +133,6 @@ const PromotionHistory = () => {
     { key: 'action', label: 'Action' },
   ];
 
-  const getImageUrl = (path) => {
-    if (!path) return null;
-    const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-    return `${base}/${path}`;
-  };
-
   const safeName = (fullName) => {
     if (!fullName || typeof fullName !== 'string') return '??';
     return fullName.split(' ').map(n => n ? n[0] : '').join('').slice(0, 2).toUpperCase() || '??';
@@ -211,7 +207,7 @@ const PromotionHistory = () => {
             name="classFilter"
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
-            options={['All Classes', 'Montessori', 'Nursery', 'KG 1', 'KG 2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10']}
+            options={['All Classes', ...CLASS_NAMES]}
           />
         </div>
         <div className="w-full sm:w-56">

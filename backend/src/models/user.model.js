@@ -86,6 +86,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    securityLockHash: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -105,6 +109,7 @@ userSchema.pre('save', function () {
     this.otpAttempts = undefined;
     this.otpRequestedAt = undefined;
     this.pendingEmail = undefined;
+    this.securityLockHash = undefined;
   }
 });
 
@@ -118,6 +123,12 @@ userSchema.pre('save', async function () {
 // Method to compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to compare security lock
+userSchema.methods.compareSecurityLock = async function (candidateLock) {
+  if (!this.securityLockHash) return false;
+  return await bcrypt.compare(candidateLock, this.securityLockHash);
 };
 
 const User = mongoose.model('User', userSchema);

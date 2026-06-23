@@ -1,11 +1,6 @@
 import StatusBadge from './StatusBadge';
 import ActionButtons from './ActionButtons';
-
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '');
-  return `${base}/${path}`;
-};
+import { getImageUrl } from '../../utils/imageUrl';
 
 const TeacherCard = ({ teacher, onView, onEdit, onDelete }) => {
   const imgSrc = getImageUrl(teacher.teacherImage);
@@ -33,7 +28,7 @@ const TeacherCard = ({ teacher, onView, onEdit, onDelete }) => {
         </span>
       </div>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{teacher.phone}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{teacher.phoneNumber}</p>
 
       <div className="mt-2">
         <StatusBadge status={teacher.status} />

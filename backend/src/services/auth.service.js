@@ -92,7 +92,7 @@ const adminLogin = async (email, password) => {
 };
 
 const teacherLogin = async (teacherId, password) => {
-  const user = await User.findOne({ teacherId, role: 'teacher' }).select('+password');
+  const user = await User.findOne({ loginId: teacherId, role: 'teacher' }).select('+password');
   if (!user) {
     throw new ApiError(401, 'Teacher ID not found');
   }

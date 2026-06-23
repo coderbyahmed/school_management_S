@@ -5,9 +5,7 @@ import Button from '../common/Button';
 import Input from '../common/Input';
 import Alert from '../common/Alert';
 import { toast } from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
-const UPLOADS_BASE = API_BASE.replace('/api/v1', '');
+import { getImageUrl } from '../../utils/imageUrl';
 
 const formatDate = (dateStr) => {
   if (!dateStr) return 'N/A';
@@ -127,8 +125,7 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
 
   const getProfileImageUrl = () => {
     if (imagePreview) return imagePreview;
-    if (profile?.profileImage) return `${UPLOADS_BASE}/${profile.profileImage}`;
-    return null;
+    return getImageUrl(profile?.profileImage);
   };
 
   const initials = profile?.fullName

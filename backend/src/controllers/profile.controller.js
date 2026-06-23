@@ -1,7 +1,9 @@
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { toFullUrl, stripBaseUrl } from '../utils/imageUrl.js';
+import { writeUploadFile } from '../middlewares/upload.middleware.js';
 import { ApiError } from '../utils/apiError.js';
 import User from '../models/user.model.js';
 
@@ -15,7 +17,7 @@ export const getProfile = asyncHandler(async (req, res) => {
     success: true,
     user: {
       id: user._id,
-      profileImage: user.profileImage || '',
+      profileImage: toFullUrl(req, user.profileImage),
       fullName: user.fullName,
       email: user.email,
       phone: user.phone || '',
@@ -52,16 +54,12 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
   if (req.file) {
     if (userToUpdate.profileImage) {
-      const oldPath = path.resolve(__dirname, '../..', userToUpdate.profileImage);
-      try {
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      } catch {
-        // silently ignore
-      }
+      const oldRelPath = stripBaseUrl(userToUpdate.profileImage);
+      const oldPath = path.resolve(__dirname, '../..', oldRelPath);
+      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch { /* ignore */ }
     }
-    updateData.profileImage = `uploads/admin-profile/${req.file.filename}`;
+    const filename = writeUploadFile(req.file.buffer, 'admin-profile', req.file.originalname);
+    updateData.profileImage = toFullUrl(req, `uploads/admin-profile/${filename}`);
   }
 
   if (updateData.fullName) userToUpdate.fullName = updateData.fullName;
@@ -74,7 +72,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
     message: 'Profile updated successfully',
     user: {
       id: userToUpdate._id,
-      profileImage: userToUpdate.profileImage || '',
+      profileImage: toFullUrl(req, userToUpdate.profileImage),
       fullName: userToUpdate.fullName,
       email: userToUpdate.email,
       phone: userToUpdate.phone || '',

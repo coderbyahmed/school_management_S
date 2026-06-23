@@ -3,11 +3,9 @@ import { ChevronDownIcon, UserCircleIcon, Cog6ToothIcon, ArrowLeftOnRectangleIco
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import authService from '../../services/auth.service';
+import { getImageUrl } from '../../utils/imageUrl';
 import ProfileModal from './ProfileModal';
 import AccountSettingsModal from './AccountSettingsModal';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
-const UPLOADS_BASE = API_BASE.replace('/api/v1', '');
 
 const AdminDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,9 +58,7 @@ const AdminDropdown = () => {
     }
   };
 
-  const profileImageUrl = profile?.profileImage
-    ? `${UPLOADS_BASE}/${profile.profileImage}`
-    : null;
+  const profileImageUrl = getImageUrl(profile?.profileImage);
   const initials = profile?.fullName
     ? profile.fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'A';

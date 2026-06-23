@@ -1,43 +1,63 @@
 import { useState, useEffect } from 'react';
-import { BookOpenIcon, CheckCircleIcon, UsersIcon, Squares2X2Icon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+import { BookOpenIcon, CheckCircleIcon, XCircleIcon, UsersIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import FilterDropdown from '../../common/FilterDropdown';
+import SearchInput from '../../common/SearchInput';
 import ViewToggle from '../../common/ViewToggle';
 import Table from '../../common/Table';
 import StatusBadge from '../../common/StatusBadge';
 import ActionButtons from '../../common/ActionButtons';
 import ClassCard from '../../common/ClassCard';
-import ClassViewModal from '../../common/ClassViewModal';
-import EditClassModal from '../../common/EditClassModal';
 import ConfirmationModal from '../../common/ConfirmationModal';
+import classService from '../../../services/class.service';
 
 const ITEMS_PER_PAGE = 10;
 
 const academicYearOptions = [
-  'All Years', '2024-2025', '2025-2026', '2026-2027', '2027-2028', '2028-2029', '2029-2030',
+  'All Years', '2025', '2026', '2027', '2028', '2029', '2030',
+  '2031', '2032', '2033', '2034', '2035',
 ];
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 
-const AllClasses = () => {
+const AllClasses = ({ onViewDetails, onEditClass }) => {
   const [view, setView] = useState('table');
   const [academicYearFilter, setAcademicYearFilter] = useState('All Years');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(null);
-  const [editingClass, setEditingClass] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [deletingClass, setDeletingClass] = useState(null);
+
+  const fetchClasses = async () => {
+    setLoading(true);
+    try {
+      const result = await classService.getAllClasses();
+      setClasses(result.data?.classes || []);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to load classes';
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
 
   const filteredClasses = classes.filter((c) => {
     if (academicYearFilter !== 'All Years' && c.academicYear !== academicYearFilter) return false;
     if (statusFilter !== 'All' && c.status !== statusFilter) return false;
+    if (searchQuery && !c.className?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [academicYearFilter, statusFilter]);
+  }, [academicYearFilter, statusFilter, searchQuery]);
 
   const totalPages = Math.ceil(filteredClasses.length / ITEMS_PER_PAGE);
   const paginatedClasses = filteredClasses.slice(
@@ -48,19 +68,35 @@ const AllClasses = () => {
   const handleReset = () => {
     setAcademicYearFilter('All Years');
     setStatusFilter('All');
+    setSearchQuery('');
     setCurrentPage(1);
   };
 
-  const totalClasses = classes.length;
-  const activeClasses = classes.filter((c) => c.status === 'Active').length;
-  const totalStudents = classes.reduce((sum, c) => sum + (c.totalStudents || 0), 0);
-  const totalSubjects = classes.reduce((sum, c) => sum + (c.totalSubjects || 0), 0);
+  const handleDelete = async () => {
+    if (!deletingClass) return;
+
+    try {
+      await classService.deleteClass(deletingClass._id);
+      toast.success('Class deleted successfully');
+      setDeletingClass(null);
+      await fetchClasses();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to delete class';
+      toast.error(msg);
+    }
+  };
+
+  const statistics = {
+    totalClasses: classes.length,
+    activeClasses: classes.filter((c) => c.status === 'Active').length,
+    inactiveClasses: classes.filter((c) => c.status === 'Inactive').length,
+    totalStudents: classes.reduce((sum, c) => sum + (c.totalStudents || 0), 0),
+  };
 
   const tableColumns = [
     { key: 'className', label: 'Class Name' },
     { key: 'academicYear', label: 'Academic Year' },
     { key: 'students', label: 'Total Students' },
-    { key: 'subjects', label: 'Total Subjects' },
     { key: 'status', label: 'Status' },
     { key: 'actions', label: 'Actions', className: 'text-right' },
   ];
@@ -77,14 +113,13 @@ const AllClasses = () => {
       </td>
       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{classData.academicYear}</td>
       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{classData.totalStudents || 0}</td>
-      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{classData.totalSubjects || 0}</td>
       <td className="px-4 py-3">
         <StatusBadge status={classData.status} />
       </td>
       <td className="px-4 py-3 text-right">
         <ActionButtons
-          onView={() => setSelectedClass(classData)}
-          onEdit={() => setEditingClass(classData)}
+          onView={() => onViewDetails(classData)}
+          onEdit={() => onEditClass(classData)}
           onDelete={() => setDeletingClass(classData)}
         />
       </td>
@@ -137,6 +172,14 @@ const AllClasses = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+        <p className="text-sm">Loading classes...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -144,10 +187,10 @@ const AllClasses = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={BookOpenIcon} label="Total Classes" value={totalClasses} color="blue" />
-        <StatCard icon={CheckCircleIcon} label="Active Classes" value={activeClasses} color="green" />
-        <StatCard icon={UsersIcon} label="Total Students" value={totalStudents} color="yellow" />
-        <StatCard icon={Squares2X2Icon} label="Assigned Subjects" value={totalSubjects} color="blue" />
+        <StatCard icon={BookOpenIcon} label="Total Classes" value={statistics.totalClasses} color="blue" />
+        <StatCard icon={CheckCircleIcon} label="Active Classes" value={statistics.activeClasses} color="green" />
+        <StatCard icon={XCircleIcon} label="Inactive Classes" value={statistics.inactiveClasses} color="red" />
+        <StatCard icon={UsersIcon} label="Total Students" value={statistics.totalStudents} color="yellow" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
@@ -165,6 +208,13 @@ const AllClasses = () => {
             options={statusOptions}
             value={statusFilter}
             onChange={setStatusFilter}
+          />
+        </div>
+        <div className="w-full sm:w-56">
+          <SearchInput
+            placeholder="Search Class"
+            value={searchQuery}
+            onChange={setSearchQuery}
           />
         </div>
         <button
@@ -203,10 +253,10 @@ const AllClasses = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {paginatedClasses.map((classData) => (
                   <ClassCard
-                    key={classData.className}
+                    key={classData._id}
                     classData={classData}
-                    onView={() => setSelectedClass(classData)}
-                    onEdit={() => setEditingClass(classData)}
+                    onView={() => onViewDetails(classData)}
+                    onEdit={() => onEditClass(classData)}
                     onDelete={() => setDeletingClass(classData)}
                   />
                 ))}
@@ -217,22 +267,6 @@ const AllClasses = () => {
         </>
       )}
 
-      <ClassViewModal
-        classData={selectedClass}
-        isOpen={!!selectedClass}
-        onClose={() => setSelectedClass(null)}
-      />
-
-      <EditClassModal
-        key={editingClass?.className || 'new'}
-        classData={editingClass}
-        isOpen={!!editingClass}
-        onClose={() => setEditingClass(null)}
-        onSave={(className, formData) => {
-          return Promise.resolve();
-        }}
-      />
-
       <ConfirmationModal
         isOpen={!!deletingClass}
         onClose={() => setDeletingClass(null)}
@@ -241,10 +275,7 @@ const AllClasses = () => {
         confirmLabel="Confirm Delete"
         cancelLabel="Cancel"
         variant="danger"
-        onConfirm={() => {
-          setClasses((prev) => prev.filter((c) => c.className !== deletingClass.className));
-          setDeletingClass(null);
-        }}
+        onConfirm={handleDelete}
       />
     </div>
   );

@@ -1,16 +1,20 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import CardSection from '../../components/common/CardSection';
 import Input from '../../components/common/Input';
 import SelectInput from '../../components/common/SelectInput';
 import DateInput from '../../components/common/DateInput';
 import Alert from '../../components/common/Alert';
+import teacherService from '../../services/teacher.service';
 
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
-const maritalOptions = ['Single', 'Married', 'Divorced', 'Widowed'];
+const maritalOptions = ['Single', 'Married'];
 const qualificationOptions = ['B.Ed', 'M.Ed', 'BS Education', 'MA Education', 'PhD Education', 'Other'];
 const experienceOptions = ['Fresher', '1 Year', '2 Years', '3 Years', '5 Years', '10+ Years'];
+
+const today = new Date().toISOString().slice(0, 10);
 
 const initialFormState = {
   photo: null,
@@ -22,7 +26,7 @@ const initialFormState = {
   maritalStatus: '',
   qualification: '',
   experience: '',
-  joiningDate: '',
+  joiningDate: today,
   status: 'Active',
   phone: '',
   alternatePhone: '',
@@ -79,18 +83,22 @@ const AddTeacherForm = ({ onSuccess }) => {
       formData.append('experience', form.experience);
       formData.append('joiningDate', form.joiningDate);
       formData.append('status', form.status);
-      formData.append('phone', form.phone.trim());
-      if (form.alternatePhone) formData.append('alternatePhone', form.alternatePhone.trim());
+      formData.append('phoneNumber', form.phone.trim());
+      if (form.alternatePhone) formData.append('alternatePhoneNumber', form.alternatePhone.trim());
       if (form.email) formData.append('email', form.email.trim());
       formData.append('city', form.city.trim());
       formData.append('address', form.address.trim());
       formData.append('password', form.password);
 
+      await teacherService.createTeacher(formData);
+
+      toast.success('Teacher created successfully');
       resetForm();
       if (onSuccess) onSuccess();
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to create teacher';
       setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

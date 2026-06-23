@@ -1,8 +1,11 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { toFullUrl } from '../utils/imageUrl.js';
 import studentService from '../services/student.service.js';
 
 const createStudent = asyncHandler(async (req, res) => {
-  const student = await studentService.createStudent(req.body, req.file);
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const student = await studentService.createStudent(req.body, req.file, baseUrl);
+  if (student) student.studentImage = toFullUrl(req, student.studentImage);
 
   return res.status(201).json({
     success: true,
@@ -13,12 +16,16 @@ const createStudent = asyncHandler(async (req, res) => {
 
 const getAllStudents = asyncHandler(async (req, res) => {
   const result = await studentService.getAllStudents(req.query);
+  const students = result.students.map((s) => ({
+    ...s.toObject(),
+    studentImage: toFullUrl(req, s.studentImage),
+  }));
 
   return res.status(200).json({
     success: true,
     message: 'Students fetched successfully',
     data: {
-      students: result.students,
+      students,
       pagination: {
         totalStudents: result.totalStudents,
         totalPages: result.totalPages,
@@ -38,6 +45,8 @@ const getStudentById = asyncHandler(async (req, res) => {
     });
   }
 
+  student.studentImage = toFullUrl(req, student.studentImage);
+
   return res.status(200).json({
     success: true,
     message: 'Student fetched successfully',
@@ -46,7 +55,9 @@ const getStudentById = asyncHandler(async (req, res) => {
 });
 
 const updateStudent = asyncHandler(async (req, res) => {
-  const student = await studentService.updateStudent(req.params.studentId, req.body, req.file);
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const student = await studentService.updateStudent(req.params.studentId, req.body, req.file, baseUrl);
+  if (student) student.studentImage = toFullUrl(req, student.studentImage);
 
   return res.status(200).json({
     success: true,

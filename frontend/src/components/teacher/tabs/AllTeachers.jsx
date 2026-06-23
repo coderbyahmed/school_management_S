@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { UsersIcon, UserGroupIcon, UserMinusIcon, UserPlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import FilterDropdown from '../../common/FilterDropdown';
@@ -11,10 +12,27 @@ import TeacherCard from '../../common/TeacherCard';
 import TeacherViewModal from '../../common/TeacherViewModal';
 import EditTeacherModal from '../../common/EditTeacherModal';
 import ConfirmationModal from '../../common/ConfirmationModal';
+import { getImageUrl } from '../../../utils/imageUrl';
+import teacherService from '../../../services/teacher.service';
 
 const ITEMS_PER_PAGE = 10;
 
 const statusOptions = ['All', 'Active', 'Inactive'];
+
+const formatDate = (d) => {
+  if (!d) return '-';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '-';
+  return dt.toISOString().slice(0, 10);
+};
+
+const isCurrentMonth = (d) => {
+  if (!d) return false;
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return false;
+  const now = new Date();
+  return dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth();
+};
 
 const AllTeachers = () => {
   const [view, setView] = useState('table');
@@ -26,17 +44,33 @@ const AllTeachers = () => {
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [deletingTeacher, setDeletingTeacher] = useState(null);
   const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredTeachers = teachers.filter((t) => {
-    if (teacherIdSearch && !t.teacherId?.toLowerCase().includes(teacherIdSearch.toLowerCase())) return false;
-    if (statusFilter !== 'All' && t.status !== statusFilter) return false;
-    if (nameSearch && !t.fullName?.toLowerCase().includes(nameSearch.toLowerCase())) return false;
-    return true;
-  });
+  const fetchTeachers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await teacherService.getAllTeachers({ page: currentPage, limit: ITEMS_PER_PAGE, status: statusFilter !== 'All' ? statusFilter : undefined, search: nameSearch || undefined });
+      setTeachers(result.data?.teachers || []);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to load teachers';
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, statusFilter, nameSearch]);
+
+  useEffect(() => {
+    fetchTeachers();
+  }, [fetchTeachers]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [teacherIdSearch, statusFilter, nameSearch]);
+
+  const filteredTeachers = teachers.filter((t) => {
+    if (teacherIdSearch && !t.teacherId?.toLowerCase().includes(teacherIdSearch.toLowerCase())) return false;
+    return true;
+  });
 
   const totalPages = Math.ceil(filteredTeachers.length / ITEMS_PER_PAGE);
   const paginatedTeachers = filteredTeachers.slice(
@@ -53,6 +87,26 @@ const AllTeachers = () => {
   const totalTeachers = teachers.length;
   const activeTeachers = teachers.filter((t) => t.status === 'Active').length;
   const inactiveTeachers = teachers.filter((t) => t.status === 'Inactive').length;
+  const newTeachers = teachers.filter((t) => isCurrentMonth(t.joiningDate)).length;
+
+  const handleEditSave = async (teacherId, formData) => {
+    const result = await teacherService.updateTeacher(teacherId, formData);
+    toast.success('Teacher updated successfully');
+    await fetchTeachers();
+    return result;
+  };
+
+  const handleDelete = async () => {
+    try {
+      await teacherService.deleteTeacher(deletingTeacher.teacherId);
+      toast.success('Teacher deleted successfully');
+      setDeletingTeacher(null);
+      await fetchTeachers();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to delete teacher';
+      toast.error(msg);
+    }
+  };
 
   const tableColumns = [
     { key: 'teacher', label: 'Teacher' },
@@ -65,20 +119,28 @@ const AllTeachers = () => {
 
   const renderTableRow = (teacher) => {
     const initials = teacher.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TC';
+    const imgSrc = getImageUrl(teacher.teacherImage);
 
     return (
       <>
         <td className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0">
-              {initials}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0 overflow-hidden">
+              {imgSrc ? (
+                <img src={imgSrc} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+              ) : (
+                initials
+              )}
             </div>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">{teacher.fullName}</span>
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{teacher.fullName}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Son of {teacher.fatherName}</p>
+            </div>
           </div>
         </td>
         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{teacher.teacherId}</td>
-        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{teacher.phone}</td>
-        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{teacher.joiningDate}</td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{teacher.phoneNumber}</td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{formatDate(teacher.joiningDate)}</td>
         <td className="px-4 py-3">
           <StatusBadge status={teacher.status} />
         </td>
@@ -156,7 +218,7 @@ const AllTeachers = () => {
         <StatCard icon={UsersIcon} label="Total Teachers" value={totalTeachers} color="blue" />
         <StatCard icon={UserGroupIcon} label="Active Teachers" value={activeTeachers} color="green" />
         <StatCard icon={UserMinusIcon} label="Inactive Teachers" value={inactiveTeachers} color="red" />
-        <StatCard icon={UserPlusIcon} label="New Teachers" value={0} color="yellow" />
+        <StatCard icon={UserPlusIcon} label="New Teachers" value={newTeachers} color="yellow" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
@@ -190,39 +252,47 @@ const AllTeachers = () => {
         </div>
       </div>
 
-      {view === 'table' ? (
-        <>
-          {filteredTeachers.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <Table columns={tableColumns} data={paginatedTeachers} renderRow={renderTableRow} />
-            </div>
-          ) : (
-            <>
-              <Table columns={tableColumns} data={paginatedTeachers} renderRow={renderTableRow} />
-              {renderPagination()}
-            </>
-          )}
-        </>
+      {loading ? (
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+          <p className="text-sm">Loading teachers...</p>
+        </div>
       ) : (
         <>
-          {paginatedTeachers.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <p className="text-sm">No teachers found</p>
-            </div>
+          {view === 'table' ? (
+            <>
+              {filteredTeachers.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <Table columns={tableColumns} data={paginatedTeachers} renderRow={renderTableRow} />
+                </div>
+              ) : (
+                <>
+                  <Table columns={tableColumns} data={paginatedTeachers} renderRow={renderTableRow} />
+                  {renderPagination()}
+                </>
+              )}
+            </>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {paginatedTeachers.map((teacher) => (
-                  <TeacherCard
-                    key={teacher.teacherId}
-                    teacher={teacher}
-                    onView={() => setSelectedTeacher(teacher)}
-                    onEdit={() => setEditingTeacher(teacher)}
-                    onDelete={() => setDeletingTeacher(teacher)}
-                  />
-                ))}
-              </div>
-              {renderPagination()}
+              {paginatedTeachers.length === 0 ? (
+                <div className="text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <p className="text-sm">No teachers found</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {paginatedTeachers.map((teacher) => (
+                      <TeacherCard
+                        key={teacher.teacherId}
+                        teacher={teacher}
+                        onView={() => setSelectedTeacher(teacher)}
+                        onEdit={() => setEditingTeacher(teacher)}
+                        onDelete={() => setDeletingTeacher(teacher)}
+                      />
+                    ))}
+                  </div>
+                  {renderPagination()}
+                </>
+              )}
             </>
           )}
         </>
@@ -238,9 +308,7 @@ const AllTeachers = () => {
         teacher={editingTeacher}
         isOpen={!!editingTeacher}
         onClose={() => setEditingTeacher(null)}
-        onSave={(teacherId, formData) => {
-          return Promise.resolve();
-        }}
+        onSave={handleEditSave}
       />
 
       <ConfirmationModal
@@ -251,10 +319,7 @@ const AllTeachers = () => {
         confirmLabel="Confirm Delete"
         cancelLabel="Cancel"
         variant="danger"
-        onConfirm={() => {
-          setTeachers((prev) => prev.filter((t) => t.teacherId !== deletingTeacher.teacherId));
-          setDeletingTeacher(null);
-        }}
+        onConfirm={handleDelete}
       />
     </div>
   );

@@ -17,7 +17,7 @@ counterSchema.statics.increment = async function (modelName) {
   const result = await this.findOneAndUpdate(
     { model: modelName },
     { $inc: { sequenceValue: 1 } },
-    { new: true, upsert: true },
+    { returnDocument: "after", upsert: true },
   );
   return result.sequenceValue;
 };

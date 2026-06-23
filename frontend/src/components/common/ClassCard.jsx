@@ -16,10 +16,6 @@ const ClassCard = ({ classData, onView, onEdit, onDelete }) => {
           <p className="text-sm font-bold text-gray-900 dark:text-white">{classData.totalStudents || 0}</p>
           <p className="text-[10px] text-gray-400 dark:text-gray-500">Students</p>
         </div>
-        <div className="text-center">
-          <p className="text-sm font-bold text-gray-900 dark:text-white">{classData.totalSubjects || 0}</p>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500">Subjects</p>
-        </div>
       </div>
 
       <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-center">

@@ -25,8 +25,10 @@ const SubjectViewModal = ({ subject, isOpen, onClose }) => {
       </div>
 
       <div className="mt-4">
-        <InfoRow label="Assigned Classes" value={(subject.assignedClasses?.length || 0) + ' class' + ((subject.assignedClasses?.length || 0) !== 1 ? 'es' : '')} />
+        <InfoRow label="Assigned Classes" value={(subject.assignedClassesCount || 0) + ' class' + ((subject.assignedClassesCount || 0) !== 1 ? 'es' : '')} />
+        <InfoRow label="Assigned Teachers" value={(subject.assignedTeachersCount || 0) + ' teacher' + ((subject.assignedTeachersCount || 0) !== 1 ? 's' : '')} />
         <InfoRow label="Description" value={subject.description} />
+        {subject.createdAt && <InfoRow label="Created" value={new Date(subject.createdAt).toLocaleDateString()} />}
       </div>
     </Modal>
   );

@@ -33,7 +33,7 @@ const AddClass = ({ editData, onSuccess }) => {
   }, [editData]);
 
   const handleChange = (field) => (e) => {
-    setForm({ ...form, [field]: e.target.value });
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
   const resetForm = () => {

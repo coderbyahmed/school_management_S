@@ -2,15 +2,15 @@ import { useState } from 'react';
 import AllClassesTimetable from './tabs/AllClassesTimetable';
 import CreateTimetable from './tabs/CreateTimetable';
 import ViewTimetable from './tabs/ViewTimetable';
-import PrintTimetable from './tabs/PrintTimetable';
+import TimetableDesigner from './tabs/TimetableDesigner';
 
-const tabs = ['All Classes Timetable', 'Create Timetable', 'View Timetable', 'Print Timetable'];
+const tabs = ['All Classes Timetable', 'Create Timetable', 'View Timetable', 'Timetable Designer'];
 
 const tabComponents = {
   'All Classes Timetable': AllClassesTimetable,
   'Create Timetable': CreateTimetable,
   'View Timetable': ViewTimetable,
-  'Print Timetable': PrintTimetable,
+  'Timetable Designer': TimetableDesigner,
 };
 
 const TimetableManagement = () => {

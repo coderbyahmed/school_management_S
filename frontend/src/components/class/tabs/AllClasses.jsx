@@ -11,13 +11,11 @@ import ActionButtons from '../../common/ActionButtons';
 import ClassCard from '../../common/ClassCard';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import classService from '../../../services/class.service';
+import { ACADEMIC_YEARS } from '../../../utils/classNames';
 
 const ITEMS_PER_PAGE = 10;
 
-const academicYearOptions = [
-  'All Years', '2025', '2026', '2027', '2028', '2029', '2030',
-  '2031', '2032', '2033', '2034', '2035',
-];
+const academicYearOptions = ['All Years', ...ACADEMIC_YEARS];
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 

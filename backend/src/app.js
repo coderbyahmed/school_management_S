@@ -15,6 +15,8 @@ import securityLockRoutes from './routes/securityLock.routes.js';
 import teacherRoutes from './routes/teacher.routes.js';
 import classRoutes from './routes/class.routes.js';
 import subjectRoutes from './routes/subject.routes.js';
+import timetableRoutes from './routes/timetable.routes.js';
+import timetableTemplateRoutes from './routes/timetableTemplate.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
 dotenv.config();
@@ -60,6 +62,8 @@ app.use('/api/v1/auth/security-lock', securityLockRoutes);
 app.use('/api/v1/teachers', teacherRoutes);
 app.use('/api/v1/classes', classRoutes);
 app.use('/api/v1/subjects', subjectRoutes);
+app.use('/api/v1/timetables', timetableRoutes);
+app.use('/api/v1/timetable-templates', timetableTemplateRoutes);
 
 // Health check
 app.get('/', (req, res) => {

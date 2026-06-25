@@ -1,5 +1,5 @@
 import express from 'express';
-import { createClass, getAllClasses, updateClass, deleteClass } from '../controllers/class.controller.js';
+import { createClass, getAllClasses, getClassDetails, updateClass, deleteClass } from '../controllers/class.controller.js';
 import { validateCreateClass, validateUpdateClass } from '../validations/class.validation.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
@@ -11,6 +11,13 @@ router.get(
   protect,
   authorize('admin'),
   getAllClasses,
+);
+
+router.get(
+  '/:id/details',
+  protect,
+  authorize('admin'),
+  getClassDetails,
 );
 
 router.post(

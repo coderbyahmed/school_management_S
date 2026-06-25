@@ -52,11 +52,12 @@ const deleteSubject = asyncHandler(async (req, res) => {
 
 const assignSubjectsToClass = asyncHandler(async (req, res) => {
   const { className, academicYear, subjectIds } = req.body;
-  await subjectService.assignSubjectsToClass(className, academicYear, subjectIds);
+  const classDoc = await subjectService.assignSubjectsToClass(className, academicYear, subjectIds);
 
   return res.status(200).json({
     success: true,
     message: 'Subjects assigned to class successfully',
+    data: { class: classDoc },
   });
 });
 
@@ -73,11 +74,12 @@ const getClassAssignments = asyncHandler(async (req, res) => {
 
 const assignSubjectsToTeacher = asyncHandler(async (req, res) => {
   const { teacherId, subjectIds } = req.body;
-  await subjectService.assignSubjectsToTeacher(teacherId, subjectIds);
+  const teacher = await subjectService.assignSubjectsToTeacher(teacherId, subjectIds);
 
   return res.status(200).json({
     success: true,
     message: 'Subjects assigned to teacher successfully',
+    data: { teacher },
   });
 });
 

@@ -2,11 +2,12 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import classService from '../services/class.service.js';
 
 const createClass = asyncHandler(async (req, res) => {
-  await classService.createClass(req.body);
+  const newClass = await classService.createClass(req.body);
 
   return res.status(201).json({
     success: true,
     message: 'Class created successfully',
+    data: { class: newClass },
   });
 });
 
@@ -24,11 +25,12 @@ const getAllClasses = asyncHandler(async (req, res) => {
 });
 
 const updateClass = asyncHandler(async (req, res) => {
-  await classService.updateClass(req.params.id, req.body);
+  const updated = await classService.updateClass(req.params.id, req.body);
 
   return res.status(200).json({
     success: true,
     message: 'Class updated successfully',
+    data: { class: updated },
   });
 });
 
@@ -41,4 +43,14 @@ const deleteClass = asyncHandler(async (req, res) => {
   });
 });
 
-export { createClass, getAllClasses, updateClass, deleteClass };
+const getClassDetails = asyncHandler(async (req, res) => {
+  const result = await classService.getClassDetails(req.params.id);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Class details fetched successfully',
+    data: result,
+  });
+});
+
+export { createClass, getAllClasses, updateClass, deleteClass, getClassDetails };

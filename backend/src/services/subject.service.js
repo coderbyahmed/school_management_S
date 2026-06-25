@@ -107,11 +107,6 @@ const deleteSubject = async (id) => {
     await teacher.save();
   }
 
-  await Subject.updateMany(
-    { _id: { $in: [...classesWithSubject.map((c) => c._id), ...teachersWithSubject.map((t) => t._id)] } },
-    {},
-  );
-
   await updateAssignmentCounts();
 };
 

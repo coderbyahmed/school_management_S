@@ -20,6 +20,11 @@ const classService = {
     const response = await api.delete(`/classes/${id}`);
     return response.data;
   },
+
+  getClassDetails: async (id) => {
+    const response = await api.get(`/classes/${id}/details`);
+    return response.data;
+  },
 };
 
 export default classService;

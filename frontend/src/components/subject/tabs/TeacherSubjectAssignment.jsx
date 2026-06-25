@@ -39,6 +39,8 @@ const TeacherSubjectAssignment = () => {
         const assigned = result.data?.assignedSubjects || [];
         setAssignedIds(assigned.map((s) => s._id));
       } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to load assignments';
+        toast.error(msg);
         setAssignedIds([]);
       } finally {
         setLoading(false);

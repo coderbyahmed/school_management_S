@@ -1,208 +1,241 @@
-import { useState } from 'react';
-import { CalendarDaysIcon } from '@heroicons/react/24/outline';
-import CardSection from '../../../common/CardSection';
-import SelectInput from '../../../common/SelectInput';
+import { useState, useCallback, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { CalendarDaysIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../../utils/classNames';
+import TimetableFilters from './TimetableFilters';
+import TimetableGrid from './TimetableGrid';
+import TimetableEmptyState from './TimetableEmptyState';
+import TimetableEditorModal from './TimetableEditorModal';
 import ConfirmationModal from '../../../common/ConfirmationModal';
-import EditTimetableModal from './EditTimetableModal';
+import classService from '../../../../services/class.service';
+import timetableService from '../../../../services/timetable.service';
 
-const academicYears = ['2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
-
-const classOptions = ['Montessori', 'Nursery', 'KG 1', 'KG 2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
-
-const loadFromStorage = (year, cls) => {
-  try {
-    const key = `timetable_${year}_${cls}`;
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
-  } catch {
-    return null;
-  }
-};
-
-const removeFromStorage = (year, cls) => {
-  localStorage.removeItem(`timetable_${year}_${cls}`);
-};
-
-const formatTime = (t) => t || '--:--';
+const classFilters = [
+  { name: 'academicYear', label: 'Academic Year', options: ACADEMIC_YEARS, placeholder: 'Select year' },
+  { name: 'className', label: 'Class', options: CLASS_NAMES, placeholder: 'Select class' },
+];
 
 const ClassView = () => {
   const [academicYear, setAcademicYear] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
+  const [className, setClassName] = useState('');
   const [viewClicked, setViewClicked] = useState(false);
   const [timetableData, setTimetableData] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleted, setDeleted] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [classes, setClasses] = useState([]);
+  const [subjectNames, setSubjectNames] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const handleView = () => {
-    if (!academicYear || !selectedClass) return;
-    setDeleted(false);
+  const classMap = {};
+  classes.forEach((c) => { classMap[c.className] = c._id; });
+
+  useEffect(() => {
+    classService.getAllClasses()
+      .then((res) => {
+        if (res?.data?.classes) setClasses(res.data.classes);
+      })
+      .catch(() => {});
+  }, []);
+
+  const filterValues = { academicYear, className };
+
+  const handleFilterChange = useCallback((name, value) => {
+    if (name === 'academicYear') setAcademicYear(value);
+    if (name === 'className') setClassName(value);
+    setViewClicked(false);
+  }, []);
+
+  const loadSubjectNames = useCallback(async () => {
+    try {
+      const res = await timetableService.getClassSubjects(classMap[className]);
+      if (res?.data?.subjects) {
+        const map = {};
+        res.data.subjects.forEach((s) => { map[s.id] = s.name; });
+        setSubjectNames(map);
+      }
+    } catch {}
+  }, [className, classMap]);
+
+  const handleView = useCallback(async () => {
+    if (!academicYear || !className) return;
+    const classId = classMap[className];
+    if (!classId) { toast.error('Class not found'); return; }
     setViewClicked(true);
-    setTimetableData(loadFromStorage(academicYear, selectedClass));
-  };
-
-  const handleEditSave = (updated) => {
-    const key = `timetable_${updated.academicYear}_${updated.className}`;
-    localStorage.setItem(key, JSON.stringify(updated));
-    setTimetableData(updated);
-    setShowEditModal(false);
-  };
-
-  const handleDeleteConfirm = () => {
-    removeFromStorage(academicYear, selectedClass);
+    setLoading(true);
     setTimetableData(null);
-    setDeleted(true);
-    setShowDeleteConfirm(false);
-  };
-
-  const renderTimetable = () => {
-    if (!timetableData || !timetableData.periods?.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
-          <CalendarDaysIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">
-            {deleted ? 'Timetable Deleted' : 'No Timetable Found'}
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-            {deleted
-              ? 'The timetable has been removed.'
-              : `No timetable found for ${selectedClass} (${academicYear}). Create one first.`}
-          </p>
-        </div>
-      );
+    try {
+      const res = await timetableService.getTimetableByClass(classId);
+      const timetables = res?.data?.timetables || [];
+      const match = timetables.find((t) => t.academicYear === academicYear);
+      if (match) {
+        setTimetableData(match);
+        await loadSubjectNames();
+      } else {
+        setTimetableData(null);
+      }
+    } catch {
+      toast.error('Failed to load timetable');
+      setTimetableData(null);
+    } finally {
+      setLoading(false);
     }
+  }, [academicYear, className, classMap, loadSubjectNames]);
 
-    return (
-      <>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-gray-800 dark:text-white bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg">
-              {timetableData.className}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{timetableData.academicYear}</span>
+  const handleEditSave = useCallback(async (updatedPeriods) => {
+    if (!timetableData?._id) return;
+    try {
+      toast.dismiss();
+      const payload = {
+        periods: updatedPeriods.map((p) => ({
+          periodNo: p.periodNum,
+          type: p.type === 'Break' ? 'break' : 'teaching',
+          startTime: p.startTime,
+          endTime: p.endTime,
+          teacherId: p.type === 'Teaching' ? p.teacher : null,
+          subjectId: p.type === 'Teaching' ? p.subject : null,
+        })),
+      };
+      const res = await timetableService.updateTimetable(timetableData._id, payload);
+      const updated = res?.data?.timetable;
+      const serverWarnings = res?.warnings || [];
+      if (updated) {
+        setTimetableData(updated);
+        await loadSubjectNames();
+      }
+      setShowEditor(false);
+      toast.success('Timetable updated successfully');
+      if (serverWarnings.length > 0) {
+        toast(
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠️ Timetable Warnings</div>
+            {serverWarnings.map((w, i) => (
+              <div key={i} style={{ marginLeft: 8 }}>• {w}</div>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
-            >
-              Edit Timetable
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
-            >
-              Delete Timetable
-            </button>
-          </div>
-        </div>
+        );
+      }
+    } catch (err) {
+      const serverMsg = err?.response?.data?.message;
+      const serverErrors = err?.response?.data?.errors;
+      if (serverErrors && Array.isArray(serverErrors) && serverErrors.length > 0) {
+        serverErrors.forEach((e) => toast.error(e.message || e));
+      } else if (serverMsg) {
+        toast.error(serverMsg);
+      } else {
+        toast.error('Failed to update timetable');
+      }
+    }
+  }, [timetableData, loadSubjectNames]);
 
-        <div className="space-y-2 mt-4">
-          {timetableData.periods.map((period, idx) => {
-            const isBreak = period.type === 'Break';
-            const timeStr = `${formatTime(period.startTime)} - ${formatTime(period.endTime)}`;
+  const handleDelete = useCallback(async () => {
+    if (!timetableData?._id) return;
+    setDeleting(true);
+    try {
+      await timetableService.deleteTimetable(timetableData._id);
+      setTimetableData(null);
+      setShowDelete(false);
+      toast.success('Timetable deleted successfully');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to delete timetable');
+    } finally {
+      setDeleting(false);
+    }
+  }, [timetableData]);
 
-            if (isBreak) {
-              return (
-                <div key={period.id || idx} className="rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-900/10 shadow-sm overflow-hidden">
-                  <div className="flex items-center gap-4 px-4 py-3">
-                    <div className="flex items-center justify-center w-16 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 text-[9px] font-bold uppercase tracking-wider flex-shrink-0">
-                      Break
-                    </div>
-                    <div>
-                      <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                        {period.breakName || 'Break'}
-                      </span>
-                      <span className="block text-xs text-amber-600 dark:text-amber-400 mt-0.5">{timeStr}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <div key={period.id || idx} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                <div className="flex items-stretch">
-                  <div className="flex flex-col items-center justify-center min-w-[100px] px-3 py-3 bg-gradient-to-b from-blue-50 to-blue-50/50 dark:from-blue-900/20 dark:to-blue-900/10 border-r border-gray-200 dark:border-gray-700">
-                    <span className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{timeStr}</span>
-                  </div>
-                  <div className="flex flex-1 items-center justify-between px-4 py-3">
-                    <div>
-                      <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">{period.periodName}</span>
-                      <span className="block text-sm font-semibold text-gray-900 dark:text-white mt-0.5">{period.subject || '-'}</span>
-                    </div>
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full whitespace-nowrap">
-                      {period.teacher || '-'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {showEditModal && (
-          <EditTimetableModal
-            timetableData={timetableData}
-            onSave={handleEditSave}
-            onClose={() => setShowEditModal(false)}
-          />
-        )}
-
-        <ConfirmationModal
-          isOpen={showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(false)}
-          title="Delete Timetable"
-          message="Are you sure you want to delete this timetable?"
-          confirmLabel="Confirm Delete"
-          variant="danger"
-          onConfirm={handleDeleteConfirm}
-        />
-      </>
-    );
+  const resolveSubjectName = (subjectId) => {
+    if (!subjectId) return '-';
+    if (typeof subjectId === 'object' && subjectId.subjectName) return subjectId.subjectName;
+    return subjectNames[subjectId] || subjectId || '-';
   };
+  const resolveTeacherName = (teacherId) => (teacherId?.fullName) || (typeof teacherId === 'string' ? teacherId : '-');
+
+  const canView = academicYear && className;
+  const hasTimetable = timetableData && timetableData.periods?.length > 0;
+
+  const displayPeriods = timetableData?.periods?.map((p) => ({
+    ...p,
+    subject: resolveSubjectName(p.subjectId),
+    teacher: resolveTeacherName(p.teacherId),
+    type: p.type === 'teaching' ? 'Teaching' : 'Break',
+  })) || [];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-4">View Timetable</h2>
-        <CardSection title="">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <div className="w-full sm:w-56">
-              <SelectInput
-                label="Academic Year"
-                name="academicYear"
-                value={academicYear}
-                onChange={(e) => { setAcademicYear(e.target.value); setViewClicked(false); }}
-                options={academicYears}
-                placeholder="Select year"
-              />
+      <TimetableFilters
+        filters={classFilters.map((f) => ({ ...f, value: filterValues[f.name] }))}
+        onFilterChange={handleFilterChange}
+        onView={handleView}
+        viewDisabled={!canView || loading}
+        viewLabel={loading ? 'Loading...' : 'View Timetable'}
+      />
+
+      {viewClicked && !loading && !hasTimetable && (
+        <TimetableEmptyState
+          icon={CalendarDaysIcon}
+          title="No Timetable Found"
+          description={`No timetable found for ${className} (${academicYear}). Create one first.`}
+        />
+      )}
+
+      {loading && (
+        <TimetableEmptyState
+          icon={CalendarDaysIcon}
+          title="Loading..."
+          description="Fetching timetable data."
+        />
+      )}
+
+      {hasTimetable && (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-white bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg">
+                <BookOpenIcon className="h-4 w-4 text-blue-500" />
+                {className}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">{academicYear}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{timetableData.periods?.length || 0} periods</span>
             </div>
-            <div className="w-full sm:w-56">
-              <SelectInput
-                label="Class"
-                name="selectedClass"
-                value={selectedClass}
-                onChange={(e) => { setSelectedClass(e.target.value); setViewClicked(false); }}
-                options={classOptions}
-                placeholder="Select class"
-              />
-            </div>
-            <div className="pb-4">
+            <div className="flex items-center gap-2">
               <button
-                onClick={handleView}
-                disabled={!academicYear || !selectedClass}
-                className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                onClick={() => setShowEditor(true)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
               >
-                <CalendarDaysIcon className="h-4 w-4" />
-                View Timetable
+                Edit Timetable
+              </button>
+              <button
+                onClick={() => setShowDelete(true)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
+              >
+                Delete Timetable
               </button>
             </div>
           </div>
-        </CardSection>
-      </div>
 
-      {viewClicked && renderTimetable()}
+          <TimetableGrid periods={displayPeriods} mode="class" />
+        </>
+      )}
+
+      {showEditor && timetableData && (
+        <TimetableEditorModal
+          timetableData={{ ...timetableData, className, academicYear }}
+          onSave={handleEditSave}
+          onClose={() => setShowEditor(false)}
+        />
+      )}
+
+      <ConfirmationModal
+        isOpen={showDelete}
+        onClose={() => setShowDelete(false)}
+        title="Delete Timetable"
+        message="Are you sure you want to delete this timetable?"
+        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDelete}
+        loading={deleting}
+      />
     </div>
   );
 };

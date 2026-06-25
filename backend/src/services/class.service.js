@@ -1,5 +1,6 @@
 import Class from '../models/class.model.js';
 import Student from '../models/student.model.js';
+import Teacher from '../models/teacher.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 const createClass = async (data) => {
@@ -117,7 +118,51 @@ const deleteClass = async (id) => {
     throw new ApiError(404, 'Class not found');
   }
 
+  const { className, academicYear } = existing;
+
   await Class.findByIdAndDelete(id);
+
+  await Student.updateMany(
+    { class: className, academicYear },
+    { $unset: { class: '' } },
+  );
 };
 
-export default { createClass, getAllClasses, updateClass, deleteClass };
+const getClassDetails = async (classId) => {
+  const classInfo = await Class.findById(classId).populate('assignedSubjects');
+
+  if (!classInfo) {
+    throw new ApiError(404, 'Class not found');
+  }
+
+  const { className, academicYear, assignedSubjects } = classInfo;
+
+  const [totalStudents, students, teachers] = await Promise.all([
+    Student.countDocuments({ class: className, academicYear }),
+    Student.find({ class: className, academicYear }).select('studentImage studentId fullName status').sort({ fullName: 1 }),
+    Teacher.find({ assignedSubjects: { $in: assignedSubjects } }).select('teacherImage teacherId fullName status'),
+  ]);
+
+  const subjects = assignedSubjects.map((s) => ({
+    _id: s._id,
+    subjectName: s.subjectName,
+    subjectCode: s.subjectCode,
+  }));
+
+  return {
+    classInfo: {
+      _id: classInfo._id,
+      className: classInfo.className,
+      academicYear: classInfo.academicYear,
+      status: classInfo.status,
+    },
+    totalStudents,
+    totalSubjects: assignedSubjects.length,
+    totalTeachers: teachers.length,
+    subjects,
+    teachers,
+    students,
+  };
+};
+
+export default { createClass, getAllClasses, updateClass, deleteClass, getClassDetails };

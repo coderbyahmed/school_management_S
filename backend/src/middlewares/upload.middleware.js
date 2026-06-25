@@ -29,12 +29,16 @@ export const createUploader = (
   return multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: maxSize } });
 };
 
-export const writeUploadFile = (buffer, subDir, originalname) => {
+export const writeUploadFile = (buffer, subDir, originalname, allowedExtensions = ALLOWED_EXTENSIONS) => {
+  const ext = path.extname(originalname).toLowerCase();
+  if (!allowedExtensions.includes(ext)) {
+    throw new ApiError(400, `Only ${allowedExtensions.join(', ')} files are allowed`);
+  }
+
   const dir = path.join(BASE_UPLOAD_DIR, subDir);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  const ext = path.extname(originalname).toLowerCase();
   const filename = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`;
   fs.writeFileSync(path.join(dir, filename), buffer);
   return filename;

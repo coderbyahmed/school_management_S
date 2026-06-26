@@ -115,6 +115,40 @@ const promoteStudents = async (studentIds, fromClass, toClass, fromAcademicYear,
   }
 };
 
+const enrichPromotions = async (promotions) => {
+  if (!promotions || promotions.length === 0) return promotions;
+
+  const studentIds = [...new Set(promotions.map(p => p.studentId).filter(Boolean))];
+  if (studentIds.length === 0) return promotions;
+
+  const students = await Student.find({ _id: { $in: studentIds } })
+    .select('fullName fatherName studentImage studentId admissionNumber')
+    .lean();
+
+  const studentMap = {};
+  students.forEach(s => { studentMap[s._id.toString()] = s; });
+
+  return promotions.map(p => {
+    const sid = p.studentId?.toString();
+    const s = studentMap[sid];
+    if (s) {
+      return {
+        ...p,
+        studentName: s.fullName,
+        studentCode: s.studentId,
+        studentImage: s.studentImage,
+        admissionNumber: s.admissionNumber,
+        studentSnapshot: {
+          ...p.studentSnapshot,
+          fullName: s.fullName,
+          fatherName: s.fatherName,
+        },
+      };
+    }
+    return p;
+  });
+};
+
 const getPromotionHistory = async (query) => {
   const { studentId, fromClass, toClass, fromAcademicYear, toAcademicYear } = query;
 
@@ -125,10 +159,12 @@ const getPromotionHistory = async (query) => {
   if (fromAcademicYear) filter.fromAcademicYear = fromAcademicYear;
   if (toAcademicYear) filter.toAcademicYear = toAcademicYear;
 
-  const promotions = await StudentPromotion.find(filter)
+  let promotions = await StudentPromotion.find(filter)
     .populate('promotedBy', 'fullName email')
     .sort({ promotedAt: -1 })
     .lean();
+
+  promotions = await enrichPromotions(promotions);
 
   const now = new Date();
   const currentYear = String(now.getFullYear());
@@ -157,11 +193,13 @@ const getStudentPromotions = async (query) => {
   if (query.fromAcademicYear) filter.fromAcademicYear = query.fromAcademicYear;
   if (query.toAcademicYear) filter.toAcademicYear = query.toAcademicYear;
 
-  const promotions = await StudentPromotion.find(filter)
+  let promotions = await StudentPromotion.find(filter)
     .populate('promotedBy', 'fullName')
     .select('studentId studentCode studentName studentImage fromClass toClass fromAcademicYear toAcademicYear promotedAt promotedBy promotedByName status')
     .sort({ promotedAt: -1 })
     .lean();
+
+  promotions = await enrichPromotions(promotions);
 
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);

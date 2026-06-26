@@ -159,6 +159,33 @@ const updateStudent = async (studentId, updateData, file, baseUrl = '') => {
     cleanData.studentImage = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
   }
 
+  if (cleanData.class && cleanData.class !== existing.class) {
+    const CLASS_ORDER = [
+      'Montessori', 'Nursery', 'KG 1', 'KG 2',
+      'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+      'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+    ];
+
+    const promotions = await StudentPromotion.find({ studentId: existing._id })
+      .sort({ promotedAt: -1 })
+      .lean();
+
+    if (promotions.length > 0) {
+      const currentIdx = CLASS_ORDER.indexOf(existing.class);
+      const newIdx = CLASS_ORDER.indexOf(cleanData.class);
+
+      if (newIdx > currentIdx) {
+        throw new ApiError(400, 'This student already has a promotion history. Please use the Student Promotion module.');
+      }
+
+      await StudentPromotion.deleteMany({
+        studentId: existing._id,
+        fromClass: cleanData.class,
+        toClass: existing.class,
+      });
+    }
+  }
+
   const updated = await Student.findOneAndUpdate(
     { studentId },
     { $set: cleanData },

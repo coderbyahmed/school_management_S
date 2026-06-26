@@ -16,6 +16,7 @@ import TeacherManagement from './pages/admin/TeacherManagement';
 import ClassManagement from './pages/admin/ClassManagement';
 import SubjectManagement from './pages/admin/SubjectManagement';
 import TimetableManagement from './pages/admin/TimetableManagement';
+import AttendanceManagement from './pages/admin/AttendanceManagement';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
             <Route path="classes" element={<ClassManagement />} />
             <Route path="subjects" element={<SubjectManagement />} />
             <Route path="timetable" element={<TimetableManagement />} />
+            <Route path="attendance" element={<AttendanceManagement />} />
           </Route>
         </Route>
 

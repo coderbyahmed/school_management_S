@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import CardSection from '../../common/CardSection';
 import SelectInput from '../../common/SelectInput';
@@ -14,30 +14,23 @@ const initialState = {
   status: 'Active',
 };
 
+const getInitialForm = (editData) => editData ? {
+  className: editData.className || '',
+  academicYear: editData.academicYear || '',
+  status: editData.status || 'Active',
+} : initialState;
+
 const AddClass = ({ editData, onSuccess }) => {
-  const [form, setForm] = useState(initialState);
+  const [form, setForm] = useState(() => getInitialForm(editData));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (editData) {
-      setForm({
-        className: editData.className || '',
-        academicYear: editData.academicYear || '',
-        status: editData.status || 'Active',
-      });
-    } else {
-      setForm(initialState);
-    }
-    setError('');
-  }, [editData]);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
   const resetForm = () => {
-    setForm(initialState);
+    setForm(getInitialForm(editData));
     setError('');
   };
 

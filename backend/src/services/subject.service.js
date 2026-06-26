@@ -1,6 +1,7 @@
 import Subject from '../models/subject.model.js';
 import Class from '../models/class.model.js';
 import Teacher from '../models/teacher.model.js';
+import Timetable from '../models/timetable.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 const createSubject = async (data) => {
@@ -93,21 +94,29 @@ const deleteSubject = async (id) => {
 
   await Subject.findByIdAndDelete(id);
 
-  const classesWithSubject = await Class.find({ assignedSubjects: subjectId });
+  const [classesWithSubject, teachersWithSubject] = await Promise.all([
+    Class.find({ assignedSubjects: subjectId }),
+    Teacher.find({ assignedSubjects: subjectId }),
+  ]);
 
   for (const cls of classesWithSubject) {
     cls.assignedSubjects.pull(subjectId);
     await cls.save();
   }
 
-  const teachersWithSubject = await Teacher.find({ assignedSubjects: subjectId });
-
   for (const teacher of teachersWithSubject) {
     teacher.assignedSubjects.pull(subjectId);
     await teacher.save();
   }
 
-  await updateAssignmentCounts();
+  await Promise.all([
+    updateAssignmentCounts(),
+    Timetable.updateMany(
+      { 'periods.subjectId': subjectId },
+      { $set: { 'periods.$[elem].subjectId': null } },
+      { arrayFilters: [{ 'elem.subjectId': subjectId }] },
+    ),
+  ]);
 };
 
 const assignSubjectsToClass = async (className, academicYear, subjectIds) => {

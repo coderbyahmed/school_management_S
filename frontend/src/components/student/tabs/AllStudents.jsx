@@ -69,10 +69,6 @@ const AllStudents = () => {
     return () => clearTimeout(debounceRef.current);
   }, [currentPage, classFilter, statusFilter, search, studentIdFilter, fetchStudents]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [classFilter, statusFilter, search, studentIdFilter]);
-
   const handleReset = () => {
     setClassFilter('All Classes');
     setStatusFilter('All');
@@ -236,7 +232,7 @@ const AllStudents = () => {
           <SearchInput
             placeholder="Student ID"
             value={studentIdFilter}
-            onChange={setStudentIdFilter}
+            onChange={(v) => { setStudentIdFilter(v); setCurrentPage(1); }}
           />
         </div>
       </div>
@@ -254,7 +250,7 @@ const AllStudents = () => {
             label="Class"
             options={classOptions}
             value={classFilter}
-            onChange={setClassFilter}
+            onChange={(v) => { setClassFilter(v); setCurrentPage(1); }}
           />
         </div>
         <div className="w-full sm:w-36">
@@ -262,7 +258,7 @@ const AllStudents = () => {
             label="Status"
             options={statusOptions}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
           />
         </div>
         <div className="w-full sm:w-56">
@@ -272,7 +268,7 @@ const AllStudents = () => {
           <SearchInput
             placeholder="Search..."
             value={search}
-            onChange={setSearch}
+            onChange={(v) => { setSearch(v); setCurrentPage(1); }}
           />
         </div>
         <button

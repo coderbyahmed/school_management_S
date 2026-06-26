@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Teacher from '../models/teacher.model.js';
 import User from '../models/user.model.js';
+import Timetable from '../models/timetable.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { stripBaseUrl } from '../utils/imageUrl.js';
 import { writeUploadFile } from '../middlewares/upload.middleware.js';
@@ -13,9 +14,9 @@ const __dirname = path.dirname(__filename);
 const deleteFileAtPath = (relativePath) => {
   if (!relativePath) return;
   const fullPath = path.resolve(__dirname, '../..', relativePath);
-  try {
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-  } catch { /* ignore */ }
+    try {
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+      } catch (err) { console.error('Failed to delete file at path', relativePath, err); }
 };
 
 const createTeacher = async (data, file, baseUrl = '') => {
@@ -178,6 +179,11 @@ const deleteTeacher = async (teacherId, performedBy) => {
   await Promise.all([
     Teacher.deleteOne({ teacherId }),
     teacherUser ? User.deleteOne({ _id: teacherUser._id }) : Promise.resolve(),
+    Timetable.updateMany(
+      { 'periods.teacherId': existing._id },
+      { $set: { 'periods.$[elem].teacherId': null } },
+      { arrayFilters: [{ 'elem.teacherId': existing._id }] },
+    ),
   ]);
 
   return existing;

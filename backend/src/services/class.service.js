@@ -1,6 +1,7 @@
 import Class from '../models/class.model.js';
 import Student from '../models/student.model.js';
 import Teacher from '../models/teacher.model.js';
+import Timetable from '../models/timetable.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 const createClass = async (data) => {
@@ -120,12 +121,14 @@ const deleteClass = async (id) => {
 
   const { className, academicYear } = existing;
 
-  await Class.findByIdAndDelete(id);
-
-  await Student.updateMany(
-    { class: className, academicYear },
-    { $unset: { class: '' } },
-  );
+  await Promise.all([
+    Class.findByIdAndDelete(id),
+    Student.updateMany(
+      { class: className, academicYear },
+      { $unset: { class: '' } },
+    ),
+    Timetable.deleteMany({ classId: id }),
+  ]);
 };
 
 const getClassDetails = async (classId) => {
@@ -135,11 +138,11 @@ const getClassDetails = async (classId) => {
     throw new ApiError(404, 'Class not found');
   }
 
-  const { className, academicYear, assignedSubjects } = classInfo;
+  const { className, assignedSubjects } = classInfo;
 
   const [totalStudents, students, teachers] = await Promise.all([
-    Student.countDocuments({ class: className, academicYear }),
-    Student.find({ class: className, academicYear }).select('studentImage studentId fullName status').sort({ fullName: 1 }),
+    Student.countDocuments({ class: className }),
+    Student.find({ class: className }).select('studentImage studentId fullName status').sort({ fullName: 1 }),
     Teacher.find({ assignedSubjects: { $in: assignedSubjects } }).select('teacherImage teacherId fullName status'),
   ]);
 

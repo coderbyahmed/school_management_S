@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import Modal from './Modal';
@@ -16,54 +16,47 @@ const maritalOptions = ['Single', 'Married'];
 const qualificationOptions = ['B.Ed', 'M.Ed', 'BS Education', 'MA Education', 'PhD Education', 'Other'];
 const experienceOptions = ['Fresher', '1 Year', '2 Years', '3 Years', '5 Years', '10+ Years'];
 
+const getInitialFormData = (teacher) => teacher ? {
+  fullName: teacher.fullName || '',
+  fatherName: teacher.fatherName || '',
+  gender: teacher.gender || '',
+  dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.slice(0, 10) : '',
+  cnic: teacher.cnic || '',
+  maritalStatus: teacher.maritalStatus || '',
+  qualification: teacher.qualification || '',
+  experience: teacher.experience || '',
+  joiningDate: teacher.joiningDate ? teacher.joiningDate.slice(0, 10) : '',
+  status: teacher.status || '',
+  phoneNumber: teacher.phoneNumber || '',
+  alternatePhoneNumber: teacher.alternatePhoneNumber || '',
+  email: teacher.email || '',
+  city: teacher.city || '',
+  address: teacher.address || '',
+} : {
+  fullName: '',
+  fatherName: '',
+  gender: '',
+  dateOfBirth: '',
+  cnic: '',
+  maritalStatus: '',
+  qualification: '',
+  experience: '',
+  joiningDate: '',
+  status: '',
+  phoneNumber: '',
+  alternatePhoneNumber: '',
+  email: '',
+  city: '',
+  address: '',
+};
+
 const EditTeacherModal = ({ teacher, isOpen, onClose, onSave }) => {
   const fileInputRef = useRef(null);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    fatherName: '',
-    gender: '',
-    dateOfBirth: '',
-    cnic: '',
-    maritalStatus: '',
-    qualification: '',
-    experience: '',
-    joiningDate: '',
-    status: '',
-    phoneNumber: '',
-    alternatePhoneNumber: '',
-    email: '',
-    city: '',
-    address: '',
-  });
+  const [formData, setFormData] = useState(() => getInitialFormData(teacher));
   const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(() => teacher ? getImageUrl(teacher.teacherImage) : null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (teacher) {
-      setFormData({
-        fullName: teacher.fullName || '',
-        fatherName: teacher.fatherName || '',
-        gender: teacher.gender || '',
-        dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.slice(0, 10) : '',
-        cnic: teacher.cnic || '',
-        maritalStatus: teacher.maritalStatus || '',
-        qualification: teacher.qualification || '',
-        experience: teacher.experience || '',
-        joiningDate: teacher.joiningDate ? teacher.joiningDate.slice(0, 10) : '',
-        status: teacher.status || '',
-        phoneNumber: teacher.phoneNumber || '',
-        alternatePhoneNumber: teacher.alternatePhoneNumber || '',
-        email: teacher.email || '',
-        city: teacher.city || '',
-        address: teacher.address || '',
-      });
-      setPhotoPreview(getImageUrl(teacher.teacherImage));
-      setPhotoFile(null);
-      setError('');
-    }
-  }, [teacher]);
 
   const handleChange = (field) => (e) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));

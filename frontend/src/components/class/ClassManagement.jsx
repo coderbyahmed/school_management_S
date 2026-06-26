@@ -72,7 +72,7 @@ const ClassManagement = () => {
         </nav>
       </div>
 
-      <ActiveComponent {...componentProps} />
+      <ActiveComponent key={activeTab === 'Add Class' ? editingClass?._id || 'add-class' : activeTab === 'Class Details' ? selectedClass?._id || 'no-class' : undefined} {...componentProps} />
     </div>
   );
 };

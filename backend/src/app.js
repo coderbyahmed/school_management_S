@@ -10,7 +10,6 @@ import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import studentRoutes from './routes/student.routes.js';
 import studentPromotionRoutes from './routes/studentPromotion.routes.js';
-import studentPromotionsRoute from './routes/studentPromotions.route.js';
 import securityLockRoutes from './routes/securityLock.routes.js';
 import teacherRoutes from './routes/teacher.routes.js';
 import classRoutes from './routes/class.routes.js';
@@ -55,9 +54,8 @@ const authLimiter = rateLimit({
 
 app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/profile', profileRoutes);
-app.use('/api/v1/students', studentRoutes);
 app.use('/api/v1/students', studentPromotionRoutes);
-app.use('/api/v1/student-promotions', studentPromotionsRoute);
+app.use('/api/v1/students', studentRoutes);
 app.use('/api/v1/auth/security-lock', securityLockRoutes);
 app.use('/api/v1/teachers', teacherRoutes);
 app.use('/api/v1/classes', classRoutes);

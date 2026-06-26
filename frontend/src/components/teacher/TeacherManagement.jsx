@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import AllTeachers from './tabs/AllTeachers';
 import AddTeacher from './tabs/AddTeacher';
-import TeacherProfile from './tabs/TeacherProfile';
-import TeacherLeave from './tabs/TeacherLeave';
-import TeacherPayroll from './tabs/TeacherPayroll';
 
-const tabs = ['All Teachers', 'Add Teacher', 'Teacher Profile', 'Leave Management', 'Payroll'];
+const tabs = ['All Teachers', 'Add Teacher'];
 
 const tabComponents = {
   'All Teachers': AllTeachers,
   'Add Teacher': AddTeacher,
-  'Teacher Profile': TeacherProfile,
-  'Leave Management': TeacherLeave,
-  'Payroll': TeacherPayroll,
 };
 
 const TeacherManagement = () => {

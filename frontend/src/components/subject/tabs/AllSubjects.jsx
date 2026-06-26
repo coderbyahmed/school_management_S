@@ -27,7 +27,6 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
   const [deletingSubject, setDeletingSubject] = useState(null);
 
   const fetchSubjects = async () => {
-    setLoading(true);
     try {
       const result = await subjectService.getAllSubjects();
       setSubjects(result.data?.subjects || []);
@@ -49,10 +48,6 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
     return true;
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
   const totalPages = Math.ceil(filteredSubjects.length / ITEMS_PER_PAGE);
   const paginatedSubjects = filteredSubjects.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -72,6 +67,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
       await subjectService.deleteSubject(deletingSubject._id);
       toast.success('Subject deleted successfully');
       setDeletingSubject(null);
+      setLoading(true);
       await fetchSubjects();
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to delete subject';
@@ -180,7 +176,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
           <SearchInput
             placeholder="Search Subject Name"
             value={search}
-            onChange={setSearch}
+            onChange={(v) => { setSearch(v); setCurrentPage(1); }}
           />
         </div>
       </div>
@@ -197,7 +193,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
             label="Status"
             options={statusOptions}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
           />
         </div>
         <button

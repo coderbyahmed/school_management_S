@@ -27,7 +27,7 @@ const ClassSubjectAssignment = () => {
   }, []);
 
   useEffect(() => {
-    fetchSubjects();
+    Promise.resolve().then(() => fetchSubjects());
   }, [fetchSubjects]);
 
   const fetchAssignments = useCallback(async () => {
@@ -50,8 +50,10 @@ const ClassSubjectAssignment = () => {
   }, [selectedClass, academicYear]);
 
   useEffect(() => {
-    setSelectedIds([]);
-    fetchAssignments();
+    Promise.resolve().then(() => {
+      setSelectedIds([]);
+      fetchAssignments();
+    });
   }, [fetchAssignments]);
 
   const handleToggle = (subjectId) => {

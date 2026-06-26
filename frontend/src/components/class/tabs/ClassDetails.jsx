@@ -5,13 +5,11 @@ import classService from '../../../services/class.service';
 
 const ClassDetails = ({ classData, onBack }) => {
   const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!classData?._id) return;
-    setLoading(true);
-    setError('');
     classService.getClassDetails(classData._id)
       .then((res) => setDetails(res?.data || null))
       .catch((err) => setError(err?.response?.data?.message || 'Failed to load class details'))

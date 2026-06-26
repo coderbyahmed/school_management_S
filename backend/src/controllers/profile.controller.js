@@ -56,7 +56,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
     if (userToUpdate.profileImage) {
       const oldRelPath = stripBaseUrl(userToUpdate.profileImage);
       const oldPath = path.resolve(__dirname, '../..', oldRelPath);
-      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch { /* ignore */ }
+      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch (err) { console.error('Failed to delete old profile image', oldRelPath, err); }
     }
     const filename = writeUploadFile(req.file.buffer, 'admin-profile', req.file.originalname);
     updateData.profileImage = toFullUrl(req, `uploads/admin-profile/${filename}`);

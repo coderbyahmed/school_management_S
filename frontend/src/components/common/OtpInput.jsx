@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 
 const OtpInput = ({ value, onChange, onPaste, disabled = false }) => {
   const otpRefs = useRef([]);

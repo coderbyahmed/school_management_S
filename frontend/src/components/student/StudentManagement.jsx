@@ -3,16 +3,13 @@ import AllStudents from './tabs/AllStudents';
 import AddStudent from './tabs/AddStudent';
 import StudentPromotionTab from './tabs/StudentPromotion';
 import PromotionHistory from './tabs/PromotionHistory';
-import StudentProfile from './tabs/StudentProfile';
-
-const tabs = ['All Students', 'Add Student', 'Student Promotion', 'Promotion History', 'Student Profile'];
+const tabs = ['All Students', 'Add Student', 'Student Promotion', 'Promotion History'];
 
 const tabComponents = {
   'All Students': AllStudents,
   'Add Student': AddStudent,
   'Student Promotion': StudentPromotionTab,
   'Promotion History': PromotionHistory,
-  'Student Profile': StudentProfile,
 };
 
 class TabErrorBoundary extends Component {

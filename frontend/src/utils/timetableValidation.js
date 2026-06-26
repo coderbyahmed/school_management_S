@@ -6,18 +6,6 @@ export const timeToMinutes = (t) => {
   return h * 60 + m;
 };
 
-export const createPeriod = (num) => ({
-  id: Date.now() + Math.random(),
-  periodNum: num,
-  type: 'Teaching',
-  startTime: '',
-  endTime: '',
-  teacher: '',
-  subject: '',
-});
-
-export const renumberPeriods = (arr) => arr.map((p, i) => ({ ...p, periodNum: i + 1 }));
-
 export const validatePeriods = (periods) => {
   const fieldErrors = {};
   if (!periods || periods.length === 0) return fieldErrors;

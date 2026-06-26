@@ -48,8 +48,8 @@ const CreateTimetable = () => {
   const [classIdMap, setClassIdMap] = useState({});
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [classSubjectsMap, setClassSubjectsMap] = useState({});
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [loadingExisting, setLoadingExisting] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
+  const [loadingExisting, setLoadingExisting] = useState(true);
 
   const groupClasses = useMemo(() => {
     if (!selectedGroup) return [];
@@ -69,7 +69,6 @@ const CreateTimetable = () => {
   }, []);
 
   useEffect(() => {
-    setLoadingTeachers(true);
     teacherService.getAllTeachers({ limit: 100, status: 'Active' })
       .then((res) => {
         const list = res?.data?.teachers || res?.data?.data?.teachers || [];
@@ -81,11 +80,9 @@ const CreateTimetable = () => {
 
   useEffect(() => {
     if (!selectedGroup || Object.keys(classIdMap).length === 0) {
-      setClassSubjectsMap({});
       return;
     }
     const load = async () => {
-      setLoadingSubjects(true);
       const map = {};
       for (const name of groupClasses) {
         const cid = classIdMap[name];
@@ -103,11 +100,9 @@ const CreateTimetable = () => {
 
   useEffect(() => {
     if (!selectedGroup || !academicYear || Object.keys(classIdMap).length === 0) {
-      setPeriods([]);
       return;
     }
     const load = async () => {
-      setLoadingExisting(true);
       const classTts = {};
       for (const name of groupClasses) {
         const cid = classIdMap[name];

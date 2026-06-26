@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { UserIcon } from '@heroicons/react/24/outline';
 import { ACADEMIC_YEARS } from '../../../../utils/classNames';
@@ -17,8 +17,11 @@ const TeacherView = () => {
   const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
 
-  const teacherMap = {};
-  teachers.forEach((t) => { teacherMap[t.fullName] = t; });
+  const teacherMap = useMemo(() => {
+    const map = {};
+    teachers.forEach((t) => { map[t.fullName] = t; });
+    return map;
+  }, [teachers]);
 
   useEffect(() => {
     teacherService.getAllTeachers()
@@ -26,7 +29,7 @@ const TeacherView = () => {
         const list = res?.data?.teachers || [];
         setTeachers(Array.isArray(list) ? list : []);
       })
-      .catch(() => {})
+      .catch(() => console.error('Failed to load teachers'))
       .finally(() => setLoadingTeachers(false));
   }, []);
 

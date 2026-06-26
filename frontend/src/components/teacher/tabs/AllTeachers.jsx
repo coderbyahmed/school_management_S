@@ -60,12 +60,8 @@ const AllTeachers = () => {
   }, [currentPage, statusFilter, nameSearch]);
 
   useEffect(() => {
-    fetchTeachers();
+    Promise.resolve().then(() => fetchTeachers());
   }, [fetchTeachers]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [teacherIdSearch, statusFilter, nameSearch]);
 
   const filteredTeachers = teachers.filter((t) => {
     if (teacherIdSearch && !t.teacherId?.toLowerCase().includes(teacherIdSearch.toLowerCase())) return false;
@@ -209,7 +205,7 @@ const AllTeachers = () => {
           <SearchInput
             placeholder="Enter Teacher ID"
             value={teacherIdSearch}
-            onChange={setTeacherIdSearch}
+            onChange={(v) => { setTeacherIdSearch(v); setCurrentPage(1); }}
           />
         </div>
       </div>
@@ -227,7 +223,7 @@ const AllTeachers = () => {
             label="Status"
             options={statusOptions}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
           />
         </div>
         <div className="w-full sm:w-56">
@@ -237,7 +233,7 @@ const AllTeachers = () => {
           <SearchInput
             placeholder="Search Teacher Name"
             value={nameSearch}
-            onChange={setNameSearch}
+            onChange={(v) => { setNameSearch(v); setCurrentPage(1); }}
           />
         </div>
         <button
@@ -305,6 +301,7 @@ const AllTeachers = () => {
       />
 
       <EditTeacherModal
+        key={editingTeacher?._id || 'new'}
         teacher={editingTeacher}
         isOpen={!!editingTeacher}
         onClose={() => setEditingTeacher(null)}

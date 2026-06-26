@@ -105,7 +105,7 @@ const AdminDropdown = () => {
           </button>
         </div>
       )}
-      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} onProfileUpdated={handleProfileUpdated} />
+      <ProfileModal key={profileOpen} isOpen={profileOpen} onClose={() => setProfileOpen(false)} onProfileUpdated={handleProfileUpdated} />
       <AccountSettingsModal isOpen={accountSettingsOpen} onClose={() => setAccountSettingsOpen(false)} />
     </div>
   );

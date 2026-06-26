@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import Modal from './Modal';
@@ -14,46 +14,39 @@ import { CLASS_NAMES, ACADEMIC_YEARS } from '../../utils/classNames';
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
 
+const getInitialFormData = (student) => student ? {
+  fullName: student.fullName || '',
+  fatherName: student.fatherName || '',
+  gender: student.gender || '',
+  dateOfBirth: student.dateOfBirth ? student.dateOfBirth.slice(0, 10) : '',
+  status: student.status || '',
+  class: student.class || '',
+  academicYear: student.academicYear || '',
+  fatherPhone: student.fatherPhone || '',
+  alternatePhone: student.alternatePhone || '',
+  city: student.city || '',
+  address: student.address || '',
+} : {
+  fullName: '',
+  fatherName: '',
+  gender: '',
+  dateOfBirth: '',
+  status: '',
+  class: '',
+  academicYear: '',
+  fatherPhone: '',
+  alternatePhone: '',
+  city: '',
+  address: '',
+};
+
 const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
   const fileInputRef = useRef(null);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    fatherName: '',
-    gender: '',
-    dateOfBirth: '',
-    status: '',
-    class: '',
-    academicYear: '',
-    fatherPhone: '',
-    alternatePhone: '',
-    city: '',
-    address: '',
-  });
+  const [formData, setFormData] = useState(() => getInitialFormData(student));
   const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(() => student ? getImageUrl(student.studentImage) : null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (student) {
-      setFormData({
-        fullName: student.fullName || '',
-        fatherName: student.fatherName || '',
-        gender: student.gender || '',
-        dateOfBirth: student.dateOfBirth ? student.dateOfBirth.slice(0, 10) : '',
-        status: student.status || '',
-        class: student.class || '',
-        academicYear: student.academicYear || '',
-        fatherPhone: student.fatherPhone || '',
-        alternatePhone: student.alternatePhone || '',
-        city: student.city || '',
-        address: student.address || '',
-      });
-      setPhotoPreview(getImageUrl(student.studentImage));
-      setPhotoFile(null);
-      setError('');
-    }
-  }, [student]);
 
   const handleChange = (field) => (e) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));

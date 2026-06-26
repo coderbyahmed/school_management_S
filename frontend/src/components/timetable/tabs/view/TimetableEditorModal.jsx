@@ -46,25 +46,21 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose }) => {
   );
 
   const [teachers, setTeachers] = useState([]);
-  const [loadingTeachers, setLoadingTeachers] = useState(false);
+  const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [subjects, setSubjects] = useState([]);
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
 
   useEffect(() => {
     if (!classId) return;
-    setLoadingSubjects(true);
     timetableService.getClassSubjects(classId)
       .then((res) => {
         if (res?.data?.subjects) setSubjects(res.data.subjects);
       })
-      .catch(() => toast.error('Failed to load subjects'))
-      .finally(() => setLoadingSubjects(false));
+      .catch(() => toast.error('Failed to load subjects'));
   }, [classId]);
 
   useEffect(() => {
-    setLoadingTeachers(true);
     teacherService.getAllTeachers({ limit: 100, status: 'Active' })
       .then((res) => {
         const list = res?.data?.teachers || res?.data?.data?.teachers || [];

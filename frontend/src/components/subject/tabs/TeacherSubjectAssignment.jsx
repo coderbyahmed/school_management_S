@@ -51,20 +51,22 @@ const TeacherSubjectAssignment = () => {
   }, [selectedTeacherId]);
 
   useEffect(() => {
-    fetchTeachersAndSubjects();
+    Promise.resolve().then(() => fetchTeachersAndSubjects());
   }, [fetchTeachersAndSubjects]);
 
   useEffect(() => {
-    if (selectedTeacherId) {
-      const teacher = teachers.find((t) => t.teacherId === selectedTeacherId);
-      setSelectedTeacher(teacher || null);
-      setSelectedIds([]);
-      fetchAssignments();
-    } else {
-      setSelectedTeacher(null);
-      setAssignedIds([]);
-      setSelectedIds([]);
-    }
+    Promise.resolve().then(() => {
+      if (selectedTeacherId) {
+        const teacher = teachers.find((t) => t.teacherId === selectedTeacherId);
+        setSelectedTeacher(teacher || null);
+        setSelectedIds([]);
+        fetchAssignments();
+      } else {
+        setSelectedTeacher(null);
+        setAssignedIds([]);
+        setSelectedIds([]);
+      }
+    });
   }, [selectedTeacherId, teachers, fetchAssignments]);
 
   const handleToggle = (subjectId) => {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { CalendarDaysIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../../utils/classNames';
@@ -27,15 +27,18 @@ const ClassView = () => {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const classMap = {};
-  classes.forEach((c) => { classMap[c.className] = c._id; });
+  const classMap = useMemo(() => {
+    const map = {};
+    classes.forEach((c) => { map[c.className] = c._id; });
+    return map;
+  }, [classes]);
 
   useEffect(() => {
     classService.getAllClasses()
       .then((res) => {
         if (res?.data?.classes) setClasses(res.data.classes);
       })
-      .catch(() => {});
+      .catch(() => console.error('Failed to load classes'));
   }, []);
 
   const filterValues = { academicYear, className };
@@ -54,7 +57,7 @@ const ClassView = () => {
         res.data.subjects.forEach((s) => { map[s.id] = s.name; });
         setSubjectNames(map);
       }
-    } catch {}
+    } catch { console.error('Failed to load subject names'); }
   }, [className, classMap]);
 
   const handleView = useCallback(async () => {

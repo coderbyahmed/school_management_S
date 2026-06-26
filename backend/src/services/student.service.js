@@ -16,9 +16,9 @@ const __dirname = path.dirname(__filename);
 const deleteFileAtPath = (relativePath) => {
   if (!relativePath) return;
   const fullPath = path.resolve(__dirname, '../..', relativePath);
-  try {
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-  } catch { /* ignore */ }
+    try {
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+      } catch (err) { console.error('Failed to delete file at path', relativePath, err); }
 };
 
 const createStudent = async (data, file, baseUrl = '') => {
@@ -58,14 +58,14 @@ const createStudent = async (data, file, baseUrl = '') => {
       return await Student.findById(savedStudent._id);
     } catch (error) {
       if (error.code === 11000 && error.keyPattern?.loginId && savedStudent) {
-        await Student.deleteOne({ _id: savedStudent._id }).catch(() => {});
+        await Student.deleteOne({ _id: savedStudent._id }).catch((e) => { console.error('Failed to cleanup student after conflict', e); });
         savedStudent = null;
         continue;
       }
 
       deleteFileAtPath(imagePath);
       if (savedStudent) {
-        await Student.deleteOne({ _id: savedStudent._id }).catch(() => {});
+        await Student.deleteOne({ _id: savedStudent._id }).catch((e) => { console.error('Failed to cleanup student after error', e); });
       }
 
       if (error.code === 11000) {

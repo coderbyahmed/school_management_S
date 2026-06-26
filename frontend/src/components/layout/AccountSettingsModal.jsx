@@ -53,9 +53,9 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (!isOpen) {
-      resetState();
+      Promise.resolve().then(() => resetState());
     } else {
-      checkLockStatus();
+      Promise.resolve().then(() => checkLockStatus());
     }
   }, [isOpen]);
 

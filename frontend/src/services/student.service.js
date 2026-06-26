@@ -46,12 +46,12 @@ const studentService = {
   },
 
   getStudentPromotions: async (params = {}) => {
-    const response = await api.get('/student-promotions', { params });
+    const response = await api.get('/students/promotions', { params });
     return response.data;
   },
 
   deleteStudentPromotion: async (id) => {
-    const response = await api.delete(`/student-promotions/${id}`);
+    const response = await api.delete(`/students/promotions/${id}`);
     return response.data;
   },
 };

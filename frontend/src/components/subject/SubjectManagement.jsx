@@ -66,7 +66,7 @@ const SubjectManagement = () => {
         </nav>
       </div>
 
-      <ActiveComponent {...componentProps} />
+      <ActiveComponent key={activeTab === 'Add Subject' ? editingSubject?._id || 'add-subject' : undefined} {...componentProps} />
     </div>
   );
 };

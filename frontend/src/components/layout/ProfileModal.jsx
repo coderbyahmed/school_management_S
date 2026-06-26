@@ -27,8 +27,6 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
   const fileInputRef = useRef(null);
 
   const loadProfile = async () => {
-    setFetching(true);
-    setError('');
     try {
       const data = await authService.getProfile();
       setProfile(data.user);

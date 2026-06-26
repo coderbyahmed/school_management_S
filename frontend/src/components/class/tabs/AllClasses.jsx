@@ -30,7 +30,6 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
   const [deletingClass, setDeletingClass] = useState(null);
 
   const fetchClasses = async () => {
-    setLoading(true);
     try {
       const result = await classService.getAllClasses();
       setClasses(result.data?.classes || []);
@@ -53,10 +52,6 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
     return true;
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [academicYearFilter, statusFilter, searchQuery]);
-
   const totalPages = Math.ceil(filteredClasses.length / ITEMS_PER_PAGE);
   const paginatedClasses = filteredClasses.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -77,6 +72,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
       await classService.deleteClass(deletingClass._id);
       toast.success('Class deleted successfully');
       setDeletingClass(null);
+      setLoading(true);
       await fetchClasses();
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to delete class';
@@ -197,7 +193,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
             label="Academic Year"
             options={academicYearOptions}
             value={academicYearFilter}
-            onChange={setAcademicYearFilter}
+            onChange={(v) => { setAcademicYearFilter(v); setCurrentPage(1); }}
           />
         </div>
         <div className="w-full sm:w-36">
@@ -205,14 +201,14 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
             label="Status"
             options={statusOptions}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
           />
         </div>
         <div className="w-full sm:w-56">
           <SearchInput
             placeholder="Search Class"
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }}
           />
         </div>
         <button

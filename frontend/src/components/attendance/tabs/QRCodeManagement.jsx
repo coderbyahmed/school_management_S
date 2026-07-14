@@ -1,130 +1,93 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
-import * as QRCode from 'qrcode';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
-  QrCodeIcon, PrinterIcon, CheckCircleIcon, XCircleIcon,
-  AcademicCapIcon, UserGroupIcon, EyeIcon, ArrowPathIcon,
-  DocumentArrowDownIcon, ChevronDownIcon, XMarkIcon, ClockIcon,
+  CheckCircleIcon, XCircleIcon, UserGroupIcon,
+  PrinterIcon, DocumentArrowDownIcon, DocumentCheckIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import SearchInput from '../../common/SearchInput';
-import { CLASS_NAMES } from '../../../utils/classNames';
-import qrManagementService, { ACADEMIC_YEARS } from '../../../services/qrManagement.service';
+import Modal from '../../common/Modal';
+import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
+import idCardDemoData from '../data/idCardDemoData';
+import { VerticalTemplate, HorizontalTemplate } from '../templates';
+import { getInitials, formatClassName } from '../templates/shared/cardHtmlUtils';
 
-const CARD_STATUSES = ['All', 'Printed', 'Not Printed'];
-const QR_STATUSES = ['All', 'Generated', 'Pending'];
+const QR_STATUSES = ['All', 'Generated', 'Not Generated'];
+const CARD_STATUSES = ['All', 'Pending', 'Generated', 'Printed'];
+
 
 const SCHOOL_INFO = {
-  name: 'School Management System',
-  contact: '+92-300-1234567',
+  name: 'Iqra Anwar Ul Quran Sec School',
   address: '123 Education Street, Lahore, Pakistan',
-  emergencyNotes: 'In case of emergency, contact the school office immediately. Keep this card with you at all times.',
-  instructions: 'This card is the property of the school. If found, please return to the school address above. Not for commercial use.',
+  contact: '+92-300-1234567',
+  email: 'info@iqraanwarulquran.edu.pk',
 };
 
-function formatClassName(cls) {
-  return cls.replace('KG ', 'KG-');
-}
+const PAGE_SIZE = 10;
 
-function getInitials(name) {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
 
-async function generateQrDataUrl(value) {
-  try {
-    return await QRCode.toDataURL(value, {
-      width: 400,
-      margin: 2,
-      color: { dark: '#000000', light: '#ffffff' },
-    });
-  } catch {
-    return '';
-  }
-}
+const CloseSvg = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
+const PaintSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>;
 
-const CardPreview = ({ student, side }) => {
-  return (
-    <div className="w-[340px] mx-auto">
-      {side === 'front' ? (
-        <div className="bg-white rounded-xl border-2 border-gray-300 dark:border-gray-600 shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-3 text-center">
-            <div className="w-10 h-10 bg-white/20 rounded-full inline-flex items-center justify-center mb-1">
-              <AcademicCapIcon className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="text-sm font-bold text-white">{SCHOOL_INFO.name}</h3>
-          </div>
-          <div className="p-5 flex flex-col items-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl ring-2 ring-yellow-400 mb-3">
-              {getInitials(student.fullName)}
-            </div>
-            <h4 className="text-base font-bold text-gray-800 text-center">{student.fullName}</h4>
-            <div className="w-full mt-4 space-y-2">
-              <div className="flex justify-between items-center py-1.5 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <span className="text-xs text-gray-500">ID</span>
-                <span className="text-xs font-mono font-semibold text-gray-800 dark:text-gray-200">{student.studentId}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <span className="text-xs text-gray-500">Class</span>
-                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{formatClassName(student.class)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <span className="text-xs text-gray-500">Academic Year</span>
-                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{student.academicYear}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border-2 border-gray-300 dark:border-gray-600 shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-3 text-center">
-            <h3 className="text-sm font-bold text-white">QR Code</h3>
-          </div>
-          <div className="p-5 flex flex-col items-center">
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-              <QRCodeSVG value={student.studentId} size={180} level="H" includeMargin />
-            </div>
-            <p className="text-xs font-mono text-gray-500 mt-3">{student.studentId}</p>
-            <div className="w-full mt-4 space-y-2 text-xs text-gray-600">
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2.5">
-                <p className="font-semibold text-yellow-800 dark:text-yellow-200 text-[10px] uppercase tracking-wider mb-1">Emergency Notes</p>
-                <p className="text-[10px] text-yellow-700 dark:text-yellow-300 leading-relaxed">{SCHOOL_INFO.emergencyNotes}</p>
-              </div>
-              <div className="flex justify-between items-center py-1.5 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <span className="text-xs text-gray-500">School Contact</span>
-                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{SCHOOL_INFO.contact}</span>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5">
-                <p className="font-semibold text-blue-800 dark:text-blue-200 text-[10px] uppercase tracking-wider mb-1">Important Instructions</p>
-                <p className="text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed">{SCHOOL_INFO.instructions}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
-const QRCodeManagement = () => {
+const IDCardManagement = () => {
   const [allStudents, setAllStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
   const [academicYear, setAcademicYear] = useState('');
   const [className, setClassName] = useState('');
   const [search, setSearch] = useState('');
   const [qrFilter, setQrFilter] = useState('All');
   const [cardFilter, setCardFilter] = useState('All');
+
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [previewStudent, setPreviewStudent] = useState(null);
   const [previewSide, setPreviewSide] = useState('front');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [designerOpen, setDesignerOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [savedTemplate, setSavedTemplate] = useState(null);
+  const [designerPreviewSide, setDesignerPreviewSide] = useState('front');
+  const DEFAULT_VISIBILITY = {
+  schoolLogo: true, schoolName: true, studentPhoto: true, studentName: true,
+  fatherName: true, studentId: true, class: true, academicYear: true, qrCode: true,
+  fatherPhone: true, schoolAddress: true, note: true,
+};
 
-  const cardPreviewRef = useRef(null);
+const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderRadius: 12, photoSize: 80, photoShape: 'circle', qrSize: 140, qrPosition: 'center', nameFontSize: 16, detailsFontSize: 12, fontWeight: 700, primaryColor: '#2563eb', secondaryColor: '#1e40af', textColor: '#1f2937', cardBgColor: '#ffffff', visibility: { ...DEFAULT_VISIBILITY } };
+  const [savedDesignerConfig, setSavedDesignerConfig] = useState(null);
+  const [frontConfig, setFrontConfig] = useState(() => ({ ...DEFAULT_CONFIG }));
+  const [backConfig, setBackConfig] = useState(() => ({ ...DEFAULT_CONFIG }));
+  const panelRef = useRef(null);
+  const activeTemplate = savedTemplate || selectedTemplate || 'vertical';
+  const activeConfig = designerPreviewSide === 'front' ? frontConfig : backConfig;
+  const setActiveConfig = designerPreviewSide === 'front' ? setFrontConfig : setBackConfig;
+
+  const setConfigProp = (key, value) => {
+    setActiveConfig((prev) => ({ ...prev, [key]: value }));
+    if (key === 'cardWidth' || key === 'cardHeight') {
+      const otherSetter = designerPreviewSide === 'front' ? setBackConfig : setFrontConfig;
+      otherSetter((prev) => ({ ...prev, [key]: value }));
+    }
+  };
+  const setVisibilityProp = (key, checked) => setActiveConfig((prev) => ({ ...prev, visibility: { ...prev.visibility, [key]: checked } }));
 
   useEffect(() => {
-    const data = qrManagementService.loadStudents();
-    setAllStudents(data);
-  }, []);
+    if (!designerOpen) return;
+    if (savedDesignerConfig) {
+      const { cardWidth, cardHeight } = savedDesignerConfig.front;
+      setFrontConfig({ ...savedDesignerConfig.front, cardWidth, cardHeight });
+      setBackConfig({ ...savedDesignerConfig.back, cardWidth, cardHeight });
+    }
+  }, [designerOpen]);
+
+
+
+  const getCardStatus = (student) => {
+    if (student.cardStatus === 'Printed') return 'Printed';
+    if (student.qrStatus === 'Generated') return 'Generated';
+    return 'Pending';
+  };
 
   const filtered = useMemo(() => {
     let list = allStudents;
@@ -135,22 +98,37 @@ const QRCodeManagement = () => {
       list = list.filter((s) => s.fullName.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q));
     }
     if (qrFilter !== 'All') list = list.filter((s) => s.qrStatus === qrFilter);
-    if (cardFilter !== 'All') list = list.filter((s) => s.cardStatus === cardFilter);
+    if (cardFilter !== 'All') list = list.filter((s) => getCardStatus(s) === cardFilter);
     return list;
   }, [allStudents, academicYear, className, search, qrFilter, cardFilter]);
 
-  useEffect(() => {
-    setFilteredStudents(filtered);
-    setSelectedIds(new Set());
-  }, [filtered]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
-  const stats = useMemo(() => qrManagementService.getStats(allStudents), [allStudents]);
+  const designerPreviewStudent = useMemo(() => {
+    if (!designerOpen) return null;
+    if (filtered.length > 0) return filtered[0];
+    const all = idCardDemoData.getStudents();
+    return all.length > 0 ? all[0] : null;
+  }, [designerOpen]);
+
+  const paginatedStudents = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage]
+  );
+
+  const stats = useMemo(() => {
+    const total = allStudents.length;
+    const generated = allStudents.filter((s) => s.qrStatus === 'Generated').length;
+    const printed = allStudents.filter((s) => s.cardStatus === 'Printed').length;
+    const pending = total - generated;
+    return { total, generated, printed, pending };
+  }, [allStudents]);
 
   const selectAll = () => {
-    if (selectedIds.size === filteredStudents.length) {
+    if (selectedIds.size === paginatedStudents.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredStudents.map((s) => s.id)));
+      setSelectedIds(new Set(paginatedStudents.map((s) => s.id)));
     }
   };
 
@@ -169,98 +147,66 @@ const QRCodeManagement = () => {
       return;
     }
     setLoading(true);
+    setCurrentPage(1);
+    setSelectedIds(new Set());
     setTimeout(() => {
-      const data = qrManagementService.loadStudents();
+      const data = idCardDemoData.getStudents();
       setAllStudents(data);
       setLoading(false);
       toast.success('Students loaded successfully');
     }, 400);
   };
 
-  const handleGenerateMissingQR = () => {
-    const count = qrManagementService.generateMissing();
-    setAllStudents(qrManagementService.loadStudents());
-    toast.success(`${count} QR code${count !== 1 ? 's' : ''} generated`);
-  };
-
-  const handleRegenerateQR = (id) => {
-    const updated = qrManagementService.updateStudent(id, { qrStatus: 'Generated' });
-    if (updated) {
-      setAllStudents(qrManagementService.loadStudents());
-      toast.success('QR code regenerated');
+  const handleGenerateMissingCards = () => {
+    let count = 0;
+    setAllStudents((prev) =>
+      prev.map((s) => {
+        if (s.qrStatus === 'Not Generated') {
+          count++;
+          return { ...s, qrStatus: 'Generated' };
+        }
+        return s;
+      })
+    );
+    if (count > 0) {
+      toast.success(`${count} ID card${count !== 1 ? 's' : ''} generated`);
+    } else {
+      toast('All students already have ID cards', { icon: 'ℹ️' });
     }
   };
 
-  const handleMarkPrinted = (ids) => {
-    qrManagementService.markPrinted(ids);
-    setAllStudents(qrManagementService.loadStudents());
-    toast.success(`${ids.length} card${ids.length !== 1 ? 's' : ''} marked as printed`);
+  const handlePrintAll = () => {
+    handlePrintCards(filtered);
   };
 
-  const handlePrintCards = useCallback(async (students) => {
-    if (!students.length) { toast.error('No cards to print'); return; }
+  const handleMarkAsPrinted = () => {
+    const toMark = selectedIds.size
+      ? filtered.filter((s) => selectedIds.has(s.id))
+      : [];
+    if (!toMark.length) { toast.error('No students selected'); return; }
+    setAllStudents((prev) =>
+      prev.map((s) => (selectedIds.has(s.id) ? { ...s, cardStatus: 'Printed', qrStatus: 'Generated' } : s))
+    );
+    toast.success(`${toMark.length} card${toMark.length !== 1 ? 's' : ''} marked as printed`);
+  };
 
-    const qrUrls = await Promise.all(students.map((s) => generateQrDataUrl(s.studentId)));
+  const handleRegenerateCard = (studentId) => {
+    toast.success(`Card regenerated for ${allStudents.find((s) => s.id === studentId)?.fullName || 'student'}`);
+  };
+
+  const handlePrintCards = async (students) => {
+    if (!students.length) { toast.error('No cards selected'); return; }
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) { toast.error('Popup blocked'); return; }
 
-    const cardsHtml = students.map((s, i) => `
-      <div class="card-page">
-        <div class="card-page-inner">
-          <div class="card front">
-            <div class="card-header">
-              <div class="school-logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342"/></svg>
-              </div>
-              <h3>${SCHOOL_INFO.name}</h3>
-            </div>
-            <div class="card-body">
-              <div class="student-photo">${getInitials(s.fullName)}</div>
-              <h4>${s.fullName}</h4>
-              <div class="info-row"><span>ID</span><span>${s.studentId}</span></div>
-              <div class="info-row"><span>Class</span><span>${formatClassName(s.class)}</span></div>
-              <div class="info-row"><span>Year</span><span>${s.academicYear}</span></div>
-            </div>
-          </div>
-          <div class="card back">
-            <div class="card-header"><h3>QR Code</h3></div>
-            <div class="card-body">
-              <img src="${qrUrls[i]}" alt="QR" class="qr-img" />
-              <p class="qr-label">${s.studentId}</p>
-              <div class="info-list">
-                <p><strong>Name:</strong> ${s.fullName}</p>
-                <p><strong>Contact:</strong> ${SCHOOL_INFO.contact}</p>
-                <p><strong>Address:</strong> ${SCHOOL_INFO.address}</p>
-                <p class="notes">${SCHOOL_INFO.notes}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `).join('');
+    const Template = activeTemplate === 'horizontal' ? HorizontalTemplate : VerticalTemplate;
+    const cardsHtml = students.map((s) => Template.toHtml(s, SCHOOL_INFO, frontConfig)).join('');
 
     const printCss = `
       @page { size: A4; margin: 10mm; }
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #f5f5f5; }
-      .card-page { page-break-after: always; display: flex; justify-content: center; padding: 10px 0; }
-      .card-page:last-child { page-break-after: avoid; }
-      .card-page-inner { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 780px; }
-      .card { width: 340px; border-radius: 12px; border: 1.5px solid #d1d5db; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-      .card-header { background: linear-gradient(135deg, #2563eb, #1e40af); padding: 10px 16px; text-align: center; }
-      .card-header h3 { color: white; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
-      .school-logo { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 2px; }
-      .card-body { padding: 16px; display: flex; flex-direction: column; align-items: center; }
-      .student-photo { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #7c3aed); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; border: 2px solid #fbbf24; margin-bottom: 8px; }
-      .card-body h4 { font-size: 14px; font-weight: 700; color: #1f2937; margin-bottom: 8px; text-align: center; }
-      .info-row { width: 100%; display: flex; justify-content: space-between; padding: 4px 10px; background: #f9fafb; border-radius: 6px; margin-bottom: 4px; font-size: 11px; }
-      .info-row span:first-child { color: #6b7280; }
-      .info-row span:last-child { font-weight: 600; color: #1f2937; }
-      .qr-img { width: 160px; height: 160px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px; background: white; }
-      .qr-label { font-size: 11px; font-family: monospace; color: #6b7280; margin-top: 6px; }
-      .info-list { width: 100%; margin-top: 10px; font-size: 11px; color: #4b5563; line-height: 1.5; }
-      .info-list p { margin-bottom: 2px; }
-      .notes { font-size: 10px; color: #9ca3af; font-style: italic; margin-top: 4px; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; }
     `;
 
     printWindow.document.open();
@@ -268,56 +214,17 @@ const QRCodeManagement = () => {
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
-  }, []);
+  };
 
-  const handleSinglePrint = async (student) => {
-    await handlePrintCards([student]);
+  const handleSinglePrint = (student) => {
+    handlePrintCards([student]);
   };
 
   const handleSinglePdf = async (student) => {
     try {
       const { default: html2pdf } = await import('html2pdf.js');
-      const qrUrl = await generateQrDataUrl(student.studentId);
-
-      const cardHtml = `
-        <div style="display: flex; justify-content: center; padding: 5mm 0;">
-          <table style="border-collapse: collapse; width: 720px;">
-            <tr>
-              <td style="width: 340px; vertical-align: top; padding: 4px;">
-                <div style="border-radius: 10px; border: 1px solid #d1d5db; overflow: hidden; background: white;">
-                  <div style="background: linear-gradient(135deg, #2563eb, #1e40af); padding: 10px 16px; text-align: center;">
-                    <h3 style="color: white; font-size: 12px; font-weight: 700; margin: 0;">${SCHOOL_INFO.name}</h3>
-                  </div>
-                  <div style="padding: 14px; text-align: center;">
-                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #7c3aed); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; border: 2px solid #fbbf24; margin: 0 auto 6px;">${getInitials(student.fullName)}</div>
-                    <h4 style="font-size: 13px; font-weight: 700; color: #1f2937; margin: 0 0 8px;">${student.fullName}</h4>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                      <tr><td style="color: #6b7280; padding: 3px 8px; background: #f9fafb; border-radius: 4px; width: 50%;">ID</td><td style="font-weight: 600; padding: 3px 8px; background: #f9fafb; border-radius: 4px;">${student.studentId}</td></tr>
-                      <tr><td style="color: #6b7280; padding: 3px 8px;">Class</td><td style="font-weight: 600; padding: 3px 8px;">${formatClassName(student.class)}</td></tr>
-                      <tr><td style="color: #6b7280; padding: 3px 8px; background: #f9fafb; border-radius: 4px;">Year</td><td style="font-weight: 600; padding: 3px 8px; background: #f9fafb; border-radius: 4px;">${student.academicYear}</td></tr>
-                    </table>
-                  </div>
-                </div>
-              </td>
-              <td style="width: 340px; vertical-align: top; padding: 4px;">
-                <div style="border-radius: 10px; border: 1px solid #d1d5db; overflow: hidden; background: white;">
-                  <div style="background: linear-gradient(135deg, #2563eb, #1e40af); padding: 10px 16px; text-align: center;">
-                    <h3 style="color: white; font-size: 12px; font-weight: 700; margin: 0;">QR Code</h3>
-                  </div>
-                  <div style="padding: 14px; text-align: center;">
-                    <img src="${qrUrl}" style="width: 150px; height: 150px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 3px; background: white;" />
-                    <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 4px 0 8px;">${student.studentId}</p>
-                    <div style="text-align: left; font-size: 10px; color: #4b5563; line-height: 1.6;">
-                      <p><strong>Name:</strong> ${student.fullName}</p>
-                      <p><strong>Contact:</strong> ${SCHOOL_INFO.contact}</p>
-                      <p style="font-size: 9px; color: #9ca3af; font-style: italic;">${SCHOOL_INFO.instructions}</p>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </div>`;
+      const Template = activeTemplate === 'horizontal' ? HorizontalTemplate : VerticalTemplate;
+      const cardHtml = Template.toHtml(student, SCHOOL_INFO, frontConfig);
 
       const element = document.createElement('div');
       element.innerHTML = cardHtml;
@@ -340,63 +247,21 @@ const QRCodeManagement = () => {
 
   const handleExportPdf = async () => {
     const toPrint = selectedIds.size
-      ? filteredStudents.filter((s) => selectedIds.has(s.id))
-      : filteredStudents;
+      ? filtered.filter((s) => selectedIds.has(s.id))
+      : [];
     if (!toPrint.length) { toast.error('No students selected'); return; }
 
     try {
       const { default: html2pdf } = await import('html2pdf.js');
-
-      const qrUrls = await Promise.all(toPrint.map((s) => generateQrDataUrl(s.studentId)));
-      const cardsHtml = toPrint.map((s, i) => `
-        <div style="page-break-after: always; padding: 5mm 0; display: flex; justify-content: center;">
-          <table style="border-collapse: collapse; width: 720px;">
-            <tr>
-              <td style="width: 340px; vertical-align: top; padding: 4px;">
-                <div style="border-radius: 10px; border: 1px solid #d1d5db; overflow: hidden; background: white;">
-                  <div style="background: linear-gradient(135deg, #2563eb, #1e40af); padding: 10px 16px; text-align: center;">
-                    <h3 style="color: white; font-size: 12px; font-weight: 700; margin: 0;">${SCHOOL_INFO.name}</h3>
-                  </div>
-                  <div style="padding: 14px; text-align: center;">
-                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #7c3aed); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; border: 2px solid #fbbf24; margin: 0 auto 6px;">${getInitials(s.fullName)}</div>
-                    <h4 style="font-size: 13px; font-weight: 700; color: #1f2937; margin: 0 0 8px;">${s.fullName}</h4>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                      <tr><td style="color: #6b7280; padding: 3px 8px; background: #f9fafb; border-radius: 4px; width: 50%;">ID</td><td style="font-weight: 600; padding: 3px 8px; background: #f9fafb; border-radius: 4px;">${s.studentId}</td></tr>
-                      <tr><td style="color: #6b7280; padding: 3px 8px;">Class</td><td style="font-weight: 600; padding: 3px 8px;">${formatClassName(s.class)}</td></tr>
-                      <tr><td style="color: #6b7280; padding: 3px 8px; background: #f9fafb; border-radius: 4px;">Year</td><td style="font-weight: 600; padding: 3px 8px; background: #f9fafb; border-radius: 4px;">${s.academicYear}</td></tr>
-                    </table>
-                  </div>
-                </div>
-              </td>
-              <td style="width: 340px; vertical-align: top; padding: 4px;">
-                <div style="border-radius: 10px; border: 1px solid #d1d5db; overflow: hidden; background: white;">
-                  <div style="background: linear-gradient(135deg, #2563eb, #1e40af); padding: 10px 16px; text-align: center;">
-                    <h3 style="color: white; font-size: 12px; font-weight: 700; margin: 0;">QR Code</h3>
-                  </div>
-                  <div style="padding: 14px; text-align: center;">
-                    <img src="${qrUrls[i]}" style="width: 150px; height: 150px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 3px; background: white;" />
-                    <p style="font-size: 10px; font-family: monospace; color: #6b7280; margin: 4px 0 8px;">${s.studentId}</p>
-                    <div style="text-align: left; font-size: 10px; color: #4b5563; line-height: 1.6;">
-                      <p><strong>Name:</strong> ${s.fullName}</p>
-                      <p><strong>Contact:</strong> ${SCHOOL_INFO.contact}</p>
-                      <p><strong>Address:</strong> ${SCHOOL_INFO.address}</p>
-                      <p style="font-size: 9px; color: #9ca3af; font-style: italic;">${SCHOOL_INFO.notes}</p>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </div>
-      `).join('');
+      const Template = activeTemplate === 'horizontal' ? HorizontalTemplate : VerticalTemplate;
+      const cardsHtml = toPrint.map((s) => Template.toHtml(s, SCHOOL_INFO, frontConfig)).join('');
 
       const pdfHtml = `
         <!DOCTYPE html><html><head>
         <style>
           @page { size: A4; margin: 8mm; }
           * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          table { border-collapse: collapse; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; }
         </style>
         </head><body>${cardsHtml}</body></html>
       `;
@@ -430,29 +295,98 @@ const QRCodeManagement = () => {
     if (type === 'qr') {
       return status === 'Generated'
         ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"><CheckCircleIcon className="h-3 w-3" /> Generated</span>
-        : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700"><ClockIcon className="h-3 w-3" /> Pending</span>;
+        : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">Not Generated</span>;
     }
-    return status === 'Printed'
-      ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"><CheckCircleIcon className="h-3 w-3" /> Printed</span>
-      : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600">Not Printed</span>;
+    if (status === 'Printed') return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"><CheckCircleIcon className="h-3 w-3" /> Printed</span>;
+    if (status === 'Generated') return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">Generated</span>;
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"><XCircleIcon className="h-3 w-3" /> Pending</span>;
+  };
+
+  const renderPagination = () => {
+    if (filtered.length === 0) return null;
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      if (currentPage <= 3) { start = 2; end = Math.min(4, totalPages - 1); }
+      if (currentPage >= totalPages - 2) { start = Math.max(2, totalPages - 3); end = totalPages - 1; }
+      if (start > 2) pages.push('...');
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (end < totalPages - 1) pages.push('...');
+      pages.push(totalPages);
+    }
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {filtered.length} student{filtered.length !== 1 ? 's' : ''} — Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Previous
+          </button>
+          {pages.map((page, idx) =>
+            page === '...' ? (
+              <span key={`ellipsis-${idx}`} className="px-1.5 text-xs text-gray-400 dark:text-gray-500">...</span>
+            ) : (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`min-w-[28px] px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                {page}
+              </button>
+            )
+          )}
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">QR Code Management</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Generate, manage, and print student ID cards with QR codes</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ID Card Management</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Generate, manage, and print student ID cards with QR codes</p>
+        </div>
+        <div className="flex-shrink-0 pt-1 flex items-center gap-3">
+          <SearchInput placeholder="Search by name or ID..." value={search} onChange={setSearch} />
+          <button
+            data-designer-toggle
+            onClick={() => setDesignerOpen((p) => !p)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer shadow-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md"
+          >
+            <PaintSvg />
+            ID Card Designer
+          </button>
+        </div>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard icon={UserGroupIcon} label="Total Students" value={stats.total} color="blue" />
-        <StatCard icon={QrCodeIcon} label="Cards Generated" value={stats.generated} color="green" />
-        <StatCard icon={PrinterIcon} label="Cards Printed" value={stats.printed} color="yellow" />
+        <StatCard icon={CheckCircleIcon} label="ID Cards Generated" value={stats.generated} color="green" />
+        <StatCard icon={PrinterIcon} label="Printed Cards" value={stats.printed} color="yellow" />
         <StatCard icon={XCircleIcon} label="Pending Cards" value={stats.pending} color="red" />
       </div>
 
-      {/* Filter Section */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col gap-1">
@@ -509,228 +443,540 @@ const QRCodeManagement = () => {
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
+
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={handleLoadStudents}
+            disabled={!academicYear || !className || loading}
             className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <UserGroupIcon className="h-4 w-4" />
             Load Students
           </button>
           <button
-            onClick={handleGenerateMissingQR}
-            disabled={stats.pending === 0}
+            onClick={handleGenerateMissingCards}
+            disabled={allStudents.length === 0}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
-            <ArrowPathIcon className="h-4 w-4" />
-            Generate Missing QR Codes
+            <CheckCircleIcon className="h-4 w-4" />
+            Generate Missing Cards
           </button>
           <button
-            onClick={() => {
-              const selected = filteredStudents.filter((s) => selectedIds.has(s.id));
-              handleMarkPrinted(selected.length ? selected.map((s) => s.id) : filteredStudents.map((s) => s.id));
-            }}
-            disabled={filteredStudents.length === 0}
-            className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-          >
-            <PrinterIcon className="h-4 w-4" />
-            Mark as Printed
-          </button>
-          <button
-            onClick={() => {
-              const toPrint = selectedIds.size
-                ? filteredStudents.filter((s) => selectedIds.has(s.id))
-                : filteredStudents;
-              handlePrintCards(toPrint);
-            }}
-            disabled={filteredStudents.length === 0}
+            onClick={() => handlePrintCards(selectedIds.size ? filtered.filter((s) => selectedIds.has(s.id)) : [])}
+            disabled={filtered.length === 0}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <PrinterIcon className="h-4 w-4" />
-            {selectedIds.size ? `Print Selected (${selectedIds.size})` : 'Print All'}
+            Print Selected
+          </button>
+          <button
+            onClick={handlePrintAll}
+            disabled={filtered.length === 0}
+            className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+          >
+            <PrinterIcon className="h-4 w-4" />
+            Print All
+          </button>
+          <button
+            onClick={handleMarkAsPrinted}
+            disabled={selectedIds.size === 0}
+            className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+          >
+            <DocumentCheckIcon className="h-4 w-4" />
+            Mark as Printed
           </button>
           <button
             onClick={handleExportPdf}
-            disabled={filteredStudents.length === 0}
+            disabled={filtered.length === 0}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <DocumentArrowDownIcon className="h-4 w-4" />
             Export PDF
           </button>
-          <div className="ml-auto">
-            <SearchInput placeholder="Search by name or ID..." value={search} onChange={setSearch} />
-          </div>
         </div>
       </div>
 
-      {/* Students Table */}
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800">
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={filteredStudents.length > 0 && selectedIds.size === filteredStudents.length}
-                  onChange={selectAll}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                />
-              </th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Photo</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Student Name</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Student ID</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Class</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Academic Year</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">QR Status</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Card Status</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Preview</th>
-              <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredStudents.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
-                  <div className="flex flex-col items-center gap-2">
-                    <UserGroupIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
-                    <p className="text-sm">No students found</p>
-                    <p className="text-xs">Select Academic Year and Class, then click Load Students</p>
-                  </div>
-                </td>
+      {loading ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
+          <svg className="animate-spin h-8 w-8 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading students...</p>
+        </div>
+      ) : allStudents.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
+          <UserGroupIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Students Loaded</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+            Select Academic Year and Class, then click Load Students.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800">
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={paginatedStudents.length > 0 && selectedIds.size === paginatedStudents.length}
+                    onChange={selectAll}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Photo</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Student Name</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Student ID</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Class</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Academic Year</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">QR Status</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Card Status</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Preview</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Actions</th>
               </tr>
-            ) : (
-              filteredStudents.map((student) => (
-                <tr key={student.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                  <td className="px-3 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(student.id)}
-                      onChange={() => toggleSelect(student.id)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                  </td>
-                  <td className="px-3 py-3">{renderPhoto(student)}</td>
-                  <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{student.fullName}</td>
-                  <td className="px-3 py-3 text-xs font-mono font-medium text-gray-700 dark:text-gray-300">{student.studentId}</td>
-                  <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{student.class}</td>
-                  <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{student.academicYear}</td>
-                  <td className="px-3 py-3">{renderStatusBadge(student.qrStatus, 'qr')}</td>
-                  <td className="px-3 py-3">{renderStatusBadge(student.cardStatus, 'card')}</td>
-                  <td className="px-3 py-3">
-                    <div className="w-8 h-8 bg-white rounded border border-gray-200 dark:border-gray-600 overflow-hidden">
-                      <QRCodeSVG value={student.studentId} size={32} level="L" />
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => { setPreviewStudent(student); setPreviewSide('front'); }}
-                        className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
-                        title="Preview Card"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleRegenerateQR(student.id)}
-                        className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer"
-                        title="Refresh Card"
-                      >
-                        <ArrowPathIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleSinglePrint(student)}
-                        className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer"
-                        title="Print Card"
-                      >
-                        <PrinterIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleSinglePdf(student)}
-                        className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
-                        title="Download PDF"
-                      >
-                        <DocumentArrowDownIcon className="h-4 w-4" />
-                      </button>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {paginatedStudents.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <UserGroupIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
+                      <p className="text-sm">No students found</p>
+                      <p className="text-xs">Try changing your search or filter criteria</p>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        {filteredStudents.length > 0 && (
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 flex items-center justify-between">
-            <span>{filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}</span>
-            {selectedIds.size > 0 && (
-              <span>{selectedIds.size} selected</span>
-            )}
-          </div>
-        )}
-      </div>
+              ) : (
+                paginatedStudents.map((student) => (
+                  <tr key={student.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(student.id)}
+                        onChange={() => toggleSelect(student.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </td>
+                    <td className="px-3 py-3">{renderPhoto(student)}</td>
+                    <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{student.fullName}</td>
+                    <td className="px-3 py-3 text-xs font-mono font-medium text-gray-700 dark:text-gray-300">{student.studentId}</td>
+                    <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{student.class}</td>
+                    <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{student.academicYear}</td>
+                    <td className="px-3 py-3">{renderStatusBadge(student.qrStatus, 'qr')}</td>
+                    <td className="px-3 py-3">{renderStatusBadge(getCardStatus(student), 'card')}</td>
+                    <td className="px-3 py-3">
+                      <div
+                        className="w-10 h-7 rounded border border-gray-200 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-white dark:from-gray-700 dark:to-gray-800 flex items-center justify-center cursor-pointer hover:ring-1 hover:ring-blue-400 transition-shadow overflow-hidden"
+                        onClick={() => { setPreviewStudent(student); setPreviewSide('front'); }}
+                      >
+                        <div className="flex flex-col items-center">
+                          <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-[6px] ring-1 ring-yellow-400/50 mb-0.5">
+                            {getInitials(student.fullName)}
+                          </div>
+                          <span className="text-[5px] text-gray-400 dark:text-gray-500 leading-none">ID CARD</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleRegenerateCard(student.id)}
+                          className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer"
+                          title="Reissue Card"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="5" width="20" height="14" rx="2" />
+                            <line x1="2" y1="10" x2="22" y2="10" />
+                            <line x1="7" y1="15" x2="13" y2="15" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleSinglePrint(student)}
+                          className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer"
+                          title="Print Card"
+                        >
+                          <PrinterIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleSinglePdf(student)}
+                          className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                          title="Download PDF"
+                        >
+                          <DocumentArrowDownIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          {renderPagination()}
+        </div>
+      )}
 
-      {/* Card Preview Modal */}
       {previewStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setPreviewStudent(null)}>
-          <div className="absolute inset-0 bg-black/50" />
-          <div
-            className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">ID Card Preview</h2>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPreviewSide('front')}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer ${previewSide === 'front' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                >
-                  Front
-                </button>
-                <button
-                  onClick={() => setPreviewSide('back')}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer ${previewSide === 'back' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                >
-                  Back
-                </button>
+        <Modal isOpen={!!previewStudent} onClose={() => setPreviewStudent(null)} title="ID Card Preview" maxWidth={activeTemplate === 'horizontal' ? 'max-w-[680px]' : 'max-w-[520px]'}>
+          <div className="flex items-center justify-center gap-2 mb-5">
+            <button
+              onClick={() => setPreviewSide('front')}
+              className={`px-3 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer ${previewSide === 'front' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            >
+              Front
+            </button>
+            <button
+              onClick={() => setPreviewSide('back')}
+              className={`px-3 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer ${previewSide === 'back' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            >
+              Back
+            </button>
+          </div>
+          {activeTemplate === 'horizontal' ? (
+            <HorizontalTemplate student={previewStudent} schoolInfo={SCHOOL_INFO} side={previewSide} layoutConfig={previewSide === 'front' ? frontConfig : backConfig} />
+          ) : (
+            <VerticalTemplate student={previewStudent} schoolInfo={SCHOOL_INFO} side={previewSide} layoutConfig={previewSide === 'front' ? frontConfig : backConfig} />
+          )}
+        </Modal>
+      )}
+
+      {designerOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30 lg:bg-black/20" />
+          {designerPreviewStudent && (
+            <div className="relative z-10 flex items-center justify-center p-6 w-full"
+              style={{ maxWidth: 'calc(100% - 420px)' }}>
+              <div onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl px-8 py-6 max-w-full flex flex-col items-center max-h-[85vh]">
+                <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+                  <button onClick={() => setDesignerPreviewSide('front')}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      designerPreviewSide === 'front'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}>Front</button>
+                  <button onClick={() => setDesignerPreviewSide('back')}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      designerPreviewSide === 'back'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}>Back</button>
+                </div>
+                <div className="overflow-y-auto flex-shrink-0">
+                  <div className="scale-[0.85] origin-center">
+                    {activeTemplate === 'horizontal' ? (
+                      <HorizontalTemplate student={designerPreviewStudent} schoolInfo={SCHOOL_INFO} side={designerPreviewSide} layoutConfig={activeConfig} />
+                    ) : (
+                      <VerticalTemplate student={designerPreviewStudent} schoolInfo={SCHOOL_INFO} side={designerPreviewSide} layoutConfig={activeConfig} />
+                    )}
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => setPreviewStudent(null)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
             </div>
-            <div className="px-5 py-5 max-h-[80vh] overflow-y-auto" ref={cardPreviewRef}>
-              <CardPreview student={previewStudent} side={previewSide} />
-              <div className="flex gap-2 mt-4">
+          )}
+        </div>
+      )}
+
+      <div ref={panelRef} className={`fixed top-0 right-0 h-full z-50 bg-white dark:bg-gray-800 shadow-2xl border-l border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out ${designerOpen ? 'translate-x-0' : 'translate-x-full'} w-full sm:w-[380px] md:w-[400px] lg:w-[420px]`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-2"><PaintSvg /> ID Card Designer</h3>
+          <button onClick={() => setDesignerOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"><CloseSvg /></button>
+        </div>
+
+        <div className="overflow-y-auto h-[calc(100%-52px)] p-4 space-y-5">
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Select Template</p>
+            <div className="grid grid-cols-1 gap-3">
+              {[
+                { id: 'vertical', name: 'Vertical ID Card', desc: 'Portrait-style card layout' },
+                { id: 'horizontal', name: 'Horizontal ID Card', desc: 'Landscape-style card layout' },
+              ].map((tpl) => (
                 <button
-                  onClick={() => handleSinglePrint(previewStudent)}
-                  className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  key={tpl.id}
+                  onClick={() => setSelectedTemplate(tpl.id)}
+                  className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer text-left ${
+                    selectedTemplate === tpl.id
+                      ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50 dark:bg-blue-900/10'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  }`}
                 >
-                  <PrinterIcon className="h-3.5 w-3.5" /> Print Card
+                  <div className={`w-12 h-16 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-[9px] border border-white/20 ${tpl.id === 'vertical' ? 'flex-col' : 'flex-row'} ${selectedTemplate === tpl.id ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                    <div className={`${tpl.id === 'vertical' ? 'w-6 h-1.5 rounded mb-1' : 'w-4 h-3 rounded mr-1'} bg-white/40`} />
+                    <div className={`${tpl.id === 'vertical' ? 'w-7 h-7 rounded-full' : 'w-3 h-3 rounded-full'} bg-white/60`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium text-gray-800 dark:text-gray-200">{tpl.name}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{tpl.desc}</p>
+                  </div>
+                  {selectedTemplate === tpl.id && (
+                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </button>
-                <button
-                  onClick={async () => {
-                    const url = await generateQrDataUrl(previewStudent.studentId);
-                    const link = document.createElement('a');
-                    link.download = `QR-${previewStudent.studentId}.png`;
-                    link.href = url;
-                    link.click();
-                    toast.success('QR code downloaded');
-                  }}
-                  className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <DocumentArrowDownIcon className="h-3.5 w-3.5" /> Download QR
-                </button>
+              ))}
+            </div>
+          </div>
+
+          {selectedTemplate && (
+            <div className="pt-2">
+              <button
+                onClick={() => { setSavedTemplate(selectedTemplate); setSavedDesignerConfig({ front: { ...frontConfig }, back: { ...backConfig } }); toast.success('Design saved successfully'); }}
+                className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                Save Design
+              </button>
+              {savedTemplate && (
+                <p className="text-[11px] text-green-600 dark:text-green-400 text-center mt-2">
+                  Current: {savedTemplate === 'vertical' ? 'Vertical ID Card' : 'Horizontal ID Card'}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Layout Controls</p>
+            <div className="space-y-4">
+              {[
+                { key: 'cardWidth', label: 'Card Width', min: 200, max: 600, suffix: 'px' },
+                { key: 'cardHeight', label: 'Card Height', min: 0, max: 600, suffix: 'px' },
+                { key: 'cardPadding', label: 'Card Padding', min: 0, max: 40, suffix: 'px' },
+                { key: 'borderRadius', label: 'Border Radius', min: 0, max: 30, suffix: 'px' },
+              ].map(({ key, label, min, max, suffix }) => (
+                <div key={key}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{label}</label>
+                    <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig[key]}{suffix}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={min}
+                    max={max}
+                    value={activeConfig[key]}
+                    onChange={(e) => setConfigProp(key, Number(e.target.value))}
+                    className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Photo Controls</p>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">Photo Size</label>
+                  <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.photoSize}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={40}
+                  max={160}
+                  value={activeConfig.photoSize}
+                  onChange={(e) => setConfigProp('photoSize', Number(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-2">Photo Shape</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'circle', label: 'Circle', icon: 'M12 2a10 10 0 100 20 10 10 0 000-20z' },
+                    { value: 'rounded', label: 'Rounded', icon: 'M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5z' },
+                    { value: 'square', label: 'Square', icon: 'M4 4h16v16H4z' },
+                  ].map(({ value, label, icon }) => (
+                    <button
+                      key={value}
+                      onClick={() => setConfigProp('photoShape', value)}
+                      className={`flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-xl text-[11px] font-medium border-2 transition-all cursor-pointer ${
+                        activeConfig.photoShape === value
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d={icon} />
+                      </svg>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">QR Code Controls</p>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">QR Code Size</label>
+                  <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.qrSize}px</span>
+                </div>
+                <input type="range" min={80} max={240} value={activeConfig.qrSize}
+                  onChange={(e) => setConfigProp('qrSize', Number(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600" />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-2">QR Code Position</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'left', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'right', label: 'Right' },
+                  ].map(({ value, label }) => (
+                    <button key={value}
+                      onClick={() => setConfigProp('qrPosition', value)}
+                      className={`px-2 py-2.5 rounded-xl text-[11px] font-medium border-2 transition-all cursor-pointer ${
+                        activeConfig.qrPosition === value
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}>{label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Typography</p>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">Student Name Font Size</label>
+                  <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.nameFontSize}px</span>
+                </div>
+                <input type="range" min={10} max={32} value={activeConfig.nameFontSize}
+                  onChange={(e) => setConfigProp('nameFontSize', Number(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">Details Font Size</label>
+                  <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.detailsFontSize}px</span>
+                </div>
+                <input type="range" min={8} max={24} value={activeConfig.detailsFontSize}
+                  onChange={(e) => setConfigProp('detailsFontSize', Number(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600" />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1.5">Font Weight</label>
+                <select value={activeConfig.fontWeight}
+                  onChange={(e) => setConfigProp('fontWeight', Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                  {[300, 400, 500, 600, 700].map((w) => (
+                    <option key={w} value={w}>{
+                      w === 300 ? 'Light (300)' : w === 400 ? 'Regular (400)' : w === 500 ? 'Medium (500)' : w === 600 ? 'Semi Bold (600)' : 'Bold (700)'
+                    }</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Color Controls</p>
+            <div className="space-y-3">
+              {[
+                { key: 'primaryColor', label: 'Primary Color' },
+                { key: 'secondaryColor', label: 'Secondary Color' },
+                { key: 'textColor', label: 'Text Color' },
+                { key: 'cardBgColor', label: 'Card Background Color' },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between">
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{label}</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400">{activeConfig[key]}</span>
+                    <input type="color" value={activeConfig[key]}
+                      onChange={(e) => setConfigProp(key, e.target.value)}
+                      className="w-8 h-8 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Visibility Controls</p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Header Section</p>
+                <div className="space-y-2">
+                  {[
+                    { key: 'schoolLogo', label: 'Show School Logo' },
+                    { key: 'schoolName', label: 'Show School Name' },
+                  ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
+                      <input type="checkbox" checked={!!activeConfig.visibility[key]}
+                        onChange={(e) => setVisibilityProp(key, e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors select-none">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Student Section</p>
+                <div className="space-y-2">
+                  {[
+                    { key: 'studentPhoto', label: 'Show Student Photo' },
+                    { key: 'studentName', label: 'Show Student Name' },
+                  ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
+                      <input type="checkbox" checked={!!activeConfig.visibility[key]}
+                        onChange={(e) => setVisibilityProp(key, e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors select-none">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Student Information</p>
+                <div className="space-y-2">
+                  {[
+                    { key: 'fatherName', label: 'Show Father Name' },
+                    { key: 'studentId', label: 'Show Student ID' },
+                    { key: 'class', label: 'Show Class' },
+                    { key: 'academicYear', label: 'Show Academic Year' },
+                  ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
+                      <input type="checkbox" checked={!!activeConfig.visibility[key]}
+                        onChange={(e) => setVisibilityProp(key, e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors select-none">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Back Side</p>
+                <div className="space-y-2">
+                  {[
+                    { key: 'qrCode', label: 'Show QR Code' },
+                    { key: 'fatherPhone', label: 'Show Father Phone' },
+                    { key: 'schoolAddress', label: 'Show School Address' },
+                    { key: 'note', label: 'Show Note' },
+                  ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
+                      <input type="checkbox" checked={!!activeConfig.visibility[key]}
+                        onChange={(e) => setVisibilityProp(key, e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                      <span className="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors select-none">{label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default QRCodeManagement;
-
+export default IDCardManagement;

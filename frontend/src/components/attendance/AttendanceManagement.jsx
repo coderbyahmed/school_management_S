@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import StudentAttendance from './tabs/StudentAttendance';
 import TeacherAttendance from './tabs/TeacherAttendance';
-import QRCodeManagement from './tabs/QRCodeManagement';
+import IDCardManagement from './tabs/QRCodeManagement';
 import AttendanceHistory from './tabs/AttendanceHistory';
 import AttendanceReports from './tabs/AttendanceReports';
 
-const tabs = ['Student Attendance', 'Teacher Attendance', 'QR Code Management', 'Attendance History', 'Attendance Reports'];
+const tabs = ['Student Attendance', 'Teacher Attendance', 'ID Card Management', 'Attendance History', 'Attendance Reports'];
 
 const tabComponents = {
   'Student Attendance': StudentAttendance,
   'Teacher Attendance': TeacherAttendance,
-  'QR Code Management': QRCodeManagement,
+  'ID Card Management': IDCardManagement,
   'Attendance History': AttendanceHistory,
   'Attendance Reports': AttendanceReports,
 };

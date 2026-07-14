@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import authService from '../../services/auth.service';
+import schoolSettingsService from '../../services/schoolSettings.service';
+import { getImageUrl } from '../../utils/imageUrl';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
@@ -19,8 +21,24 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [schoolBranding, setSchoolBranding] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const res = await schoolSettingsService.getPublicSchoolSettings();
+        setSchoolBranding(res.data);
+      } catch {
+        // fallback to defaults
+      }
+    };
+    fetchBranding();
+  }, []);
+
+  const schoolName = schoolBranding?.schoolName || 'School Name';
+  const schoolLogoUrl = schoolBranding?.logo ? getImageUrl(schoolBranding.logo) : null;
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -92,15 +110,16 @@ const LoginPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex flex-col items-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg ring-4 ring-yellow-400/50">
-            <span className="text-xl md:text-2xl font-bold text-white">IQ</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg ring-4 ring-yellow-400/50 overflow-hidden">
+            {schoolLogoUrl ? (
+              <img src={schoolLogoUrl} alt={schoolName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl md:text-3xl font-bold text-white">{schoolName.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <h2 className="mt-3 text-xl md:text-2xl font-bold text-gray-900 text-center leading-tight">
-            Iqra Anwar-ul-Quran
+            {schoolName}
           </h2>
-          <p className="text-xs md:text-sm text-gray-500 font-medium -mt-0.5">
-            Secondary School
-          </p>
         </div>
       </div>
 

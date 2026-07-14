@@ -16,6 +16,7 @@ import classRoutes from './routes/class.routes.js';
 import subjectRoutes from './routes/subject.routes.js';
 import timetableRoutes from './routes/timetable.routes.js';
 import timetableTemplateRoutes from './routes/timetableTemplate.routes.js';
+import schoolSettingsRoutes from './routes/schoolSettings.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
 dotenv.config();
@@ -62,6 +63,7 @@ app.use('/api/v1/classes', classRoutes);
 app.use('/api/v1/subjects', subjectRoutes);
 app.use('/api/v1/timetables', timetableRoutes);
 app.use('/api/v1/timetable-templates', timetableTemplateRoutes);
+app.use('/api/v1/school-settings', schoolSettingsRoutes);
 
 // Health check
 app.get('/', (req, res) => {

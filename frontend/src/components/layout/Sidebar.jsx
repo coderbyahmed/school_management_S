@@ -1,7 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import useSchoolBranding from '../../hooks/useSchoolBranding';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
+  const { schoolBranding } = useSchoolBranding();
+  const logoUrl = schoolBranding?.adminPanelLogo ? getImageUrl(schoolBranding.adminPanelLogo) : null;
+  const principalName = schoolBranding?.principalName || 'Admin Panel';
   return (
     <>
       {!isOpen && (
@@ -34,17 +39,21 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <div className="h-16 flex items-center border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           {isOpen ? (
             <div className="flex items-center justify-between w-full px-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/70 flex-shrink-0">
-                  IQ
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-sm ring-1 ring-yellow-400/70 flex-shrink-0 overflow-hidden">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={principalName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{principalName.charAt(0).toUpperCase()}</span>
+                  )}
                 </div>
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                  Admin Panel
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">
+                  {principalName}
                 </span>
               </div>
               <button
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer flex-shrink-0"
                 aria-label="Close sidebar"
               >
                 <XMarkIcon className="h-5 w-5" />
@@ -54,10 +63,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <div className="flex items-center justify-center w-full">
               <button
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                 aria-label="Open sidebar"
               >
-                <Bars3Icon className="h-5 w-5" />
+                {logoUrl ? (
+                  <img src={logoUrl} alt={principalName} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{principalName.charAt(0).toUpperCase()}</span>
+                )}
               </button>
             </div>
           )}
@@ -205,6 +218,26 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 <CheckCircleIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
                   <span className="text-sm font-medium">Attendance Management</span>
+                )}
+              </NavLink>
+            </li>
+            <li className="flex justify-center">
+              <NavLink
+                to="/admin/settings"
+                className={({ isActive }) =>
+                  `flex items-center transition-all duration-200 rounded-lg ${
+                    isActive
+                      ? 'bg-blue-500 text-white shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
+                }
+                onClick={() => {
+                  if (window.innerWidth < 768) toggleSidebar();
+                }}
+              >
+                <Cog6ToothIcon className="h-5 w-5 flex-shrink-0" />
+                {isOpen && (
+                  <span className="text-sm font-medium">School Settings</span>
                 )}
               </NavLink>
             </li>

@@ -13,7 +13,6 @@ import idCardDemoData from '../data/idCardDemoData';
 import { VerticalTemplate, HorizontalTemplate } from '../templates';
 import { getInitials, formatClassName } from '../templates/shared/cardHtmlUtils';
 
-const QR_STATUSES = ['All', 'Generated', 'Not Generated'];
 const CARD_STATUSES = ['All', 'Pending', 'Generated', 'Printed'];
 
 
@@ -36,7 +35,6 @@ const IDCardManagement = () => {
   const [academicYear, setAcademicYear] = useState('');
   const [className, setClassName] = useState('');
   const [search, setSearch] = useState('');
-  const [qrFilter, setQrFilter] = useState('All');
   const [cardFilter, setCardFilter] = useState('All');
 
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -97,10 +95,9 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
       const q = search.toLowerCase();
       list = list.filter((s) => s.fullName.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q));
     }
-    if (qrFilter !== 'All') list = list.filter((s) => s.qrStatus === qrFilter);
     if (cardFilter !== 'All') list = list.filter((s) => getCardStatus(s) === cardFilter);
     return list;
-  }, [allStudents, academicYear, className, search, qrFilter, cardFilter]);
+  }, [allStudents, academicYear, className, search, cardFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
@@ -418,19 +415,6 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">QR Status</label>
-            <div className="relative">
-              <select
-                value={qrFilter}
-                onChange={(e) => setQrFilter(e.target.value)}
-                className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-              >
-                {QR_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Card Status</label>
             <div className="relative">
               <select
@@ -487,14 +471,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             <DocumentCheckIcon className="h-4 w-4" />
             Mark as Printed
           </button>
-          <button
-            onClick={handleExportPdf}
-            disabled={filtered.length === 0}
-            className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-          >
-            <DocumentArrowDownIcon className="h-4 w-4" />
-            Export PDF
-          </button>
+
         </div>
       </div>
 
@@ -532,7 +509,6 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                 <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Student ID</th>
                 <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Class</th>
                 <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Academic Year</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">QR Status</th>
                 <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Card Status</th>
                 <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Preview</th>
                 <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Actions</th>
@@ -541,7 +517,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                     <div className="flex flex-col items-center gap-2">
                       <UserGroupIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
                       <p className="text-sm">No students found</p>
@@ -565,7 +541,6 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                     <td className="px-3 py-3 text-xs font-mono font-medium text-gray-700 dark:text-gray-300">{student.studentId}</td>
                     <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{student.class}</td>
                     <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{student.academicYear}</td>
-                    <td className="px-3 py-3">{renderStatusBadge(student.qrStatus, 'qr')}</td>
                     <td className="px-3 py-3">{renderStatusBadge(getCardStatus(student), 'card')}</td>
                     <td className="px-3 py-3">
                       <div

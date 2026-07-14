@@ -1,10 +1,9 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import {
   CheckCircleIcon, XCircleIcon, ClockIcon, CalendarDaysIcon,
   UserGroupIcon, ArrowPathIcon, DocumentArrowDownIcon,
   PrinterIcon, EyeIcon, MagnifyingGlassIcon, ChevronDownIcon, XMarkIcon,
-  ChartBarSquareIcon,
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import SearchInput from '../../common/SearchInput';
@@ -33,115 +32,6 @@ function formatTimeDisplay(timeStr) {
   if (!timeStr) return '—';
   return timeStr;
 }
-
-const DonutChart = ({ present, absent, leave, late, total }) => {
-  if (!total) return null;
-  const segments = [
-    { label: 'Present', value: present, color: '#22c55e' },
-    { label: 'Absent', value: absent, color: '#ef4444' },
-    { label: 'Leave', value: leave, color: '#eab308' },
-    { label: 'Late', value: late, color: '#f97316' },
-  ];
-
-  const radius = 60;
-  const circumference = 2 * Math.PI * radius;
-  let offset = 0;
-  let pathData = '';
-
-  segments.forEach((seg) => {
-    if (seg.value === 0) return;
-    const ratio = seg.value / total;
-    const length = ratio * circumference;
-    pathData += `<circle cx="80" cy="80" r="${radius}" fill="none" stroke="${seg.color}" stroke-width="18" stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}" transform="rotate(-90 80 80)" />`;
-    offset += length;
-  });
-
-  return (
-    <div className="flex flex-col items-center">
-      <svg width="160" height="160" viewBox="0 0 160 160" dangerouslySetInnerHTML={{ __html: pathData }} />
-      <div className="flex flex-wrap gap-3 mt-3 justify-center">
-        {segments.map((s) => (
-          <div key={s.label} className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
-            {s.label} ({s.value})
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const BarChart = ({ data }) => {
-  if (!data.length) return null;
-  const maxVal = Math.max(...data.map((d) => d.total), 1);
-
-  return (
-    <div className="flex items-end gap-2 h-32">
-      {data.map((d) => {
-        const height = (d.total / maxVal) * 100;
-        return (
-          <div key={d.month} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full flex flex-col items-center justify-end" style={{ height: '100px' }}>
-              <div className="w-full flex flex-col-reverse items-center" style={{ height: '100px' }}>
-                <div
-                  className="w-full rounded-t bg-blue-500 dark:bg-blue-400 transition-all"
-                  style={{ height: `${height}%`, minHeight: d.total > 0 ? '4px' : '0' }}
-                  title={`${d.month}: ${d.total} records`}
-                />
-              </div>
-            </div>
-            <span className="text-[8px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
-              {d.month.slice(5)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-const TrendChart = ({ data }) => {
-  if (!data.length) return null;
-  const maxVal = Math.max(...data.map((d) => d.total), 1);
-  const width = 280;
-  const height = 80;
-  const padding = 4;
-  const chartW = width - padding * 2;
-  const chartH = height - padding * 2;
-  const stepX = data.length > 1 ? chartW / (data.length - 1) : 0;
-
-  const presentPoints = data.map((d, i) => `${padding + i * stepX},${padding + chartH - (d.present / maxVal) * chartH}`).join(' ');
-  const absentPoints = data.map((d, i) => `${padding + i * stepX},${padding + chartH - (d.absent / maxVal) * chartH}`).join(' ');
-
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full">
-      {data.length > 1 && (
-        <>
-          <polyline fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={presentPoints} />
-          <polyline fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={absentPoints} />
-        </>
-      )}
-      {data.map((d, i) => (
-        <circle
-          key={d.date}
-          cx={padding + i * stepX}
-          cy={padding + chartH - (d.present / maxVal) * chartH}
-          r="2.5"
-          fill="#22c55e"
-        />
-      ))}
-      {data.map((d, i) => (
-        <circle
-          key={`a${d.date}`}
-          cx={padding + i * stepX}
-          cy={padding + chartH - (d.absent / maxVal) * chartH}
-          r="2.5"
-          fill="#ef4444"
-        />
-      ))}
-    </svg>
-  );
-};
 
 const AttendanceHistory = () => {
   const [allRecords, setAllRecords] = useState([]);
@@ -177,8 +67,16 @@ const AttendanceHistory = () => {
   }, [allRecords, type, academicYear, className, fromDate, toDate, status, search]);
 
   const stats = useMemo(() => attendanceHistoryService.getStats(filteredRecords), [filteredRecords]);
-  const monthlyStats = useMemo(() => attendanceHistoryService.getMonthlyStats(filteredRecords), [filteredRecords]);
-  const dailyStats = useMemo(() => attendanceHistoryService.getDailyStats(filteredRecords), [filteredRecords]);
+
+  const dashboardStats = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      totalRecords: filteredRecords.length,
+      todayRecords: filteredRecords.filter((r) => r.date === today).length,
+      studentRecords: filteredRecords.filter((r) => r.type === 'Student').length,
+      teacherRecords: filteredRecords.filter((r) => r.type === 'Teacher').length,
+    };
+  }, [filteredRecords]);
 
   const deptOptions = useMemo(() => {
     if (type === 'Teachers') return attendanceHistoryService.DEPARTMENTS;
@@ -263,26 +161,7 @@ const AttendanceHistory = () => {
     }
   };
 
-  const handleExportExcel = () => {
-    if (!filteredRecords.length) { toast.error('No records to export'); return; }
-
-    const headers = ['Name', 'ID', 'Type', 'Class/Department', 'Date', 'Check In', 'Check Out', 'Status', 'Mode'];
-    const rows = filteredRecords.map((r) => [
-      r.name, r.personId, r.type, r.classOrDept, formatDateDisplay(r.date),
-      formatTimeDisplay(r.checkIn), formatTimeDisplay(r.checkOut), r.status, r.mode,
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map((r) => r.map((c) => `"${c}"`).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Attendance-History-${academicYear || 'all'}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast.success('CSV exported successfully');
-  };
-
-  const handlePrint = useCallback(() => {
+  const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) { window.print(); return; }
 
@@ -316,7 +195,7 @@ const AttendanceHistory = () => {
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
-  }, []);
+  };
 
   const renderPhoto = (record) => (
     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs ring-1 flex-shrink-0 ${
@@ -363,10 +242,10 @@ const AttendanceHistory = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon={UserGroupIcon} label="Total Records" value={stats.total} color="blue" />
-        <StatCard icon={CheckCircleIcon} label="Present" value={stats.present} color="green" />
-        <StatCard icon={XCircleIcon} label="Absent" value={stats.absent} color="red" />
-        <StatCard icon={CalendarDaysIcon} label="Late" value={stats.late} color="yellow" />
+        <StatCard icon={UserGroupIcon} label="Total Records" value={dashboardStats.totalRecords} color="blue" />
+        <StatCard icon={CalendarDaysIcon} label="Today's Records" value={dashboardStats.todayRecords} color="green" />
+        <StatCard icon={UserGroupIcon} label="Student Records" value={dashboardStats.studentRecords} color="yellow" />
+        <StatCard icon={UserGroupIcon} label="Teacher Records" value={dashboardStats.teacherRecords} color="purple" />
       </div>
 
       {/* Filters */}
@@ -445,12 +324,6 @@ const AttendanceHistory = () => {
             <DocumentArrowDownIcon className="h-4 w-4" />
             Export PDF
           </button>
-          <button onClick={handleExportExcel}
-            disabled={!filteredRecords.length}
-            className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer">
-            <ChartBarSquareIcon className="h-4 w-4" />
-            Export Excel
-          </button>
           <button onClick={handlePrint}
             disabled={!filteredRecords.length}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer">
@@ -463,28 +336,8 @@ const AttendanceHistory = () => {
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Monthly Overview</h3>
-          <BarChart data={monthlyStats} />
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Present vs Absent</h3>
-          <DonutChart present={stats.present} absent={stats.absent} leave={stats.leave} late={stats.late} total={stats.total} />
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Attendance Trend (30 days)</h3>
-          <TrendChart data={dailyStats} />
-          <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-gray-500 dark:text-gray-400">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Present</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Absent</span>
-          </div>
-        </div>
-      </div>
-
       {/* Table */}
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm" ref={tableRef}>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-auto" ref={tableRef}>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800">
@@ -495,7 +348,6 @@ const AttendanceHistory = () => {
               <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Class / Dept</th>
               <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Date</th>
               <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Check In</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Check Out</th>
               <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Status</th>
               <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Mode</th>
               <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider no-print">Actions</th>
@@ -504,7 +356,7 @@ const AttendanceHistory = () => {
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredRecords.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                   <div className="flex flex-col items-center gap-2">
                     <UserGroupIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
                     <p className="text-sm">No attendance records found</p>
@@ -530,7 +382,6 @@ const AttendanceHistory = () => {
                   <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{record.classOrDept}</td>
                   <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatDateDisplay(record.date)}</td>
                   <td className="px-3 py-3 text-xs font-mono text-gray-600 dark:text-gray-400">{formatTimeDisplay(record.checkIn)}</td>
-                  <td className="px-3 py-3 text-xs font-mono text-gray-600 dark:text-gray-400">{formatTimeDisplay(record.checkOut)}</td>
                   <td className="px-3 py-3">{renderStatusBadge(record.status)}</td>
                   <td className="px-3 py-3">{renderModeBadge(record.mode)}</td>
                   <td className="px-3 py-3 no-print">
@@ -563,7 +414,6 @@ const AttendanceHistory = () => {
                               <div class="row"><span class="label">Class/Department</span><span class="value">${record.classOrDept}</span></div>
                               <div class="row"><span class="label">Date</span><span class="value">${formatDateDisplay(record.date)}</span></div>
                               <div class="row"><span class="label">Check In</span><span class="value">${formatTimeDisplay(record.checkIn)}</span></div>
-                              <div class="row"><span class="label">Check Out</span><span class="value">${formatTimeDisplay(record.checkOut)}</span></div>
                               <div class="row"><span class="label">Status</span><span class="value">${record.status}</span></div>
                               <div class="row"><span class="label">Mode</span><span class="value">${record.mode}</span></div>
                             </div>
@@ -628,7 +478,6 @@ const AttendanceHistory = () => {
                   ['Academic Year', selectedRecord.academicYear],
                   ['Date', formatDateDisplay(selectedRecord.date)],
                   ['Check In Time', formatTimeDisplay(selectedRecord.checkIn)],
-                  ['Check Out Time', formatTimeDisplay(selectedRecord.checkOut)],
                   ['Attendance Mode', selectedRecord.mode],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between items-center py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -668,7 +517,6 @@ const AttendanceHistory = () => {
                           <div class="row"><span class="label">Academic Year</span><span class="value">${selectedRecord.academicYear}</span></div>
                           <div class="row"><span class="label">Date</span><span class="value">${formatDateDisplay(selectedRecord.date)}</span></div>
                           <div class="row"><span class="label">Check In</span><span class="value">${formatTimeDisplay(selectedRecord.checkIn)}</span></div>
-                          <div class="row"><span class="label">Check Out</span><span class="value">${formatTimeDisplay(selectedRecord.checkOut)}</span></div>
                           <div class="row"><span class="label">Status</span><span class="value">${selectedRecord.status}</span></div>
                           <div class="row"><span class="label">Mode</span><span class="value">${selectedRecord.mode}</span></div>
                         </div>

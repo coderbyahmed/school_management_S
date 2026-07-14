@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'attendance_reports_records';
 const ACADEMIC_YEARS = [
-  '2025-26', '2026-27', '2027-28', '2028-29', '2029-30',
-  '2030-31', '2031-32', '2032-33', '2033-34', '2034-35', '2035-36',
+  '2025', '2026', '2027', '2028', '2029', '2030',
+  '2031', '2032', '2033', '2034', '2035',
 ];
 const CLASSES = [
   'Montessori', 'Nursery', 'KG 1', 'KG 2',
@@ -9,7 +9,6 @@ const CLASSES = [
   'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
 ];
 const DEPARTMENTS = ['Science', 'Arts', 'Mathematics', 'Languages', 'Computer Science', 'Physical Education', 'Islamic Studies'];
-const STATUSES = ['Present', 'Absent', 'Leave', 'Late'];
 const MODES = ['Manual', 'QR Code', 'Hardware (Coming Soon)'];
 
 const STUDENT_NAMES = [
@@ -132,9 +131,6 @@ function applyFilters(records, filters) {
   if (filters.className) {
     list = list.filter((r) => r.classOrDept === filters.className);
   }
-  if (filters.status && filters.status !== 'All') {
-    list = list.filter((r) => r.status === filters.status);
-  }
   if (filters.fromDate) {
     list = list.filter((r) => r.date >= filters.fromDate);
   }
@@ -211,27 +207,24 @@ const attendanceReportsService = {
     return this.getClassWiseStats(teacherRecords);
   },
 
-  getInsights(records) {
+  getPersonSummaries(records) {
     const personMap = {};
     records.forEach((r) => {
-      if (!personMap[r.personId]) personMap[r.personId] = { name: r.name, personId: r.personId, present: 0, absent: 0, leave: 0, late: 0, total: 0 };
+      if (!personMap[r.personId]) {
+        personMap[r.personId] = {
+          name: r.name,
+          personId: r.personId,
+          type: r.type,
+          classOrDept: r.classOrDept,
+          present: 0, absent: 0, leave: 0, late: 0, total: 0,
+        };
+      }
       personMap[r.personId].total++;
       personMap[r.personId][r.status.toLowerCase()]++;
     });
-
-    const personList = Object.values(personMap);
-    if (!personList.length) return { highestAttendance: null, lowestAttendance: null, mostLate: null, mostLeaves: null, avgPercentage: 0 };
-
-    const highestAttendance = personList.reduce((a, b) => a.present > b.present ? a : b);
-    const lowestAttendance = personList.reduce((a, b) => a.absent > b.absent ? a : b);
-    const mostLate = personList.reduce((a, b) => a.late > b.late ? a : b);
-    const mostLeaves = personList.reduce((a, b) => a.leave > b.leave ? a : b);
-
-    const totalPresent = personList.reduce((sum, p) => sum + p.present, 0);
-    const totalRecords = personList.reduce((sum, p) => sum + p.total, 0);
-    const avgPercentage = totalRecords > 0 ? Math.round((totalPresent / totalRecords) * 100) : 0;
-
-    return { highestAttendance, lowestAttendance, mostLate, mostLeaves, avgPercentage };
+    return Object.values(personMap)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((p) => ({ ...p, percentage: p.total > 0 ? Math.round((p.present / p.total) * 100) : 0 }));
   },
 
   getPersonSummary(records, personId) {

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
+import { SchoolConfigProvider } from './contexts/SchoolConfigContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
@@ -22,6 +23,7 @@ import SchoolSettings from './pages/admin/SchoolSettings';
 function App() {
   return (
     <AuthProvider>
+      <SchoolConfigProvider>
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         {/* Public Routes */}
@@ -56,6 +58,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      </SchoolConfigProvider>
     </AuthProvider>
   );
 }

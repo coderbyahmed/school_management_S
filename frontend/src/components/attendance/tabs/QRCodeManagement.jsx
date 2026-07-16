@@ -11,17 +11,10 @@ import Modal from '../../common/Modal';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import idCardDemoData from '../data/idCardDemoData';
 import { VerticalTemplate, HorizontalTemplate } from '../templates';
-import { getInitials, formatClassName } from '../templates/shared/cardHtmlUtils';
+import { getInitials } from '../templates/shared/cardHtmlUtils';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const CARD_STATUSES = ['All', 'Pending', 'Generated', 'Printed'];
-
-
-const SCHOOL_INFO = {
-  name: 'Iqra Anwar Ul Quran Sec School',
-  address: '123 Education Street, Lahore, Pakistan',
-  contact: '+92-300-1234567',
-  email: 'info@iqraanwarulquran.edu.pk',
-};
 
 const PAGE_SIZE = 10;
 
@@ -31,6 +24,14 @@ const PaintSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor
 
 
 const IDCardManagement = () => {
+  const { schoolInfo } = useSchoolConfig();
+  const SCHOOL_INFO = {
+    name: schoolInfo.name,
+    address: schoolInfo.address || schoolInfo.schoolAddress || 'N/A',
+    contact: schoolInfo.contact || schoolInfo.schoolContact || 'N/A',
+    email: schoolInfo.email || schoolInfo.schoolEmail || 'N/A',
+  };
+
   const [allStudents, setAllStudents] = useState([]);
   const [academicYear, setAcademicYear] = useState('');
   const [className, setClassName] = useState('');

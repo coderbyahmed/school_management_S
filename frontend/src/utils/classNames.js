@@ -8,3 +8,5 @@ export const ACADEMIC_YEARS = [
   '2025', '2026', '2027', '2028', '2029', '2030',
   '2031', '2032', '2033', '2034', '2035',
 ];
+
+export const DEPARTMENTS = ['Science', 'Arts', 'Mathematics', 'Languages', 'Computer Science', 'Physical Education', 'Islamic Studies'];

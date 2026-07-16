@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import timetableTemplateService from '../../../services/timetableTemplate.service';
 import timetableService from '../../../services/timetable.service';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const GROUPS = {
   1: { name: 'Group 1', classes: ['Montessori', 'Nursery', 'KG 1', 'KG 2'] },
@@ -36,8 +37,8 @@ const PADDING_OPTIONS = [
 ];
 
 const HEADER_INIT = {
-  schoolName: { text: 'IQRA ANWAR UL QURAN SECONDARY SCHOOL', align: 'left', fontFamily: 'Inter', fontSize: '24px', fontWeight: '700', color: '#ffffff' },
-  principalName: { text: 'Dr. Abdul Rahman', align: 'left', fontFamily: 'Inter', fontSize: '12px', fontWeight: '400', color: '#ffffff' },
+  schoolName: { text: 'School Name', align: 'left', fontFamily: 'Inter', fontSize: '24px', fontWeight: '700', color: '#ffffff' },
+  principalName: { text: 'Principal Name', align: 'left', fontFamily: 'Inter', fontSize: '12px', fontWeight: '400', color: '#ffffff' },
   academicYear: { text: '2026', align: 'left', fontFamily: 'Inter', fontSize: '10px', fontWeight: '400', color: '#ffffff' },
   logo: { show: true, dataUrl: null },
   container: { bgColor: '#1d4ed8', borderColor: '#1d4ed8', borderRadius: '0px', padding: '14px 20px', shadow: false },
@@ -136,9 +137,14 @@ const StyleGroup = ({ label, align, fontFamily, fontSize, fontWeight, color, onC
 );
 
 const TimetableDesigner = () => {
+  const { schoolInfo } = useSchoolConfig();
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('classic');
-  const [header, setHeader] = useState(HEADER_INIT);
+  const [header, setHeader] = useState({
+    ...HEADER_INIT,
+    schoolName: { ...HEADER_INIT.schoolName, text: schoolInfo.name || HEADER_INIT.schoolName.text },
+    principalName: { ...HEADER_INIT.principalName, text: schoolInfo.principalName || HEADER_INIT.principalName.text },
+  });
   const [title, setTitle] = useState(TITLE_INIT);
   const [tableHeaders, setTableHeaders] = useState(TABLE_HEADERS_INIT);
   const [periodCells, setPeriodCells] = useState(PERIOD_CELLS_INIT);
@@ -577,13 +583,13 @@ const TimetableDesigner = () => {
     if (!tpl) return;
     setSelectedTemplate(tplId);
     const font = tplId === 'professional' ? 'Arial' : tplId === 'green' ? 'Georgia' : 'Inter';
-    setHeader({
-      schoolName: { ...HEADER_INIT.schoolName, color: tpl.headerText, fontFamily: font },
-      principalName: { ...HEADER_INIT.principalName, color: tpl.headerText, fontFamily: font },
-      academicYear: { ...HEADER_INIT.academicYear, color: tpl.headerText, fontFamily: font },
-      logo: { ...HEADER_INIT.logo },
-      container: { ...HEADER_INIT.container, bgColor: tpl.primary, borderColor: tpl.primary },
-    });
+    setHeader((prev) => ({
+      schoolName: { ...prev.schoolName, color: tpl.headerText, fontFamily: font },
+      principalName: { ...prev.principalName, color: tpl.headerText, fontFamily: font },
+      academicYear: { ...prev.academicYear, color: tpl.headerText, fontFamily: font },
+      logo: { ...prev.logo },
+      container: { ...prev.container, bgColor: tpl.primary, borderColor: tpl.primary },
+    }));
     setTitle({ ...TITLE_INIT, color: tpl.headerText, fontFamily: font });
     setTableHeaders({
       time: { ...TABLE_HEADERS_INIT.time, bg: tpl.primary, color: tpl.headerText, fontFamily: font },
@@ -1007,7 +1013,7 @@ const TimetableDesigner = () => {
               <button onClick={handleExportPdf} disabled={groupTimetables.length === 0 || pdfExporting} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
                 {pdfExporting ? 'Exporting PDF...' : 'Export PDF'}
               </button>
-              <button onClick={() => { setDesignPanelOpen(false); setHeader(HEADER_INIT); setTitle(TITLE_INIT); setTableHeaders(TABLE_HEADERS_INIT); setPeriodCells(PERIOD_CELLS_INIT); setBreakRow(BREAK_ROW_INIT); setTableLayout(TABLE_LAYOUT_INIT); setMergedPairs([]); setShowSignature(false); setShowFooter(true); setWatermark(false); setOrientation('landscape'); setMarginTop('15mm'); setMarginBottom('15mm'); setMarginLeft('10mm'); setMarginRight('10mm'); setSelectedTemplate('classic'); setSavedTemplateId(null); setSaveName(''); setGroupTimetables([]); setGroupError(''); }} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"><ResetSvg /> Reset Design</button>
+              <button onClick={() => { const defaultHeader = { ...HEADER_INIT, schoolName: { ...HEADER_INIT.schoolName, text: schoolInfo.name || HEADER_INIT.schoolName.text }, principalName: { ...HEADER_INIT.principalName, text: schoolInfo.principalName || HEADER_INIT.principalName.text } }; setDesignPanelOpen(false); setHeader(defaultHeader); setTitle(TITLE_INIT); setTableHeaders(TABLE_HEADERS_INIT); setPeriodCells(PERIOD_CELLS_INIT); setBreakRow(BREAK_ROW_INIT); setTableLayout(TABLE_LAYOUT_INIT); setMergedPairs([]); setShowSignature(false); setShowFooter(true); setWatermark(false); setOrientation('landscape'); setMarginTop('15mm'); setMarginBottom('15mm'); setMarginLeft('10mm'); setMarginRight('10mm'); setSelectedTemplate('classic'); setSavedTemplateId(null); setSaveName(''); setGroupTimetables([]); setGroupError(''); }} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"><ResetSvg /> Reset Design</button>
             </div>
           </AccordionSection>
         </div>

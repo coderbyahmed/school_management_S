@@ -5,6 +5,7 @@ import AcademicSettings from './tabs/AcademicSettings';
 import BrandingDocuments from './tabs/BrandingDocuments';
 import SystemPreferences from './tabs/SystemPreferences';
 import schoolSettingsService from '../../services/schoolSettings.service';
+import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
 
 const tabs = ['School Information', 'Academic Settings', 'Branding & Documents', 'System Preferences'];
 
@@ -128,6 +129,7 @@ const mapApiToBranding = (api) => ({
 });
 
 const SchoolSettings = () => {
+  const { refresh } = useSchoolConfig();
   const [activeTab, setActiveTab] = useState('School Information');
   const [apiSettings, setApiSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -201,6 +203,7 @@ const SchoolSettings = () => {
       const res = await schoolSettingsService.updateSchoolInformation(payload);
       setApiSettings(res.data.settings);
       toast.success('School information saved successfully');
+      refresh();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to save school information');
     } finally {
@@ -221,6 +224,7 @@ const SchoolSettings = () => {
       const res = await schoolSettingsService.updateAcademicSettings(payload);
       setApiSettings(res.data.settings);
       toast.success('Academic settings saved successfully');
+      refresh();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to save academic settings');
     } finally {
@@ -240,6 +244,7 @@ const SchoolSettings = () => {
       const res = await schoolSettingsService.updateBrandingSettings(payload);
       setApiSettings(res.data.settings);
       toast.success('Branding settings saved successfully');
+      refresh();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to save branding settings');
     } finally {
@@ -253,6 +258,7 @@ const SchoolSettings = () => {
       const res = await schoolSettingsService.uploadSchoolImage(field, file);
       setApiSettings(res.data.settings);
       toast.success('Image uploaded successfully');
+      refresh();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to upload image');
     } finally {
@@ -273,6 +279,7 @@ const SchoolSettings = () => {
       const res = await schoolSettingsService.updateSystemPreferences(payload);
       setApiSettings(res.data.settings);
       toast.success('System preferences saved successfully');
+      refresh();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to save system preferences');
     } finally {

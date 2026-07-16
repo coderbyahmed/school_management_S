@@ -1,13 +1,5 @@
-const ACADEMIC_YEARS = [
-  '2025', '2026', '2027', '2028', '2029', '2030',
-  '2031', '2032', '2033', '2034', '2035',
-];
-
-const CLASS_LIST = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
+import { ACADEMIC_YEARS, CLASS_NAMES } from '../../../utils/classNames';
+const CLASS_LIST = CLASS_NAMES;
 
 const NAMES = [
   'Ahmed Khan', 'Sara Ali', 'Muhammad Usman', 'Fatima Zahra', 'Ali Raza',

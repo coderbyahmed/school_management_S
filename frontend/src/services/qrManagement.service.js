@@ -1,15 +1,6 @@
+import { ACADEMIC_YEARS, CLASS_NAMES } from '../utils/classNames';
+
 const STORAGE_KEY = 'qr_management_students';
-
-const ACADEMIC_YEARS = [
-  '2025-26', '2026-27', '2027-28', '2028-29', '2029-30',
-  '2030-31', '2031-32', '2032-33', '2033-34', '2034-35', '2035-36',
-];
-
-const CLASS_LIST = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
 
 const NAMES = [
   'Ahmed Khan', 'Sara Ali', 'Muhammad Usman', 'Fatima Zahra', 'Ali Raza',
@@ -32,7 +23,7 @@ function generateDummyStudents() {
   let globalIdx = 1;
 
   ACADEMIC_YEARS.slice(0, 3).forEach((year) => {
-    CLASS_LIST.forEach((cls) => {
+    CLASS_NAMES.forEach((cls) => {
       const count = Math.floor(Math.random() * 3) + 2;
       for (let i = 0; i < count; i++) {
         const name = NAMES[Math.floor(Math.random() * NAMES.length)];
@@ -115,5 +106,5 @@ const qrManagementService = {
   },
 };
 
-export { ACADEMIC_YEARS, CLASS_LIST };
+export { ACADEMIC_YEARS, CLASS_LIST: CLASS_NAMES };
 export default qrManagementService;

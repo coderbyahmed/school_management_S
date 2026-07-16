@@ -1,14 +1,6 @@
+import { ACADEMIC_YEARS, CLASS_NAMES, DEPARTMENTS } from '../utils/classNames';
+
 const STORAGE_KEY = 'attendance_history_records';
-const ACADEMIC_YEARS = [
-  '2025-26', '2026-27', '2027-28', '2028-29', '2029-30',
-  '2030-31', '2031-32', '2032-33', '2033-34', '2034-35', '2035-36',
-];
-const CLASSES = [
-  'Montessori', 'Nursery', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-];
-const DEPARTMENTS = ['Science', 'Arts', 'Mathematics', 'Languages', 'Computer Science', 'Physical Education', 'Islamic Studies'];
 const STATUSES = ['Present', 'Absent', 'Leave', 'Late'];
 const MODES = ['Manual', 'QR Code', 'Hardware (Coming Soon)'];
 
@@ -67,7 +59,7 @@ function generateRecords() {
       for (let i = 0; i < studentCount; i++) {
         const name = randomItem(STUDENT_NAMES);
         const status = randomItem(STATUSES);
-        const cls = randomItem(CLASSES);
+        const cls = randomItem(CLASS_NAMES);
         const checkIn = status === 'Present' || status === 'Late' ? formatTime(new Date(date.getFullYear(), date.getMonth(), date.getDate(), randomInt(7, 9), randomInt(0, 59))) : '';
         const checkOut = status === 'Present' || status === 'Late' ? formatTime(new Date(date.getFullYear(), date.getMonth(), date.getDate(), randomInt(13, 16), randomInt(0, 59))) : '';
 
@@ -195,7 +187,7 @@ const attendanceHistoryService = {
   },
 
   ACADEMIC_YEARS,
-  CLASSES,
+  CLASSES: CLASS_NAMES,
   DEPARTMENTS,
 };
 

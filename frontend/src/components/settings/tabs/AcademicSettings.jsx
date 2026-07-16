@@ -5,8 +5,7 @@ import {
 } from '@heroicons/react/24/outline';
 import CardSection from '../../common/CardSection';
 import SelectInput from '../../common/SelectInput';
-
-const ACADEMIC_YEARS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032'];
+import { ACADEMIC_YEARS } from '../../../utils/classNames';
 const SCHOOL_SHIFTS = ['Morning', 'Evening', 'Both'];
 const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const LANGUAGES = ['English', 'Urdu', 'Arabic', 'French'];

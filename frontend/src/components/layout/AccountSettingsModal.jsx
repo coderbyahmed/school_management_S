@@ -6,6 +6,7 @@ import Input from '../common/Input';
 import Alert from '../common/Alert';
 import OtpInput from '../common/OtpInput';
 import { toast } from 'react-hot-toast';
+import Spinner from '../common/Spinner';
 
 const OTP_EXPIRY_SEC = 300;
 
@@ -51,27 +52,6 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
   const [lockStep, setLockStep] = useState('old'); // 'old' | 'new' for change flow
   const [lockLoading, setLockLoading] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) {
-      Promise.resolve().then(() => resetState());
-    } else {
-      Promise.resolve().then(() => checkLockStatus());
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (timer > 0) {
-      timerRef.current = setTimeout(() => {
-        setTimer((prev) => {
-          if (prev <= 1) return 0;
-          if (expiresAt) return calcRemaining(expiresAt);
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearTimeout(timerRef.current);
-  }, [timer, expiresAt]);
-
   const resetState = () => {
     setActiveSection(null);
     setLoading(false);
@@ -105,19 +85,6 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     setLockLoading(false);
   };
 
-  const handleClose = () => {
-    resetState();
-    onClose();
-  };
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // Security lock handlers
-
   const checkLockStatus = async () => {
     setLockLoading(true);
     try {
@@ -130,6 +97,38 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
     } finally {
       setLockLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      Promise.resolve().then(() => resetState());
+    } else {
+      Promise.resolve().then(() => checkLockStatus());
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (timer > 0) {
+      timerRef.current = setTimeout(() => {
+        setTimer((prev) => {
+          if (prev <= 1) return 0;
+          if (expiresAt) return calcRemaining(expiresAt);
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearTimeout(timerRef.current);
+  }, [timer, expiresAt]);
+
+  const handleClose = () => {
+    resetState();
+    onClose();
+  };
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleSetLock = async () => {
@@ -572,7 +571,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
 
             {hasLock === null && (
               <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                <Spinner size="md" className="text-blue-600" />
               </div>
             )}
 

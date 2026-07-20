@@ -6,6 +6,7 @@ import BrandingDocuments from './tabs/BrandingDocuments';
 import SystemPreferences from './tabs/SystemPreferences';
 import schoolSettingsService from '../../services/schoolSettings.service';
 import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
+import Spinner from '../common/Spinner';
 
 const tabs = ['School Information', 'Academic Settings', 'Branding & Documents', 'System Preferences'];
 
@@ -45,6 +46,7 @@ const DEFAULT_ACADEMIC = {
 const DEFAULT_BRANDING = {
   adminPanelLogo: null,
   smallLogo: null,
+  splashBackground: null,
   principalSignature: null,
   schoolStamp: null,
   footerText: '',
@@ -115,6 +117,7 @@ const mapApiToAcademic = (api) => ({
 const mapApiToBranding = (api) => ({
   adminPanelLogo: api.adminPanelLogo || null,
   smallLogo: api.smallLogo || null,
+  splashBackground: api.splashBackground || null,
   principalSignature: api.principalSignature || null,
   schoolStamp: api.schoolStamp || null,
   footerText: '',
@@ -314,7 +317,7 @@ const SchoolSettings = () => {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          <Spinner size="md" className="text-blue-600" />
         </div>
       ) : (
         <>

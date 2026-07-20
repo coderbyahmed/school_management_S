@@ -112,7 +112,7 @@ const CreateTimetable = () => {
           const tts = res?.data?.timetables || [];
           const match = tts.find((t) => t.academicYear === academicYear);
           if (match) classTts[name] = match;
-        } catch {}
+        } catch { /* empty */ }
       }
       if (Object.keys(classTts).length === 0) {
         setPeriods([]);
@@ -318,7 +318,7 @@ const CreateTimetable = () => {
           const tts = res?.data?.timetables || [];
           const match = tts.find((t) => t.academicYear === academicYear);
           if (match) existingId = match._id;
-        } catch {}
+        } catch { /* empty */ }
         if (existingId) {
           const res = await timetableService.updateTimetable(existingId, payload);
           if (res?.warnings) allWarnings = allWarnings.concat(res.warnings);
@@ -351,7 +351,7 @@ const CreateTimetable = () => {
           const tts = res?.data?.timetables || [];
           const match = tts.find((t) => t.academicYear === academicYear);
           if (match) classTts[name] = match;
-        } catch {}
+        } catch { /* empty */ }
       }
       if (Object.keys(classTts).length > 0) {
         const slotMap = {};
@@ -471,10 +471,8 @@ const CreateTimetable = () => {
             const err = fieldErrors[period.id];
             const locked = period.completed;
 
-            const disabledSelectCls = 'appearance-none w-full px-2 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-xs text-gray-400 dark:text-gray-500 cursor-default transition-all';
             const disabledInputCls = 'w-full px-2 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-xs text-gray-400 dark:text-gray-500 cursor-default transition-all [color-scheme:light] dark:[color-scheme:dark]';
 
-            const pSelectCls = locked ? disabledSelectCls : selectCls;
             const pInputCls = locked ? disabledInputCls : inputCls;
 
             return (

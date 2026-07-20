@@ -21,7 +21,6 @@ const AllClassesTimetable = () => {
   const [academicYear, setAcademicYear] = useState('');
   const [viewClicked, setViewClicked] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const [groupData, setGroupData] = useState(null);
   const [allTimetables, setAllTimetables] = useState([]);
   const [loading, setLoading] = useState(false);
   const [subjects, setSubjects] = useState({});
@@ -32,6 +31,7 @@ const AllClassesTimetable = () => {
 
   useEffect(() => {
     if (!viewClicked) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     timetableService.getAllTimetables()
       .then((res) => {
@@ -54,6 +54,7 @@ const AllClassesTimetable = () => {
         }
       });
     });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSubjects(map);
   }, [allTimetables]);
 
@@ -61,20 +62,17 @@ const AllClassesTimetable = () => {
     if (!academicYear) return;
     setViewClicked(true);
     setCurrentPage(0);
-    setGroupData(null);
     setAllTimetables([]);
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    setGroupData(null);
   };
 
   const handleReset = () => {
     setAcademicYear('');
     setViewClicked(false);
     setCurrentPage(0);
-    setGroupData(null);
     setAllTimetables([]);
   };
 

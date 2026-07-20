@@ -47,6 +47,7 @@ const AttendanceHistory = () => {
 
   useEffect(() => {
     const records = attendanceHistoryService.getRecords();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAllRecords(records);
   }, []);
 

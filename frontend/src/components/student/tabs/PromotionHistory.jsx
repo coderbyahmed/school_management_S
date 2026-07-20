@@ -10,6 +10,7 @@ import ConfirmationModal from '../../common/ConfirmationModal';
 import { getImageUrl } from '../../../utils/imageUrl';
 import studentService from '../../../services/student.service';
 import { CLASS_NAMES } from '../../../utils/classNames';
+import Spinner from '../../common/Spinner';
 
 const PromotionHistory = () => {
   const [yearFilter, setYearFilter] = useState('All');
@@ -54,7 +55,8 @@ const PromotionHistory = () => {
     }
   }, []);
 
-  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+  useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchHistory(); }, [fetchHistory]);
 
   const handleDeleteClick = useCallback((id) => {
     setDeleteId(id);
@@ -239,7 +241,7 @@ const PromotionHistory = () => {
 
       {loading ? (
         <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-          <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+          <Spinner size="sm" className="text-blue-500 mx-auto mb-2" />
           <p className="text-sm">Loading promotion history...</p>
         </div>
       ) : filteredPromotions.length > 0 ? (

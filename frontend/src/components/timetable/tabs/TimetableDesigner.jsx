@@ -162,8 +162,6 @@ const TimetableDesigner = () => {
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [mergeSelections, setMergeSelections] = useState([]);
   const [mergeEnabled, setMergeEnabled] = useState(false);
-  const [mergePrimary, setMergePrimary] = useState('');
-  const [mergeSecondary, setMergeSecondary] = useState('');
   const [openSections, setOpenSections] = useState({ templates: true, header: false, title: false, tableHeaders: false, periodCells: false, breakRow: false, tableLayout: false, merge: false, print: false });
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [savedTemplateId, setSavedTemplateId] = useState(null);
@@ -182,7 +180,6 @@ const TimetableDesigner = () => {
   const [groupError, setGroupError] = useState('');
   const [pdfExporting, setPdfExporting] = useState(false);
   const fileInputRef = useRef(null);
-  const printAreaRef = useRef(null);
   const panelRef = useRef(null);
 
   const toggleSection = (key) => setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -210,6 +207,7 @@ const TimetableDesigner = () => {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTemplates();
   }, [loadTemplates]);
 
@@ -249,6 +247,7 @@ const TimetableDesigner = () => {
   }, [selectedGroup, groupAcademicYear]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadGroupTimetables();
   }, [loadGroupTimetables]);
 
@@ -327,6 +326,7 @@ const TimetableDesigner = () => {
 
   useEffect(() => {
     if (savedTemplates.length > 0 && !savedTemplateId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       autoLoadDefault(savedTemplates);
     }
   }, [savedTemplates, savedTemplateId, autoLoadDefault]);

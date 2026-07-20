@@ -45,7 +45,6 @@ function generateRecords() {
   const now = new Date();
 
   for (let monthsBack = 2; monthsBack >= 0; monthsBack--) {
-    const monthStart = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 0).getDate();
 
     for (let day = 1; day <= daysInMonth; day++) {

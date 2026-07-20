@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback } from 'react';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import CardSection from '../../common/CardSection';
 import SelectInput from '../../common/SelectInput';
 import SearchInput from '../../common/SearchInput';
@@ -10,6 +9,7 @@ import { getImageUrl } from '../../../utils/imageUrl';
 import studentService from '../../../services/student.service';
 import { toast } from 'react-hot-toast';
 import { CLASS_NAMES } from '../../../utils/classNames';
+import Spinner from '../../common/Spinner';
 
 const statusOptions = ['All', 'Active', 'Inactive'];
 
@@ -316,8 +316,8 @@ const StudentPromotion = () => {
               disabled={loading || !fromClass || !toYear}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-transparent text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Loading...' : 'Load Students'}
+              {loading && <Spinner size="xs" />}
+              Load Students
             </button>
           </div>
         </div>

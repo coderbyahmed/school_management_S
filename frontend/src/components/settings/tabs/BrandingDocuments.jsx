@@ -5,6 +5,7 @@ import {
 } from '@heroicons/react/24/outline';
 import CardSection from '../../common/CardSection';
 import Input from '../../common/Input';
+import Spinner from '../../common/Spinner';
 
 const IMAGE_FIELDS = [
   { key: 'adminPanelLogo', label: 'Admin Panel Logo', apiField: 'adminPanelLogo' },
@@ -86,7 +87,7 @@ const BrandingDocuments = ({ data, onSave, onImageUpload, saving, uploadingField
                   </div>
                   {isUploading ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
-                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
+                      <Spinner size="xs" className="text-white" />
                     </div>
                   ) : (
                     <label className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">

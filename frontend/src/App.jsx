@@ -1,7 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SchoolConfigProvider } from './contexts/SchoolConfigContext';
+import { LoaderProvider } from './contexts/LoaderContext';
+import usePageLoader from './hooks/usePageLoader';
+import FullPageLoader from './components/common/FullPageLoader';
+import SplashScreen from './components/common/SplashScreen';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
@@ -20,10 +24,17 @@ import TimetableManagement from './pages/admin/TimetableManagement';
 import AttendanceManagement from './pages/admin/AttendanceManagement';
 import SchoolSettings from './pages/admin/SchoolSettings';
 
-function App() {
+function AppContent() {
+  const { loading: authLoading } = useAuth();
+  const { pageLoading, pageMessage } = usePageLoader();
+
+  if (pageLoading) {
+    return <FullPageLoader message={pageMessage} />;
+  }
+
   return (
-    <AuthProvider>
-      <SchoolConfigProvider>
+    <>
+      <SplashScreen visible={authLoading} />
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         {/* Public Routes */}
@@ -58,6 +69,17 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <SchoolConfigProvider>
+        <LoaderProvider>
+          <AppContent />
+        </LoaderProvider>
       </SchoolConfigProvider>
     </AuthProvider>
   );

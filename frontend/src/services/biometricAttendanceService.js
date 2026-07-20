@@ -19,7 +19,7 @@ const biometricAttendanceService = {
     // Future: stop biometric scan
   },
 
-  verify: (biometricId) => {
+  verify: () => {
     // Future: verify biometric ID against teacher records
     return null;
   },

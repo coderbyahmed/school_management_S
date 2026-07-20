@@ -13,6 +13,7 @@ import idCardDemoData from '../data/idCardDemoData';
 import { VerticalTemplate, HorizontalTemplate } from '../templates';
 import { getInitials } from '../templates/shared/cardHtmlUtils';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
+import Spinner from '../../common/Spinner';
 
 const CARD_STATUSES = ['All', 'Pending', 'Generated', 'Printed'];
 
@@ -75,10 +76,11 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     if (!designerOpen) return;
     if (savedDesignerConfig) {
       const { cardWidth, cardHeight } = savedDesignerConfig.front;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFrontConfig({ ...savedDesignerConfig.front, cardWidth, cardHeight });
       setBackConfig({ ...savedDesignerConfig.back, cardWidth, cardHeight });
     }
-  }, [designerOpen]);
+  }, [designerOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
 
@@ -107,6 +109,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     if (filtered.length > 0) return filtered[0];
     const all = idCardDemoData.getStudents();
     return all.length > 0 ? all[0] : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [designerOpen]);
 
   const paginatedStudents = useMemo(
@@ -240,46 +243,6 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
       toast.success('PDF downloaded successfully');
     } catch {
       toast.error('Failed to download PDF');
-    }
-  };
-
-  const handleExportPdf = async () => {
-    const toPrint = selectedIds.size
-      ? filtered.filter((s) => selectedIds.has(s.id))
-      : [];
-    if (!toPrint.length) { toast.error('No students selected'); return; }
-
-    try {
-      const { default: html2pdf } = await import('html2pdf.js');
-      const Template = activeTemplate === 'horizontal' ? HorizontalTemplate : VerticalTemplate;
-      const cardsHtml = toPrint.map((s) => Template.toHtml(s, SCHOOL_INFO, frontConfig)).join('');
-
-      const pdfHtml = `
-        <!DOCTYPE html><html><head>
-        <style>
-          @page { size: A4; margin: 8mm; }
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; }
-        </style>
-        </head><body>${cardsHtml}</body></html>
-      `;
-
-      const element = document.createElement('div');
-      element.innerHTML = pdfHtml;
-      document.body.appendChild(element);
-
-      await html2pdf().set({
-        margin: [8, 8, 8, 8],
-        filename: `ID-Cards-${academicYear || 'all'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      }).from(element).save();
-
-      document.body.removeChild(element);
-      toast.success('PDF exported successfully');
-    } catch {
-      toast.error('Failed to export PDF');
     }
   };
 
@@ -478,10 +441,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
 
       {loading ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
-          <svg className="animate-spin h-8 w-8 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
+          <Spinner size="md" className="text-blue-600 mb-4" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Loading students...</p>
         </div>
       ) : allStudents.length === 0 ? (

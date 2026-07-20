@@ -106,5 +106,5 @@ const qrManagementService = {
   },
 };
 
-export { ACADEMIC_YEARS, CLASS_LIST: CLASS_NAMES };
+export { ACADEMIC_YEARS, CLASS_NAMES as CLASS_LIST };
 export default qrManagementService;

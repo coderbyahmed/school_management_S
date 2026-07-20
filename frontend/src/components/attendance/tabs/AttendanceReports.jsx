@@ -9,16 +9,12 @@ import {
 import StatCard from '../../common/StatCard';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import attendanceReportsService from '../../../services/attendanceReports.service';
+import Spinner from '../../common/Spinner';
 
 const TYPE_OPTIONS = ['All', 'Students', 'Teachers'];
 
 function getInitials(name) {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
-
-function formatDateDisplay(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 const DonutChart = ({ present, absent, leave, late, total }) => {
@@ -61,7 +57,6 @@ const MonthlyBarChart = ({ data }) => {
   return (
     <div className="flex items-end gap-2 h-32">
       {data.map((d) => {
-        const height = (d.total / maxVal) * 100;
         const presentH = (d.present / maxVal) * 100;
         const absentH = (d.absent / maxVal) * 100;
         return (
@@ -82,7 +77,6 @@ const MonthlyBarChart = ({ data }) => {
 
 const ClassBarChart = ({ data }) => {
   if (!data.length) return null;
-  const maxVal = Math.max(...data.map((d) => d.total), 1);
   return (
     <div className="space-y-2">
       {data.slice(0, 10).map((d) => {
@@ -115,6 +109,7 @@ const AttendanceReports = () => {
 
   useEffect(() => {
     const records = attendanceReportsService.getRecords();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAllRecords(records);
   }, []);
 
@@ -569,7 +564,7 @@ const AttendanceReports = () => {
             <div className="px-5 py-5 max-h-[80vh] overflow-y-auto">
               {loadingSummary || !personSummary ? (
                 <div className="flex items-center justify-center py-10">
-                  <ArrowPathIcon className="h-8 w-8 text-blue-500 animate-spin" />
+                  <Spinner size="md" className="text-blue-500" />
                 </div>
               ) : (
                 <>

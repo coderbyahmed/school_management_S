@@ -39,6 +39,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSubjects();
   }, []);
 

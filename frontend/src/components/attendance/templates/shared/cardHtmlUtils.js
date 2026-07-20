@@ -27,6 +27,6 @@ export function qrPlaceholderHtml(size) {
   return `<div style="width:${size}px;height:${size}px;border:2px dashed #d1d5db;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f9fafb;margin:0 auto;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z" /></svg></div>`;
 }
 
-export function noteHtml(detailsFontSize = 12, textColor = '#1f2937') {
+export function noteHtml(detailsFontSize = 12) {
   return `<div style="text-align:left;font-size:${detailsFontSize - 2}px;color:#6b7280;line-height:1.6;margin-top:10px;padding-top:8px;border-top:1px solid #e5e7eb;"><strong>Note:</strong> This ID Card must be carried daily. Attendance will be marked only through this card. If lost, immediately report to the school administration.</div>`;
 }

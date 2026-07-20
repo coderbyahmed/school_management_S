@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { XMarkIcon, PencilSquareIcon, CameraIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
 import authService from '../../services/auth.service';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Alert from '../common/Alert';
 import { toast } from 'react-hot-toast';
 import { getImageUrl } from '../../utils/imageUrl';
+import Spinner from '../common/Spinner';
 
 const formatDate = (dateStr) => {
   if (!dateStr) return 'N/A';
@@ -44,6 +45,7 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadProfile();
     }
   }, [isOpen]);
@@ -157,7 +159,7 @@ const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
         <div className="px-6 py-6">
           {fetching ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              <Spinner size="md" className="text-blue-600" />
             </div>
           ) : (
             <>

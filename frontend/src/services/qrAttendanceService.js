@@ -19,7 +19,7 @@ const qrAttendanceService = {
     // Future: stop QR scanning
   },
 
-  verify: (qrToken) => {
+  verify: () => {
     // Future: verify scanned QR token against student records
     return null;
   },

@@ -9,7 +9,7 @@ const DEFAULT_VISIBILITY = {
   fatherPhone: true, schoolAddress: true, note: true,
 };
 
-const HorizontalTemplateFront = ({ student, schoolInfo, layoutConfig }) => {
+const HorizontalTemplateFront = ({ student, layoutConfig }) => {
   const { cardWidth, cardHeight, cardPadding, borderRadius, photoSize, photoShape, nameFontSize, detailsFontSize, fontWeight, textColor, cardBgColor, primaryColor, secondaryColor } = layoutConfig;
   const visibility = { ...DEFAULT_VISIBILITY, ...(layoutConfig.visibility || {}) };
   const leftWidth = Math.round(cardWidth * 0.4);

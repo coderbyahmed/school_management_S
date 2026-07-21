@@ -3,6 +3,7 @@ import Student from '../models/student.model.js';
 import StudentPromotion from '../models/studentPromotion.model.js';
 import AuditLog from '../models/auditLog.model.js';
 import { ApiError } from '../utils/apiError.js';
+import classValidation from './classValidation.service.js';
 
 const filterStudentsForPromotion = async (query) => {
   const { class: className, academicYear } = query;
@@ -54,6 +55,8 @@ const promoteStudents = async (studentIds, fromClass, toClass, fromAcademicYear,
   if (alreadyPromoted.length > 0) {
     throw new ApiError(409, `Already promoted to ${toClass} (${toAcademicYear}): ${alreadyPromoted.map((s) => s.studentId).join(', ')}`);
   }
+
+  await classValidation.validateClassExists(toClass, toAcademicYear);
 
   const session = await mongoose.startSession();
   try {

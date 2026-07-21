@@ -3,15 +3,11 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SchoolConfigProvider } from './contexts/SchoolConfigContext';
 import { LoaderProvider } from './contexts/LoaderContext';
-import usePageLoader from './hooks/usePageLoader';
-import FullPageLoader from './components/common/FullPageLoader';
 import SplashScreen from './components/common/SplashScreen';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Pages
 import LoginPage from './pages/auth/Login';
 import ForgotPasswordPage from './pages/auth/ForgotPassword';
-
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import StudentDashboard from './pages/student/StudentDashboard';
 import AdminLayout from './layouts/AdminLayout';
@@ -30,24 +26,26 @@ import StudentFees from './pages/admin/fee/Students';
 import FeeReports from './pages/admin/fee/Reports';
 import SchoolSettings from './pages/admin/SchoolSettings';
 
+function IndexRedirect() {
+  const { user, role, loading, DASHBOARD_ROUTES } = useAuth();
+  if (loading) return null;
+  if (user && role) {
+    return <Navigate to={DASHBOARD_ROUTES[role] || '/login'} replace />;
+  }
+  return <Navigate to="/login" replace />;
+}
+
 function AppContent() {
   const { loading: authLoading } = useAuth();
-  const { pageLoading, pageMessage } = usePageLoader();
-
-  if (pageLoading) {
-    return <FullPageLoader message={pageMessage} />;
-  }
 
   return (
     <>
       <SplashScreen visible={authLoading} />
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
-        {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
@@ -69,18 +67,15 @@ function AppContent() {
           </Route>
         </Route>
 
-        {/* Protected Teacher Routes */}
         <Route element={<ProtectedRoute allowedRoles={['teacher']} />}>
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
         </Route>
 
-        {/* Protected Student Routes */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
         </Route>
 
-        {/* Fallback */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<IndexRedirect />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>

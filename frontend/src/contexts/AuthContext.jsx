@@ -3,53 +3,79 @@ import authService from '../services/auth.service';
 
 const AuthContext = createContext();
 
+const DASHBOARD_ROUTES = {
+  admin: '/admin',
+  teacher: '/teacher/dashboard',
+  student: '/student/dashboard',
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      setUser(null);
-      setRole(null);
-      localStorage.clear();
-    }
-  };
-
   useEffect(() => {
+    let mounted = true;
+
     const initAuth = async () => {
       const accessToken = localStorage.getItem('accessToken');
-      if (accessToken) {
-        try {
-          const response = await authService.getMe();
-          setUser(response.user);
-          setRole(response.user.role);
-        } catch (error) {
-          console.error('Initial auth failed:', error);
-          logout();
-        }
+      if (!accessToken) {
+        if (mounted) setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const response = await authService.getMe();
+        if (!mounted) return;
+        setUser(response.user);
+        setRole(response.user.role);
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Session validation failed:', error);
+        setUser(null);
+        setRole(null);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
 
     initAuth();
+
+    return () => { mounted = false; };
   }, []);
 
-  const login = (userData, role, accessToken, refreshToken) => {
+  const login = (userData, userRole, accessToken, refreshToken) => {
     setUser(userData);
-    setRole(role);
+    setRole(userRole);
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('role', role);
+    localStorage.setItem('role', userRole);
+  };
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    } finally {
+      setUser(null);
+      setRole(null);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, role, loading, login, logout, DASHBOARD_ROUTES }}>
       {children}
     </AuthContext.Provider>
   );

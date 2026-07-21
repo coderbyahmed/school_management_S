@@ -20,7 +20,6 @@ const validateCreateTeacher = (req, res, next) => {
     experience,
     joiningDate,
     status,
-    password,
   } = req.body;
 
   if (!req.file) {
@@ -132,16 +131,6 @@ const validateCreateTeacher = (req, res, next) => {
     throw new ApiError(400, 'Status must be Active or Inactive');
   }
 
-  if (!password) {
-    throw new ApiError(400, 'Password is required');
-  }
-  if (password.length < 6) {
-    throw new ApiError(400, 'Password must be at least 6 characters');
-  }
-  if (password.length > 100) {
-    throw new ApiError(400, 'Password must not exceed 100 characters');
-  }
-
   next();
 };
 
@@ -163,13 +152,11 @@ const validateUpdateTeacher = (req, res, next) => {
     joiningDate,
     status,
     teacherId,
-    password,
   } = req.body;
 
-  const forbidden = [teacherId, password].some((v) => v !== undefined);
+  const forbidden = [teacherId].some((v) => v !== undefined);
   if (forbidden) {
     delete req.body.teacherId;
-    delete req.body.password;
   }
 
   if (fullName !== undefined) {

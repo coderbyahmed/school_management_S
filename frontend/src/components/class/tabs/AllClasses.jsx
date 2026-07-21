@@ -46,6 +46,26 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
     fetchClasses();
   }, []);
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchClasses();
+      }
+    };
+
+    const handleFocus = () => {
+      fetchClasses();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   const filteredClasses = classes.filter((c) => {
     if (academicYearFilter !== 'All Years' && c.academicYear !== academicYearFilter) return false;
     if (statusFilter !== 'All' && c.status !== statusFilter) return false;

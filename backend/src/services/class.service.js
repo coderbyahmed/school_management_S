@@ -138,11 +138,11 @@ const getClassDetails = async (classId) => {
     throw new ApiError(404, 'Class not found');
   }
 
-  const { className, assignedSubjects } = classInfo;
+  const { className, academicYear, assignedSubjects } = classInfo;
 
   const [totalStudents, students, teachers] = await Promise.all([
-    Student.countDocuments({ class: className }),
-    Student.find({ class: className }).select('studentImage studentId fullName status').sort({ fullName: 1 }),
+    Student.countDocuments({ class: className, academicYear }),
+    Student.find({ class: className, academicYear }).select('studentImage studentId fullName status').sort({ fullName: 1 }),
     Teacher.find({ assignedSubjects: { $in: assignedSubjects } }).select('teacherImage teacherId fullName status'),
   ]);
 

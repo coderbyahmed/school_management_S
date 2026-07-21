@@ -21,7 +21,6 @@ const validateCreateStudent = (req, res, next) => {
     admissionDate,
     class: studentClass,
     academicYear,
-    password,
     status,
   } = req.body;
 
@@ -119,16 +118,6 @@ const validateCreateStudent = (req, res, next) => {
     throw new ApiError(400, 'Invalid academic year format');
   }
 
-  if (!password) {
-    throw new ApiError(400, 'Password is required');
-  }
-  if (password.length < 8) {
-    throw new ApiError(400, 'Password must be at least 8 characters');
-  }
-  if (password.length > 100) {
-    throw new ApiError(400, 'Password must not exceed 100 characters');
-  }
-
   if (status && !['Active', 'Inactive'].includes(status)) {
     throw new ApiError(400, 'Status must be Active or Inactive');
   }
@@ -151,16 +140,12 @@ const validateUpdateStudent = (req, res, next) => {
     academicYear,
     studentId,
     admissionNumber,
-    loginId,
-    password,
   } = req.body;
 
-  const forbidden = [studentId, admissionNumber, loginId, password].some((v) => v !== undefined);
+  const forbidden = [studentId, admissionNumber].some((v) => v !== undefined);
   if (forbidden) {
     delete req.body.studentId;
     delete req.body.admissionNumber;
-    delete req.body.loginId;
-    delete req.body.password;
   }
 
   if (fullName !== undefined) {

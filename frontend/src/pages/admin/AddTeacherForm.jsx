@@ -33,7 +33,6 @@ const initialFormState = {
   email: '',
   city: '',
   address: '',
-  password: '',
 };
 
 const AddTeacherForm = ({ onSuccess }) => {
@@ -88,7 +87,6 @@ const AddTeacherForm = ({ onSuccess }) => {
       if (form.email) formData.append('email', form.email.trim());
       formData.append('city', form.city.trim());
       formData.append('address', form.address.trim());
-      formData.append('password', form.password);
 
       await teacherService.createTeacher(formData);
 
@@ -211,8 +209,7 @@ const AddTeacherForm = ({ onSuccess }) => {
         </CardSection>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <CardSection title="Contact Information">
+      <CardSection title="Contact Information">
           <Input
             label="Phone Number"
             name="phone"
@@ -255,25 +252,7 @@ const AddTeacherForm = ({ onSuccess }) => {
               className="appearance-none block w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all bg-white dark:bg-gray-800 dark:text-white resize-none"
             />
           </div>
-        </CardSection>
-
-        <CardSection title="Login Information">
-          <Input
-            label="Login ID"
-            name="loginId"
-            value="Auto Generated"
-            disabled
-          />
-          <Input
-            label="Default Password"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange('password')}
-            placeholder="Enter default password"
-          />
-        </CardSection>
-      </div>
+      </CardSection>
 
       <div className="flex items-center justify-end gap-3 pt-2">
         <button

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon, UserCircleIcon, Cog6ToothIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import authService from '../../services/auth.service';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -13,7 +12,6 @@ const AdminDropdown = () => {
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const dropdownRef = useRef(null);
-  const navigate = useNavigate();
   const { logout } = useAuth();
 
   const fetchProfile = async () => {
@@ -49,13 +47,8 @@ const AdminDropdown = () => {
   };
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    setIsOpen(false);
+    await logout();
   };
 
   const profileImageUrl = getImageUrl(profile?.profileImage);

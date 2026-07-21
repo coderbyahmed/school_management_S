@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Teacher from '../models/teacher.model.js';
-import User from '../models/user.model.js';
 import Timetable from '../models/timetable.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { stripBaseUrl } from '../utils/imageUrl.js';
@@ -20,19 +19,12 @@ const deleteFileAtPath = (relativePath) => {
 };
 
 const createTeacher = async (data, file, baseUrl = '') => {
-  const { password, ...rest } = data;
-
-  if (!password) {
-    throw new ApiError(400, 'Password is required');
-  }
-
   if (!file) {
     throw new ApiError(400, 'Teacher image is required');
   }
 
-  const teacherData = { ...rest };
+  const teacherData = { ...data };
   delete teacherData.teacherId;
-  delete teacherData.loginId;
   if (teacherData.joiningDate === '' || teacherData.joiningDate === null || teacherData.joiningDate === undefined) {
     delete teacherData.joiningDate;
   }
@@ -43,26 +35,7 @@ const createTeacher = async (data, file, baseUrl = '') => {
 
   try {
     const teacher = await Teacher.create(teacherData);
-
-    const user = await User.create({
-      fullName: teacher.fullName,
-      teacherId: teacher.teacherId,
-      loginId: teacher.teacherId,
-      referenceId: teacher._id,
-      password,
-      role: 'teacher',
-      isActive: true,
-    });
-
-    const updates = {};
-    if (teacher.phoneNumber) updates.phone = teacher.phoneNumber;
-    if (teacher.teacherImage) updates.profileImage = teacher.teacherImage;
-    if (Object.keys(updates).length > 0) {
-      await User.updateOne({ _id: user._id }, { $set: updates });
-    }
-
     const created = await Teacher.findById(teacher._id);
-
     return created;
   } catch (error) {
     deleteFileAtPath(imagePath);
@@ -128,7 +101,7 @@ const updateTeacher = async (teacherId, updateData, file, baseUrl = '') => {
     throw new ApiError(404, 'Teacher not found');
   }
 
-  const forbidden = ['teacherId', '_id', 'loginId'];
+  const forbidden = ['teacherId', '_id'];
   const cleanData = {};
   for (const key of Object.keys(updateData)) {
     if (!forbidden.includes(key)) {
@@ -151,16 +124,6 @@ const updateTeacher = async (teacherId, updateData, file, baseUrl = '') => {
     { returnDocument: "after", runValidators: true },
   );
 
-  if (cleanData.fullName || cleanData.status) {
-    const syncFields = {};
-    if (cleanData.fullName) syncFields.fullName = cleanData.fullName;
-    if (cleanData.status) syncFields.isActive = cleanData.status === 'Active';
-    await User.findOneAndUpdate(
-      { referenceId: existing._id, role: 'teacher' },
-      { $set: syncFields },
-    );
-  }
-
   return updated;
 };
 
@@ -174,11 +137,8 @@ const deleteTeacher = async (teacherId, performedBy) => {
     deleteFileAtPath(stripBaseUrl(existing.teacherImage));
   }
 
-  const teacherUser = await User.findOne({ referenceId: existing._id, role: 'teacher' });
-
   await Promise.all([
     Teacher.deleteOne({ teacherId }),
-    teacherUser ? User.deleteOne({ _id: teacherUser._id }) : Promise.resolve(),
     Timetable.updateMany(
       { 'periods.teacherId': existing._id },
       { $set: { 'periods.$[elem].teacherId': null } },

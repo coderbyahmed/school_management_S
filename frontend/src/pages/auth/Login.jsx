@@ -22,8 +22,14 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [schoolBranding, setSchoolBranding] = useState(null);
-  const { login } = useAuth();
+  const { user, role, login, DASHBOARD_ROUTES } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && role && DASHBOARD_ROUTES[role]) {
+      navigate(DASHBOARD_ROUTES[role], { replace: true });
+    }
+  }, [user, role, navigate, DASHBOARD_ROUTES]);
 
   useEffect(() => {
     const fetchBranding = async () => {
@@ -69,14 +75,9 @@ const LoginPage = () => {
       }
 
       if (response.success) {
-        const { user, accessToken, refreshToken } = response;
-        const role = user.role;
-        login(user, role, accessToken, refreshToken);
+        const { user: userData, accessToken, refreshToken } = response;
+        login(userData, userData.role, accessToken, refreshToken);
         toast.success('Login Successful');
-
-        if (role === 'admin') navigate('/admin');
-        else if (role === 'teacher') navigate('/teacher/dashboard');
-        else navigate('/student/dashboard');
       }
     } catch (err) {
       const message = err.response?.data?.message || 'Login failed. Please check your credentials.';

@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import FullPageLoader from './common/FullPageLoader';
 
 const ProtectedRoute = ({ allowedRoles }) => {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, DASHBOARD_ROUTES } = useAuth();
 
   if (loading) {
     return <FullPageLoader />;
@@ -14,7 +14,8 @@ const ProtectedRoute = ({ allowedRoles }) => {
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/" replace />;
+    const redirectPath = DASHBOARD_ROUTES[role] || '/login';
+    return <Navigate to={redirectPath} replace />;
   }
 
   return <Outlet />;

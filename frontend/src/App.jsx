@@ -23,6 +23,7 @@ import SubjectManagement from './pages/admin/SubjectManagement';
 import TimetableManagement from './pages/admin/TimetableManagement';
 import AttendanceManagement from './pages/admin/AttendanceManagement';
 import EventsHolidays from './pages/admin/EventsHolidays';
+import FeeManagement from './pages/admin/FeeManagement';
 import SchoolSettings from './pages/admin/SchoolSettings';
 
 function AppContent() {
@@ -53,6 +54,7 @@ function AppContent() {
             <Route path="timetable" element={<TimetableManagement />} />
             <Route path="attendance" element={<AttendanceManagement />} />
             <Route path="events" element={<EventsHolidays />} />
+            <Route path="fees" element={<FeeManagement />} />
             <Route path="settings" element={<SchoolSettings />} />
           </Route>
         </Route>

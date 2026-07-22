@@ -9,16 +9,11 @@ import TimetableEditorModal from './TimetableEditorModal';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import classService from '../../../../services/class.service';
 import timetableService from '../../../../services/timetable.service';
-
-const classFilters = [
-  { name: 'academicYear', label: 'Academic Year', options: ACADEMIC_YEARS, placeholder: 'Select year' },
-  { name: 'className', label: 'Class', options: CLASS_NAMES, placeholder: 'Select class' },
-];
+import { useTimetableYear } from '../../../../contexts/TimetableContext';
 
 const ClassView = () => {
-  const [academicYear, setAcademicYear] = useState('');
+  const { selectedYear, setSelectedYear } = useTimetableYear();
   const [className, setClassName] = useState('');
-  const [viewClicked, setViewClicked] = useState(false);
   const [timetableData, setTimetableData] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -41,49 +36,47 @@ const ClassView = () => {
       .catch(() => console.error('Failed to load classes'));
   }, []);
 
-  const filterValues = { academicYear, className };
-
-  const handleFilterChange = useCallback((name, value) => {
-    if (name === 'academicYear') setAcademicYear(value);
-    if (name === 'className') setClassName(value);
-    setViewClicked(false);
-  }, []);
-
-  const loadSubjectNames = useCallback(async () => {
+  const loadSubjectNames = useCallback(async (classId) => {
     try {
-      const res = await timetableService.getClassSubjects(classMap[className]);
+      const res = await timetableService.getClassSubjects(classId);
       if (res?.data?.subjects) {
         const map = {};
         res.data.subjects.forEach((s) => { map[s.id] = s.name; });
         setSubjectNames(map);
       }
     } catch { console.error('Failed to load subject names'); }
-  }, [className, classMap]);
+  }, []);
 
-  const handleView = useCallback(async () => {
-    if (!academicYear || !className) return;
+  useEffect(() => {
+    if (!selectedYear || !className) return;
     const classId = classMap[className];
-    if (!classId) { toast.error('Class not found'); return; }
-    setViewClicked(true);
+    if (!classId) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setTimetableData(null);
-    try {
-      const res = await timetableService.getTimetableByClass(classId);
-      const timetables = res?.data?.timetables || [];
-      const match = timetables.find((t) => t.academicYear === academicYear);
-      if (match) {
-        setTimetableData(match);
-        await loadSubjectNames();
-      } else {
+    timetableService.getTimetableByClass(classId)
+      .then((res) => {
+        const timetables = res?.data?.timetables || [];
+        const match = timetables.find((t) => t.academicYear === selectedYear);
+        if (match) {
+          setTimetableData(match);
+          loadSubjectNames(classId);
+        } else {
+          setTimetableData(null);
+        }
+      })
+      .catch(() => {
+        toast.error('Failed to load timetable');
         setTimetableData(null);
-      }
-    } catch {
-      toast.error('Failed to load timetable');
-      setTimetableData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [academicYear, className, classMap, loadSubjectNames]);
+      })
+      .finally(() => setLoading(false));
+  }, [selectedYear, className, classMap, loadSubjectNames]);
+
+  const handleFilterChange = useCallback((name, value) => {
+    if (name === 'academicYear') setSelectedYear(value);
+    if (name === 'className') setClassName(value);
+  }, [setSelectedYear]);
 
   const handleEditSave = useCallback(async (updatedPeriods) => {
     if (!timetableData?._id) return;
@@ -104,7 +97,8 @@ const ClassView = () => {
       const serverWarnings = res?.warnings || [];
       if (updated) {
         setTimetableData(updated);
-        await loadSubjectNames();
+        const classId = classMap[className];
+        if (classId) loadSubjectNames(classId);
       }
       setShowEditor(false);
       toast.success('Timetable updated successfully');
@@ -129,7 +123,7 @@ const ClassView = () => {
         toast.error('Failed to update timetable');
       }
     }
-  }, [timetableData, loadSubjectNames]);
+  }, [timetableData, className, classMap, loadSubjectNames]);
 
   const handleDelete = useCallback(async () => {
     if (!timetableData?._id) return;
@@ -153,7 +147,6 @@ const ClassView = () => {
   };
   const resolveTeacherName = (teacherId) => (teacherId?.fullName) || (typeof teacherId === 'string' ? teacherId : '-');
 
-  const canView = academicYear && className;
   const hasTimetable = timetableData && timetableData.periods?.length > 0;
 
   const displayPeriods = timetableData?.periods?.map((p) => ({
@@ -166,26 +159,42 @@ const ClassView = () => {
   return (
     <div className="space-y-6">
       <TimetableFilters
-        filters={classFilters.map((f) => ({ ...f, value: filterValues[f.name] }))}
+        filters={[
+          { name: 'academicYear', label: 'Academic Year', value: selectedYear, options: ACADEMIC_YEARS, placeholder: 'Select year' },
+          { name: 'className', label: 'Class', value: className, options: CLASS_NAMES, placeholder: 'Select class' },
+        ]}
         onFilterChange={handleFilterChange}
-        onView={handleView}
-        viewDisabled={!canView || loading}
-        viewLabel={loading ? 'Loading...' : 'View Timetable'}
       />
-
-      {viewClicked && !loading && !hasTimetable && (
-        <TimetableEmptyState
-          icon={CalendarDaysIcon}
-          title="No Timetable Found"
-          description={`No timetable found for ${className} (${academicYear}). Create one first.`}
-        />
-      )}
 
       {loading && (
         <TimetableEmptyState
           icon={CalendarDaysIcon}
           title="Loading..."
           description="Fetching timetable data."
+        />
+      )}
+
+      {!selectedYear && !loading && (
+        <TimetableEmptyState
+          icon={CalendarDaysIcon}
+          title="No Academic Year Selected"
+          description="Please select an academic year and class to view timetable."
+        />
+      )}
+
+      {selectedYear && !className && !loading && (
+        <TimetableEmptyState
+          icon={CalendarDaysIcon}
+          title="Select a Class"
+          description="Choose a class to view its timetable."
+        />
+      )}
+
+      {selectedYear && className && !loading && !hasTimetable && (
+        <TimetableEmptyState
+          icon={CalendarDaysIcon}
+          title="No Timetable Found"
+          description={`No timetable found for ${className} (${selectedYear}). Create one first.`}
         />
       )}
 
@@ -197,7 +206,7 @@ const ClassView = () => {
                 <BookOpenIcon className="h-4 w-4 text-blue-500" />
                 {className}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">{academicYear}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">{selectedYear}</span>
               <span className="text-xs text-gray-400 dark:text-gray-500">{timetableData.periods?.length || 0} periods</span>
             </div>
             <div className="flex items-center gap-2">
@@ -222,7 +231,7 @@ const ClassView = () => {
 
       {showEditor && timetableData && (
         <TimetableEditorModal
-          timetableData={{ ...timetableData, className, academicYear }}
+          timetableData={{ ...timetableData, className, academicYear: selectedYear }}
           onSave={handleEditSave}
           onClose={() => setShowEditor(false)}
         />

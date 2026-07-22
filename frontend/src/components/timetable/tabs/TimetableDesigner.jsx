@@ -4,6 +4,7 @@ import timetableTemplateService from '../../../services/timetableTemplate.servic
 import timetableService from '../../../services/timetable.service';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
+import { useTimetableYear } from '../../../contexts/TimetableContext';
 
 const GROUPS = {
   1: { name: 'Group 1', classes: ['Montessori', 'Nursery', 'KG 1', 'KG 2'] },
@@ -138,6 +139,7 @@ const StyleGroup = ({ label, align, fontFamily, fontSize, fontWeight, color, onC
 
 const TimetableDesigner = () => {
   const { schoolInfo } = useSchoolConfig();
+  const { selectedYear, setSelectedYear } = useTimetableYear();
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('classic');
   const [header, setHeader] = useState({
@@ -176,7 +178,6 @@ const TimetableDesigner = () => {
   const [selectedGroup, setSelectedGroup] = useState(1);
   const [groupTimetables, setGroupTimetables] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
-  const [groupAcademicYear, setGroupAcademicYear] = useState('');
   const [groupError, setGroupError] = useState('');
   const [pdfExporting, setPdfExporting] = useState(false);
   const fileInputRef = useRef(null);
@@ -213,9 +214,9 @@ const TimetableDesigner = () => {
 
   const loadGroupTimetables = useCallback(async () => {
     const groupClasses = GROUPS[selectedGroup]?.classes || [];
-    if (!groupAcademicYear || groupClasses.length === 0) {
+    if (!selectedYear || groupClasses.length === 0) {
       setGroupTimetables([]);
-      setGroupError(groupAcademicYear ? '' : 'Select an academic year');
+      setGroupError(selectedYear ? '' : 'Select an academic year');
       return;
     }
     setGroupsLoading(true);
@@ -224,7 +225,7 @@ const TimetableDesigner = () => {
       const allTimetables = await timetableService.getAllTimetables();
       const all = allTimetables?.data?.timetables || [];
       const filtered = all.filter(
-        (t) => t.academicYear === groupAcademicYear && groupClasses.includes(t.classId?.className)
+        (t) => t.academicYear === selectedYear && groupClasses.includes(t.classId?.className)
       );
       const classMap = {};
       for (const tt of filtered) {
@@ -244,7 +245,7 @@ const TimetableDesigner = () => {
     } finally {
       setGroupsLoading(false);
     }
-  }, [selectedGroup, groupAcademicYear]);
+  }, [selectedGroup, selectedYear]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -558,7 +559,7 @@ const TimetableDesigner = () => {
       const element = document.getElementById('designer-preview');
       if (!element) return;
       const groupName = getGroupClassName();
-      const year = groupAcademicYear || 'Timetable';
+      const year = selectedYear || 'Timetable';
       const html2pdf = (await import('html2pdf.js')).default;
       const marginNum = (val) => parseInt(val) || 10;
       const opt = {
@@ -689,7 +690,7 @@ const TimetableDesigner = () => {
             <div className="min-w-0">
               <h1 className="font-bold tracking-wide truncate" style={{ fontFamily: header.schoolName.fontFamily, fontSize: header.schoolName.fontSize, fontWeight: header.schoolName.fontWeight, color: header.schoolName.color, textAlign: header.schoolName.align }}>{header.schoolName.text}</h1>
               <p className="opacity-90" style={{ fontFamily: title.fontFamily, fontSize: title.fontSize, fontWeight: title.fontWeight, color: title.color, textAlign: title.align }}>{title.text} - {group?.name || 'Group'}</p>
-              <p style={{ fontFamily: header.academicYear.fontFamily, fontSize: header.academicYear.fontSize, fontWeight: header.academicYear.fontWeight, color: header.academicYear.color, textAlign: header.academicYear.align }}>Academic Year: {groupAcademicYear || header.academicYear.text}</p>
+              <p style={{ fontFamily: header.academicYear.fontFamily, fontSize: header.academicYear.fontSize, fontWeight: header.academicYear.fontWeight, color: header.academicYear.color, textAlign: header.academicYear.align }}>Academic Year: {selectedYear || header.academicYear.text}</p>
               {header.principalName.text && <p style={{ fontFamily: header.principalName.fontFamily, fontSize: header.principalName.fontSize, fontWeight: header.principalName.fontWeight, color: header.principalName.color, textAlign: header.principalName.align }}>Principal: {header.principalName.text}</p>}
             </div>
           </div>
@@ -779,7 +780,7 @@ const TimetableDesigner = () => {
               <button key={g} onClick={() => setSelectedGroup(g)} className={`px-3 py-1.5 rounded-md text-[10px] font-medium transition-all cursor-pointer whitespace-nowrap ${selectedGroup === g ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>Group {g}</button>
             ))}
           </div>
-          <select value={groupAcademicYear} onChange={(e) => setGroupAcademicYear(e.target.value)} className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-[10px] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
+          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-[10px] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
             <option value="">Select Year</option>
             {ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -799,7 +800,7 @@ const TimetableDesigner = () => {
           {groupTimetables.length > 0 ? (
             <span className="text-[10px] text-gray-400">{GROUPS[selectedGroup]?.name} &middot; {groupTimetables.length} classes</span>
           ) : (
-            <span className="text-[10px] text-gray-400">{groupAcademicYear ? 'No data' : 'Select year'}</span>
+            <span className="text-[10px] text-gray-400">{selectedYear ? 'No data' : 'Select year'}</span>
           )}
         </div>
         <div className="p-4 md:p-6 overflow-x-auto">

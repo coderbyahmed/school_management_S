@@ -52,12 +52,16 @@ const deleteSubject = asyncHandler(async (req, res) => {
 
 const assignSubjectsToClass = asyncHandler(async (req, res) => {
   const { className, academicYear, subjectIds } = req.body;
-  const classDoc = await subjectService.assignSubjectsToClass(className, academicYear, subjectIds);
+  const result = await subjectService.assignSubjectsToClass(className, academicYear, subjectIds);
 
   return res.status(200).json({
     success: true,
-    message: 'Subjects assigned to class successfully',
-    data: { class: classDoc },
+    message: 'Subject assignments updated successfully',
+    data: {
+      class: result.classDoc,
+      added: result.added,
+      removed: result.removed,
+    },
   });
 });
 
@@ -74,12 +78,16 @@ const getClassAssignments = asyncHandler(async (req, res) => {
 
 const assignSubjectsToTeacher = asyncHandler(async (req, res) => {
   const { teacherId, subjectIds } = req.body;
-  const teacher = await subjectService.assignSubjectsToTeacher(teacherId, subjectIds);
+  const result = await subjectService.assignSubjectsToTeacher(teacherId, subjectIds);
 
   return res.status(200).json({
     success: true,
-    message: 'Subjects assigned to teacher successfully',
-    data: { teacher },
+    message: 'Teacher subject assignments updated successfully',
+    data: {
+      teacher: result.teacher,
+      added: result.added,
+      removed: result.removed,
+    },
   });
 });
 

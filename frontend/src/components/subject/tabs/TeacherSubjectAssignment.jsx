@@ -37,16 +37,20 @@ const TeacherSubjectAssignment = () => {
       try {
         const result = await subjectService.getTeacherAssignments(selectedTeacherId);
         const assigned = result.data?.assignedSubjects || [];
-        setAssignedIds(assigned.map((s) => s._id));
+        const ids = assigned.map((s) => s._id);
+        setAssignedIds(ids);
+        setSelectedIds([...ids]);
       } catch (err) {
         const msg = err.response?.data?.message || 'Failed to load assignments';
         toast.error(msg);
         setAssignedIds([]);
+        setSelectedIds([]);
       } finally {
         setLoading(false);
       }
     } else {
       setAssignedIds([]);
+      setSelectedIds([]);
     }
   }, [selectedTeacherId]);
 
@@ -59,7 +63,6 @@ const TeacherSubjectAssignment = () => {
       if (selectedTeacherId) {
         const teacher = teachers.find((t) => t.teacherId === selectedTeacherId);
         setSelectedTeacher(teacher || null);
-        setSelectedIds([]);
         fetchAssignments();
       } else {
         setSelectedTeacher(null);
@@ -70,7 +73,6 @@ const TeacherSubjectAssignment = () => {
   }, [selectedTeacherId, teachers, fetchAssignments]);
 
   const handleToggle = (subjectId) => {
-    if (assignedIds.includes(subjectId)) return;
     setSelectedIds((prev) =>
       prev.includes(subjectId)
         ? prev.filter((id) => id !== subjectId)
@@ -78,17 +80,16 @@ const TeacherSubjectAssignment = () => {
     );
   };
 
-  const handleSave = async () => {
+  const handleUpdate = async () => {
     if (!selectedTeacherId) return;
 
     setAssigning(true);
     try {
       await subjectService.assignSubjectsToTeacher(selectedTeacherId, selectedIds);
-      toast.success('Subjects assigned to teacher successfully');
-      setSelectedIds([]);
+      toast.success('Teacher subject assignments updated successfully');
       await Promise.all([fetchTeachersAndSubjects(), fetchAssignments()]);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to assign subjects';
+      const msg = err.response?.data?.message || 'Failed to update assignments';
       toast.error(msg);
     } finally {
       setAssigning(false);
@@ -96,13 +97,14 @@ const TeacherSubjectAssignment = () => {
   };
 
   const handleReset = () => {
-    setSelectedIds([]);
-    if (selectedTeacherId) {
-      fetchAssignments();
-    }
+    setSelectedIds([...assignedIds]);
   };
 
-  const selectedCount = selectedIds.length;
+  const hasChanges = (() => {
+    if (selectedIds.length !== assignedIds.length) return true;
+    const assignedSet = new Set(assignedIds);
+    return selectedIds.some((id) => !assignedSet.has(id));
+  })();
 
   return (
     <div className="space-y-6">
@@ -138,7 +140,7 @@ const TeacherSubjectAssignment = () => {
                 </div>
               </div>
               <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Subjects assigned: <span className="font-medium text-gray-700 dark:text-gray-200">{assignedIds.length}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Subjects assigned: <span className="font-medium text-gray-700 dark:text-gray-200">{selectedIds.length}</span></p>
               </div>
             </div>
           )}
@@ -173,31 +175,34 @@ const TeacherSubjectAssignment = () => {
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {allSubjects.map((subject) => {
                   const isAssigned = assignedIds.includes(subject._id);
-                  const isChecked = isAssigned || selectedIds.includes(subject._id);
+                  const isSelected = selectedIds.includes(subject._id);
 
                   return (
                     <div
                       key={subject._id}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isAssigned
+                        isSelected
                           ? 'bg-green-50 dark:bg-green-900/10'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                       }`}
                     >
                       <input
                         type="checkbox"
-                        checked={isChecked}
-                        disabled={isAssigned}
+                        checked={isSelected}
                         onChange={() => handleToggle(subject._id)}
-                        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
+                        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
                       />
-                      <span className={`text-sm ${isAssigned ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                      <span className={`text-sm ${isSelected ? 'text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>
                         {subject.subjectName}
                       </span>
                       <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">{subject.subjectCode}</span>
-                      {isAssigned && (
+                      {isAssigned ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                           Assigned
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                          Unassigned
                         </span>
                       )}
                     </div>
@@ -207,15 +212,15 @@ const TeacherSubjectAssignment = () => {
 
               <div className="flex items-center gap-3 pt-5 mt-5 border-t border-gray-100 dark:border-gray-700">
                 <button
-                  onClick={handleSave}
-                  disabled={assigning || selectedIds.length === 0}
+                  onClick={handleUpdate}
+                  disabled={assigning || !hasChanges}
                   className="px-6 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {assigning ? 'Saving...' : `Save Assignments (${selectedCount})`}
+                  {assigning ? 'Updating...' : 'Update Subject Assignment'}
                 </button>
                 <button
                   onClick={handleReset}
-                  disabled={assigning}
+                  disabled={assigning || !hasChanges}
                   className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Reset

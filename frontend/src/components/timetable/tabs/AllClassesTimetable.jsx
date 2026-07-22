@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import timetableService from '../../../services/timetable.service';
+import { useTimetableYear } from '../../../contexts/TimetableContext';
 
 const CLASS_GROUPS = [
   { page: 1, classes: CLASS_NAMES.slice(0, 4) },
@@ -18,8 +19,7 @@ const resolveTeacherName = (t) => {
 };
 
 const AllClassesTimetable = () => {
-  const [academicYear, setAcademicYear] = useState('');
-  const [viewClicked, setViewClicked] = useState(false);
+  const { selectedYear, setSelectedYear } = useTimetableYear();
   const [currentPage, setCurrentPage] = useState(0);
   const [allTimetables, setAllTimetables] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ const AllClassesTimetable = () => {
   const classes = currentGroup?.classes || [];
 
   useEffect(() => {
-    if (!viewClicked) return;
+    if (!selectedYear) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     timetableService.getAllTimetables()
@@ -40,7 +40,7 @@ const AllClassesTimetable = () => {
       })
       .catch(() => toast.error('Failed to load timetables'))
       .finally(() => setLoading(false));
-  }, [viewClicked]);
+  }, [selectedYear]);
 
   useEffect(() => {
     if (allTimetables.length === 0) return;
@@ -58,22 +58,8 @@ const AllClassesTimetable = () => {
     setSubjects(map);
   }, [allTimetables]);
 
-  const handleViewTimetable = () => {
-    if (!academicYear) return;
-    setViewClicked(true);
-    setCurrentPage(0);
-    setAllTimetables([]);
-  };
-
   const handlePageChange = (page) => {
     setCurrentPage(page);
-  };
-
-  const handleReset = () => {
-    setAcademicYear('');
-    setViewClicked(false);
-    setCurrentPage(0);
-    setAllTimetables([]);
   };
 
   const getGroupTimetableMap = (groupIdx) => {
@@ -83,7 +69,7 @@ const AllClassesTimetable = () => {
 
     const yearTts = allTimetables.filter((tt) => {
       const clsName = tt.classId?.className || '';
-      return tt.academicYear === academicYear && group.classes.includes(clsName);
+      return tt.academicYear === selectedYear && group.classes.includes(clsName);
     });
 
     yearTts.forEach((tt) => {
@@ -135,9 +121,9 @@ const AllClassesTimetable = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
           <CalendarDaysIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Timetable Data Available</h3>
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Timetable Available</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-            No timetables have been created for this academic year. Please create timetables first.
+            No timetable available for Academic Year {selectedYear}. Create one first.
           </p>
         </div>
       );
@@ -149,7 +135,7 @@ const AllClassesTimetable = () => {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Academic Year: <span className="font-semibold text-gray-700 dark:text-gray-200">{academicYear}</span>
+            Academic Year: <span className="font-semibold text-gray-700 dark:text-gray-200">{selectedYear}</span>
           </p>
           <div className="flex items-center gap-2">
             {CLASS_GROUPS.map((group, idx) => (
@@ -166,12 +152,6 @@ const AllClassesTimetable = () => {
               </button>
             ))}
           </div>
-          <button
-            onClick={handleReset}
-            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer"
-          >
-            Reset
-          </button>
         </div>
 
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-auto">
@@ -261,45 +241,33 @@ const AllClassesTimetable = () => {
     );
   };
 
-  const renderEmptyState = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
-      <CalendarDaysIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-      <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Timetable Loaded</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-        Please select Academic Year and click View Timetable.
-      </p>
-    </div>
-  );
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-        <div className="w-full sm:w-48">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-            Academic Year
-          </label>
-          <select
-            value={academicYear}
-            onChange={(e) => { setAcademicYear(e.target.value); setViewClicked(false); }}
-            className="appearance-none w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-          >
-            <option value="">Select year</option>
-            {ACADEMIC_YEARS.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-        <button
-          onClick={handleViewTimetable}
-          disabled={!academicYear || loading}
-          className="px-6 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      <div className="w-full sm:w-48">
+        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+          Academic Year
+        </label>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+          className="appearance-none w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
         >
-          <CalendarDaysIcon className="h-4 w-4" />
-          {loading ? 'Loading...' : 'View Timetable'}
-        </button>
+          <option value="">Select year</option>
+          {ACADEMIC_YEARS.map((year) => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
       </div>
 
-      {viewClicked ? renderTimetableGrid() : renderEmptyState()}
+      {selectedYear ? renderTimetableGrid() : (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
+          <CalendarDaysIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Academic Year Selected</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+            Please select an academic year to view timetables.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

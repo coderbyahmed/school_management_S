@@ -7,6 +7,7 @@ import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import classService from '../../../services/class.service';
 import teacherService from '../../../services/teacher.service';
 import timetableService from '../../../services/timetable.service';
+import { useTimetableYear } from '../../../contexts/TimetableContext';
 
 const GROUPS = {
   1: { name: 'Group 1', classes: ['Montessori', 'Nursery', 'KG 1', 'KG 2'] },
@@ -38,7 +39,7 @@ const buildPeriodCells = (classNames) => {
 };
 
 const CreateTimetable = () => {
-  const [academicYear, setAcademicYear] = useState('');
+  const { selectedYear, setSelectedYear } = useTimetableYear();
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [periods, setPeriods] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -99,7 +100,7 @@ const CreateTimetable = () => {
   }, [selectedGroup, classIdMap, groupClasses]);
 
   useEffect(() => {
-    if (!selectedGroup || !academicYear || Object.keys(classIdMap).length === 0) {
+    if (!selectedGroup || !selectedYear || Object.keys(classIdMap).length === 0) {
       return;
     }
     const load = async () => {
@@ -110,7 +111,7 @@ const CreateTimetable = () => {
         try {
           const res = await timetableService.getTimetableByClass(cid);
           const tts = res?.data?.timetables || [];
-          const match = tts.find((t) => t.academicYear === academicYear);
+          const match = tts.find((t) => t.academicYear === selectedYear);
           if (match) classTts[name] = match;
         } catch { /* empty */ }
       }
@@ -152,7 +153,7 @@ const CreateTimetable = () => {
       setLoadingExisting(false);
     };
     load();
-  }, [selectedGroup, academicYear, classIdMap, groupClasses]);
+  }, [selectedGroup, selectedYear, classIdMap, groupClasses]);
 
   const getAvailableSubjects = useCallback((className, teacherId) => {
     if (!teacherId || !teachers.length || !classSubjectsMap[className]) return [];
@@ -270,7 +271,7 @@ const CreateTimetable = () => {
   }, [periods, groupClasses]);
 
   const canSave = useMemo(() => {
-    if (!academicYear || !selectedGroup) return false;
+    if (!selectedYear || !selectedGroup) return false;
     const newPeriods = periods.filter((p) => !p.completed);
     if (newPeriods.length === 0) return false;
     if (Object.values(fieldErrors).some((r) => r.timeOverlap)) return false;
@@ -288,10 +289,10 @@ const CreateTimetable = () => {
       });
     });
     return allFilled;
-  }, [academicYear, selectedGroup, periods, fieldErrors, groupClasses]);
+  }, [selectedYear, selectedGroup, periods, fieldErrors, groupClasses]);
 
   const handleSave = useCallback(async () => {
-    if (!academicYear || !selectedGroup) return;
+    if (!selectedYear || !selectedGroup) return;
     if (periods.length === 0) { toast.error('Add at least one period'); return; }
     const timeErr = Object.values(fieldErrors).find((r) => r.timeOverlap);
     if (timeErr) { toast.error('Fix time errors before saving'); return; }
@@ -310,13 +311,13 @@ const CreateTimetable = () => {
         teacherId: p.type === 'teaching' ? (p.cells[className]?.teacher || null) : null,
         subjectId: p.type === 'teaching' ? (p.cells[className]?.subject || null) : null,
       }));
-      const payload = { academicYear, classId, periods: classPeriods };
+      const payload = { academicYear: selectedYear, classId, periods: classPeriods };
       try {
         let existingId = null;
         try {
           const res = await timetableService.getTimetableByClass(classId);
           const tts = res?.data?.timetables || [];
-          const match = tts.find((t) => t.academicYear === academicYear);
+          const match = tts.find((t) => t.academicYear === selectedYear);
           if (match) existingId = match._id;
         } catch { /* empty */ }
         if (existingId) {
@@ -349,7 +350,7 @@ const CreateTimetable = () => {
         try {
           const res = await timetableService.getTimetableByClass(cid);
           const tts = res?.data?.timetables || [];
-          const match = tts.find((t) => t.academicYear === academicYear);
+          const match = tts.find((t) => t.academicYear === selectedYear);
           if (match) classTts[name] = match;
         } catch { /* empty */ }
       }
@@ -386,7 +387,7 @@ const CreateTimetable = () => {
         setPeriods(merged);
       }
     }
-  }, [academicYear, selectedGroup, groupClasses, periods, fieldErrors, classIdMap]);
+  }, [selectedYear, selectedGroup, groupClasses, periods, fieldErrors, classIdMap]);
 
   const handleGroupChange = useCallback((g) => {
     setSelectedGroup(g);
@@ -394,9 +395,9 @@ const CreateTimetable = () => {
   }, []);
 
   const handleYearChange = useCallback((value) => {
-    setAcademicYear(value);
+    setSelectedYear(value);
     setPeriods([]);
-  }, []);
+  }, [setSelectedYear]);
 
   const hasOverlap = useMemo(() => Object.values(fieldErrors).some((r) => r.timeOverlap), [fieldErrors]);
 
@@ -412,7 +413,7 @@ const CreateTimetable = () => {
             <SelectInput
               label="Academic Year"
               name="academicYear"
-              value={academicYear}
+              value={selectedYear}
               onChange={(e) => handleYearChange(e.target.value)}
               options={ACADEMIC_YEARS}
               placeholder="Select year"
@@ -432,7 +433,7 @@ const CreateTimetable = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={addPeriod}
-              disabled={!academicYear || !selectedGroup || loadingClasses || loadingSubjects}
+              disabled={!selectedYear || !selectedGroup || loadingClasses || loadingSubjects}
               className="px-5 py-2 rounded-lg text-[13px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
@@ -450,10 +451,10 @@ const CreateTimetable = () => {
         {loadingExisting && (
           <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Loading existing timetables...</p>
         )}
-        {!loadingExisting && selectedGroup && academicYear && periods.length > 0 && (
+        {!loadingExisting && selectedGroup && selectedYear && periods.length > 0 && (
           <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-3">{periods.filter((p) => p.completed).length} completed, {periods.filter((p) => !p.completed).length} pending &middot; {GROUPS[selectedGroup]?.name}</p>
         )}
-        {!loadingExisting && selectedGroup && academicYear && periods.length === 0 && (
+        {!loadingExisting && selectedGroup && selectedYear && periods.length === 0 && (
           <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3">No periods yet. Click "Add Period" to start building.</p>
         )}
       </CardSection>
@@ -595,7 +596,7 @@ const CreateTimetable = () => {
             <svg className="h-14 w-14 text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No periods yet</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-              {!academicYear || !selectedGroup
+              {!selectedYear || !selectedGroup
                 ? 'Select Academic Year and Group to begin.'
                 : loadingClasses || loadingSubjects
                   ? 'Loading data...'

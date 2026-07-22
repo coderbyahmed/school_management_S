@@ -126,25 +126,32 @@ const assignSubjectsToClass = async (className, academicYear, subjectIds) => {
     throw new ApiError(404, 'Class not found');
   }
 
+  if (!Array.isArray(subjectIds)) {
+    throw new ApiError(400, 'subjectIds must be an array');
+  }
+
   const validSubjects = await Subject.find({ _id: { $in: subjectIds } });
 
   if (validSubjects.length !== subjectIds.length) {
     throw new ApiError(400, 'One or more subjects not found');
   }
 
-  const existingIds = (classDoc.assignedSubjects || []).map((id) => id.toString());
-  const newIds = subjectIds.filter((id) => !existingIds.includes(id));
+  const currentIds = (classDoc.assignedSubjects || []).map((id) => id.toString());
+  const desiredIds = subjectIds.map((id) => id.toString());
 
-  if (newIds.length === 0) {
-    throw new ApiError(409, 'Subject is already assigned to this class');
+  const toAdd = desiredIds.filter((id) => !currentIds.includes(id));
+  const toRemove = currentIds.filter((id) => !desiredIds.includes(id));
+
+  if (toAdd.length === 0 && toRemove.length === 0) {
+    throw new ApiError(409, 'No changes detected');
   }
 
-  classDoc.assignedSubjects = [...classDoc.assignedSubjects, ...newIds];
+  classDoc.assignedSubjects = desiredIds;
   await classDoc.save();
 
   await updateAssignmentCounts();
 
-  return classDoc;
+  return { classDoc, added: toAdd.length, removed: toRemove.length };
 };
 
 const getClassAssignments = async (className, academicYear) => {
@@ -170,25 +177,32 @@ const assignSubjectsToTeacher = async (teacherId, subjectIds) => {
     throw new ApiError(404, 'Teacher not found');
   }
 
+  if (!Array.isArray(subjectIds)) {
+    throw new ApiError(400, 'subjectIds must be an array');
+  }
+
   const validSubjects = await Subject.find({ _id: { $in: subjectIds } });
 
   if (validSubjects.length !== subjectIds.length) {
     throw new ApiError(400, 'One or more subjects not found');
   }
 
-  const existingIds = (teacher.assignedSubjects || []).map((id) => id.toString());
-  const newIds = subjectIds.filter((id) => !existingIds.includes(id));
+  const currentIds = (teacher.assignedSubjects || []).map((id) => id.toString());
+  const desiredIds = subjectIds.map((id) => id.toString());
 
-  if (newIds.length === 0) {
-    throw new ApiError(409, 'Subject is already assigned to this teacher');
+  const toAdd = desiredIds.filter((id) => !currentIds.includes(id));
+  const toRemove = currentIds.filter((id) => !desiredIds.includes(id));
+
+  if (toAdd.length === 0 && toRemove.length === 0) {
+    throw new ApiError(409, 'No changes detected');
   }
 
-  teacher.assignedSubjects = [...teacher.assignedSubjects, ...newIds];
+  teacher.assignedSubjects = desiredIds;
   await teacher.save();
 
   await updateAssignmentCounts();
 
-  return teacher;
+  return { teacher, added: toAdd.length, removed: toRemove.length };
 };
 
 const getTeacherAssignments = async (teacherId) => {

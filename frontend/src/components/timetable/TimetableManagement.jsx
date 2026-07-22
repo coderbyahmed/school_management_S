@@ -3,6 +3,7 @@ import AllClassesTimetable from './tabs/AllClassesTimetable';
 import CreateTimetable from './tabs/CreateTimetable';
 import ViewTimetable from './tabs/ViewTimetable';
 import TimetableDesigner from './tabs/TimetableDesigner';
+import { TimetableProvider } from '../../contexts/TimetableContext';
 
 const tabs = ['All Classes Timetable', 'Create Timetable', 'View Timetable', 'Timetable Designer'];
 
@@ -13,7 +14,7 @@ const tabComponents = {
   'Timetable Designer': TimetableDesigner,
 };
 
-const TimetableManagement = () => {
+const TimetableContent = () => {
   const [activeTab, setActiveTab] = useState('All Classes Timetable');
 
   const ActiveComponent = tabComponents[activeTab];
@@ -40,6 +41,14 @@ const TimetableManagement = () => {
 
       <ActiveComponent />
     </div>
+  );
+};
+
+const TimetableManagement = () => {
+  return (
+    <TimetableProvider>
+      <TimetableContent />
+    </TimetableProvider>
   );
 };
 

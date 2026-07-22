@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, CurrencyDollarIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, CurrencyDollarIcon, Cog6ToothIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import useSchoolBranding from '../../hooks/useSchoolBranding';
 import { getImageUrl } from '../../utils/imageUrl';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
+  const [feeOpen, setFeeOpen] = useState(false);
   const { schoolBranding } = useSchoolBranding();
   const logoUrl = schoolBranding?.adminPanelLogo ? getImageUrl(schoolBranding.adminPanelLogo) : null;
   const principalName = schoolBranding?.principalName || 'Admin Panel';
@@ -242,24 +244,63 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               </NavLink>
             </li>
             <li className="flex justify-center">
-              <NavLink
-                to="/admin/fees"
-                className={({ isActive }) =>
-                  `flex items-center transition-all duration-200 rounded-lg ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
-                }
-                onClick={() => {
-                  if (window.innerWidth < 768) toggleSidebar();
-                }}
-              >
-                <CurrencyDollarIcon className="h-5 w-5 flex-shrink-0" />
-                {isOpen && (
-                  <span className="text-sm font-medium">Fee Management</span>
-                )}
-              </NavLink>
+              {isOpen ? (
+                <div className="w-[calc(100%-16px)]">
+                  <button
+                    onClick={() => setFeeOpen(!feeOpen)}
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <CurrencyDollarIcon className="h-5 w-5 flex-shrink-0" />
+                      <span className="text-sm font-medium">Fee Management</span>
+                    </div>
+                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${feeOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {feeOpen && (
+                    <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                      {[
+                        { to: '/admin/fees/dashboard', label: 'Fee Dashboard' },
+                        { to: '/admin/fees/structure', label: 'Fee Structure' },
+                        { to: '/admin/fees/students', label: 'Student Fees' },
+                        { to: '/admin/fees/reports', label: 'Reports & Settings' },
+                      ].map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          className={({ isActive }) =>
+                            `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                              isActive
+                                ? 'bg-blue-500 text-white shadow-md font-medium'
+                                : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                            }`
+                          }
+                          onClick={() => {
+                            if (window.innerWidth < 768) toggleSidebar();
+                          }}
+                        >
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to="/admin/fees/dashboard"
+                  className={({ isActive }) =>
+                    `flex items-center transition-all duration-200 rounded-lg ${
+                      isActive
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                    } w-10 h-10 justify-center`
+                  }
+                  onClick={() => {
+                    if (window.innerWidth < 768) toggleSidebar();
+                  }}
+                >
+                  <CurrencyDollarIcon className="h-5 w-5 flex-shrink-0" />
+                </NavLink>
+              )}
             </li>
             <li className="flex justify-center">
               <NavLink

@@ -24,6 +24,10 @@ import TimetableManagement from './pages/admin/TimetableManagement';
 import AttendanceManagement from './pages/admin/AttendanceManagement';
 import EventsHolidays from './pages/admin/EventsHolidays';
 import FeeManagement from './pages/admin/FeeManagement';
+import FeeDashboard from './pages/admin/fee/Dashboard';
+import FeeStructure from './pages/admin/fee/Structure';
+import StudentFees from './pages/admin/fee/Students';
+import FeeReports from './pages/admin/fee/Reports';
 import SchoolSettings from './pages/admin/SchoolSettings';
 
 function AppContent() {
@@ -54,7 +58,13 @@ function AppContent() {
             <Route path="timetable" element={<TimetableManagement />} />
             <Route path="attendance" element={<AttendanceManagement />} />
             <Route path="events" element={<EventsHolidays />} />
-            <Route path="fees" element={<FeeManagement />} />
+            <Route path="fees" element={<FeeManagement />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<FeeDashboard />} />
+              <Route path="structure" element={<FeeStructure />} />
+              <Route path="students" element={<StudentFees />} />
+              <Route path="reports" element={<FeeReports />} />
+            </Route>
             <Route path="settings" element={<SchoolSettings />} />
           </Route>
         </Route>

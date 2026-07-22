@@ -1,7 +1,11 @@
-import FeeManagement from '../../components/fee/FeeManagement';
+import { Outlet } from 'react-router-dom';
 
-const FeeManagementPage = () => {
-  return <FeeManagement />;
+const FeeManagementLayout = () => {
+  return (
+    <div className="space-y-6">
+      <Outlet />
+    </div>
+  );
 };
 
-export default FeeManagementPage;
+export default FeeManagementLayout;

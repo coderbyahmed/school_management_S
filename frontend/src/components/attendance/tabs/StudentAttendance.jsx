@@ -11,9 +11,11 @@ import DateInput from '../../common/DateInput';
 import Modal from '../../common/Modal';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
+import { getImageUrl } from '../../../utils/imageUrl';
 import Spinner from '../../common/Spinner';
+import studentAttendanceService from '../../../services/studentAttendance.service';
 
-const STATUS_OPTIONS = ['Present', 'Absent', 'Leave', 'Late'];
+const STATUS_OPTIONS = ['Select Status', 'Present', 'Absent', 'Leave', 'Late'];
 const ATTENDANCE_METHODS = ['Manual Attendance', 'QR Scanner'];
 
 const STATUS_STYLES = {
@@ -22,6 +24,7 @@ const STATUS_STYLES = {
   Leave: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700',
   Late: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700',
   Pending: 'bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600',
+  'Select Status': 'bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600',
 };
 
 const STATUS_COLORS = {
@@ -29,6 +32,7 @@ const STATUS_COLORS = {
   Absent: { dot: 'bg-red-500', hover: 'hover:bg-red-50 dark:hover:bg-red-900/20', text: 'text-red-700 dark:text-red-300' },
   Leave: { dot: 'bg-yellow-400', hover: 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-300' },
   Late: { dot: 'bg-blue-500', hover: 'hover:bg-blue-50 dark:hover:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300' },
+  'Select Status': { dot: 'bg-gray-400', hover: 'hover:bg-gray-50 dark:hover:bg-gray-900/20', text: 'text-gray-500 dark:text-gray-400' },
 };
 
 const PAGE_SIZE = 10;
@@ -37,17 +41,6 @@ const formatTime = () => {
   const now = new Date();
   return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
-
-const STUDENT_NAMES = [
-  'Ahmed Khan', 'Sara Ali', 'Muhammad Usman', 'Fatima Zahra', 'Ali Raza',
-  'Ayesha Bibi', 'Hassan Javed', 'Zainab Malik', 'Omar Farooq', 'Hira Batool',
-  'Hamza Sheikh', 'Mahnoor Ahmed', 'Bilal Hussain', 'Laiba Noor', 'Tahir Iqbal',
-  'Sana Mirza', 'Rayan Akhtar', 'Iqra Aziz', 'Zayan Siddiqui', 'Eman Tariq',
-  'Aryan Bhatti', 'Rida Fatima', 'Shahmir Ali', 'Dua Hasan', 'Rohail Shah',
-  'Minahil Zafar', 'Saim Riaz', 'Aleena Khan', 'Huzaifa Khalid', 'Amna Rizvi',
-  'Arham Sheikh', 'Sehrish Ali', 'Ibrahim Hashmi', 'Fiza Qureshi', 'Rayyan Ansari',
-  'Noor Fatima', 'Moin Abbas', 'Sidra Iqbal', 'Rafay Mansoor', 'Hania Amir',
-];
 
 const StudentAttendance = () => {
   const [academicYear, setAcademicYear] = useState('');
@@ -87,7 +80,7 @@ const StudentAttendance = () => {
     return () => document.removeEventListener('click', close);
   }, []);
 
-  const loadStudents = useCallback((silent = false) => {
+  const loadStudents = useCallback(async (silent = false) => {
     if (!academicYear || !className) {
       if (!silent) toast.error('Please select Academic Year and Class');
       return;
@@ -97,29 +90,38 @@ const StudentAttendance = () => {
     setLoaded(false);
     setStudents([]);
     setAttendanceMap({});
-    setTimeout(() => {
-      const yearPrefix = academicYear.split('-')[0];
-      const shuffled = [...STUDENT_NAMES].sort(() => Math.random() - 0.5);
-      const isAll = className === 'All Classes';
-      const count = isAll ? shuffled.length : Math.min(shuffled.length, 18);
-      const list = shuffled.slice(0, count).map((name, i) => ({
-        _id: `std_demo_${isAll ? 'all' : className.replace(/\s/g, '_')}_${i + 1}`,
-        fullName: name,
-        studentId: `STD-${yearPrefix}-${String(i + 1).padStart(4, '0')}`,
-        class: isAll ? CLASS_NAMES[i % CLASS_NAMES.length] : className,
+    try {
+      const response = await studentAttendanceService.getStudentsWithAttendance({
         academicYear,
-      }));
-      const now = formatTime();
-      const map = {};
-      list.forEach(s => {
-        map[s._id] = { status: 'Present', checkIn: now };
+        class: className === 'All Classes' ? '' : className,
+        date,
       });
-      setStudents(list);
-      setAttendanceMap(map);
+      const { students: fetchedStudents = [], attendanceMap: existing = {} } = response.data || {};
+      setStudents(fetchedStudents);
+      const isScanner = attendanceMethod === 'QR Scanner';
+      const defaultStatus = isScanner ? 'Pending' : 'Select Status';
+      const mergedMap = {};
+      fetchedStudents.forEach((s) => {
+        const existingRecord = existing[s._id];
+        if (existingRecord) {
+          mergedMap[s._id] = {
+            status: existingRecord.status,
+            checkIn: existingRecord.checkIn
+              ? new Date(existingRecord.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+              : '',
+          };
+        } else {
+          mergedMap[s._id] = { status: defaultStatus, checkIn: '' };
+        }
+      });
+      setAttendanceMap(mergedMap);
       setLoaded(true);
+    } catch {
+      if (!silent) toast.error('Failed to load students');
+    } finally {
       setLoading(false);
-    }, 300);
-  }, [academicYear, className]);
+    }
+  }, [academicYear, className, date, attendanceMethod]);
 
   useEffect(() => {
     if (!academicYear || !className) return;
@@ -127,18 +129,63 @@ const StudentAttendance = () => {
     return () => clearTimeout(id);
   }, [academicYear, className, loadStudents]);
 
+  const saveSingleRecord = async (studentId, status) => {
+    if (!academicYear || !className || !loaded) return;
+    try {
+      await studentAttendanceService.saveAttendance({
+        academicYear,
+        class: className === 'All Classes' ? '' : className,
+        date,
+        records: [{
+          student: studentId,
+          status,
+          method: isScannerMode ? 'QR' : 'Manual',
+        }],
+      });
+    } catch {
+      toast.error('Failed to save attendance');
+    }
+  };
+
+  const handleMarkAllPresent = async () => {
+    if (!loaded || students.length === 0) return;
+    const now = formatTime();
+    setAttendanceMap((prev) => {
+      const next = { ...prev };
+      students.forEach((s) => {
+        next[s._id] = { status: 'Present', checkIn: now };
+      });
+      return next;
+    });
+    const records = students.map((s) => ({
+      student: s._id,
+      status: 'Present',
+      method: isScannerMode ? 'QR' : 'Manual',
+    }));
+    try {
+      await studentAttendanceService.saveAttendance({
+        academicYear,
+        class: className === 'All Classes' ? '' : className,
+        date,
+        records,
+      });
+      toast.success('All students marked present');
+    } catch {
+      toast.error('Failed to save attendance');
+    }
+  };
+
   const handleAttendanceMethodChange = (e) => {
     const method = e.target.value;
     setAttendanceMethod(method);
     if (!loaded) return;
     const isScanner = method === 'QR Scanner';
-    const defaultStatus = isScanner ? 'Pending' : 'Present';
-    const now = formatTime();
+    const defaultStatus = isScanner ? 'Pending' : 'Select Status';
     setAttendanceMap(prev => {
       const next = {};
       Object.keys(prev).forEach(id => {
         next[id] = { ...prev[id], status: defaultStatus };
-        next[id].checkIn = defaultStatus !== 'Pending' ? (prev[id].checkIn || now) : '';
+        next[id].checkIn = defaultStatus !== 'Pending' && defaultStatus !== 'Select Status' ? (prev[id].checkIn || formatTime()) : '';
       });
       return next;
     });
@@ -170,14 +217,18 @@ const StudentAttendance = () => {
       [studentId]: {
         ...prev[studentId],
         [field]: value,
-        ...(field === 'status' ? { checkIn: formatTime() } : {}),
+        ...(field === 'status' && value !== 'Select Status' ? { checkIn: formatTime() } : {}),
+        ...(field === 'status' && value === 'Select Status' ? { checkIn: '' } : {}),
       },
     }));
+    if (field === 'status' && value !== 'Select Status') {
+      saveSingleRecord(studentId, value);
+    }
   };
 
   const handleResetConfirm = () => {
     if (!resetTarget) return;
-    const defaultStatus = isScannerMode ? 'Pending' : 'Present';
+    const defaultStatus = isScannerMode ? 'Pending' : 'Select Status';
     setAttendanceMap(prev => ({
       ...prev,
       [resetTarget]: { ...prev[resetTarget], status: defaultStatus, checkIn: '' },
@@ -353,8 +404,12 @@ const StudentAttendance = () => {
               return (
                 <tr key={student._id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/30">
-                      {student.fullName?.charAt(0) || 'S'}
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/30 overflow-hidden">
+                      {getImageUrl(student.studentImage) ? (
+                        <img src={getImageUrl(student.studentImage)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <span>{student.fullName?.charAt(0) || 'S'}</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{student.fullName}</td>
@@ -411,7 +466,11 @@ const StudentAttendance = () => {
       <Modal isOpen={!!viewStudent} onClose={() => setViewStudent(null)} title="Attendance Details" maxWidth="max-w-md">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xl ring-2 ring-yellow-400/50 mb-3 overflow-hidden">
-            {viewStudent.fullName?.charAt(0) || 'S'}
+            {getImageUrl(viewStudent.studentImage) ? (
+              <img src={getImageUrl(viewStudent.studentImage)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+            ) : (
+              <span>{viewStudent.fullName?.charAt(0) || 'S'}</span>
+            )}
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{viewStudent.fullName}</h3>
           {renderStatusBadge(record.status || '—')}
@@ -518,6 +577,16 @@ const StudentAttendance = () => {
             <UserGroupIcon className="h-4 w-4" />
             Load Students
           </button>
+          {loaded && (
+            <button
+              onClick={handleMarkAllPresent}
+              disabled={loading}
+              className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+            >
+              <CheckCircleIcon className="h-4 w-4" />
+              Mark All Present
+            </button>
+          )}
         </div>
       </div>
 

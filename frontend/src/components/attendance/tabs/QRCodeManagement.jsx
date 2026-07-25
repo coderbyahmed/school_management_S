@@ -9,7 +9,6 @@ import StatCard from '../../common/StatCard';
 import SearchInput from '../../common/SearchInput';
 import Modal from '../../common/Modal';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
-import idCardDemoData from '../data/idCardDemoData';
 import { VerticalTemplate, HorizontalTemplate } from '../templates';
 import { getInitials } from '../templates/shared/cardHtmlUtils';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
@@ -105,8 +104,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
   const designerPreviewStudent = useMemo(() => {
     if (!designerOpen) return null;
     if (filtered.length > 0) return filtered[0];
-    const all = idCardDemoData.getStudents();
-    return all.length > 0 ? all[0] : null;
+    return null;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [designerOpen]);
 
@@ -149,8 +147,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     setCurrentPage(1);
     setSelectedIds(new Set());
     setTimeout(() => {
-      const data = idCardDemoData.getStudents();
-      setAllStudents(data);
+      setAllStudents([]);
       setLoading(false);
       toast.success('Students loaded successfully');
     }, 400);

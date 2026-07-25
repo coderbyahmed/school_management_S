@@ -1,160 +1,21 @@
-import { ACADEMIC_YEARS, CLASS_NAMES, DEPARTMENTS } from '../utils/classNames';
-
-const STORAGE_KEY = 'attendance_reports_records';
-const MODES = ['Manual', 'QR Code', 'Hardware (Coming Soon)'];
-
-const STUDENT_NAMES = [
-  'Ahmed Khan', 'Sara Ali', 'Muhammad Usman', 'Fatima Zahra', 'Ali Raza',
-  'Ayesha Bibi', 'Hassan Javed', 'Zainab Malik', 'Omar Farooq', 'Hira Batool',
-  'Hamza Sheikh', 'Mahnoor Ahmed', 'Bilal Hussain', 'Laiba Noor', 'Tahir Iqbal',
-  'Sana Mirza', 'Rayan Akhtar', 'Iqra Aziz', 'Zayan Siddiqui', 'Eman Tariq',
-  'Arham Sheikh', 'Sehrish Ali', 'Ibrahim Hashmi', 'Fiza Qureshi', 'Rayyan Ansari',
-  'Noor Fatima', 'Moin Abbas', 'Sidra Iqbal', 'Rafay Mansoor', 'Hania Amir',
-];
-
-const TEACHER_NAMES = [
-  'Prof. Ahmed Raza', 'Ms. Fatima Hassan', 'Mr. Imran Ali', 'Dr. Saba Khan',
-  'Mr. Usman Malik', 'Ms. Ayesha Sheikh', 'Prof. Bilal Ahmed', 'Dr. Hira Batool',
-  'Mr. Tariq Mehmood', 'Ms. Sana Javed', 'Prof. Zainab Noor', 'Mr. Kashif Riaz',
-  'Dr. Nimrah Tariq', 'Ms. Sidra Iqbal', 'Mr. Ovais Mughal',
-];
-
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function randomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-let nameCounter = {};
-
-function uniqueName(name) {
-  if (!nameCounter[name]) nameCounter[name] = 0;
-  nameCounter[name]++;
-  if (nameCounter[name] > 1) return `${name} ${nameCounter[name]}`;
-  return name;
-}
-
-function formatDate(date) {
-  return date.toISOString().split('T')[0];
-}
-
-function formatTime(date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
-function generateRecords() {
-  const records = [];
-  let id = 1;
-  const now = new Date();
-  const yearLabel = ACADEMIC_YEARS[0];
-
-  nameCounter = {};
-
-  const persons = [];
-
-  for (let i = 0; i < 25; i++) {
-    const name = uniqueName(randomItem(STUDENT_NAMES));
-    persons.push({
-      name,
-      personId: `STD-${yearLabel.split('-')[0]}-${String(i + 1).padStart(4, '0')}`,
-      type: 'Student',
-      classOrDept: randomItem(CLASS_NAMES),
-    });
-  }
-
-  for (let i = 0; i < 12; i++) {
-    const name = uniqueName(randomItem(TEACHER_NAMES));
-    persons.push({
-      name,
-      personId: `TCH-${yearLabel.split('-')[0]}-${String(i + 1).padStart(4, '0')}`,
-      type: 'Teacher',
-      classOrDept: randomItem(DEPARTMENTS),
-    });
-  }
-
-  for (let monthsBack = 3; monthsBack >= 0; monthsBack--) {
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 0).getDate();
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, day);
-      if (date.getDay() === 5 || date.getDay() === 6) continue;
-
-      const dateStr = formatDate(date);
-
-      persons.forEach((person) => {
-        const rand = Math.random();
-        const status = rand < 0.55 ? 'Present' : rand < 0.72 ? 'Absent' : rand < 0.86 ? 'Late' : 'Leave';
-        const checkIn = status === 'Present' || status === 'Late'
-          ? formatTime(new Date(date.getFullYear(), date.getMonth(), date.getDate(), randomInt(7, 9), randomInt(0, 59)))
-          : '';
-        const checkOut = status === 'Present' || status === 'Late'
-          ? formatTime(new Date(date.getFullYear(), date.getMonth(), date.getDate(), randomInt(13, 16), randomInt(0, 59)))
-          : '';
-
-        records.push({
-          id: `rep_${id++}`,
-          name: person.name,
-          personId: person.personId,
-          type: person.type,
-          classOrDept: person.classOrDept,
-          date: dateStr,
-          checkIn,
-          checkOut,
-          status,
-          mode: randomItem(MODES),
-          academicYear: yearLabel,
-        });
-      });
-    }
-  }
-
-  return records;
-}
-
-function applyFilters(records, filters) {
-  let list = [...records];
-  if (filters.type && filters.type !== 'All') {
-    list = list.filter((r) => r.type === filters.type);
-  }
-  if (filters.academicYear) {
-    list = list.filter((r) => r.academicYear === filters.academicYear);
-  }
-  if (filters.className) {
-    list = list.filter((r) => r.classOrDept === filters.className);
-  }
-  if (filters.fromDate) {
-    list = list.filter((r) => r.date >= filters.fromDate);
-  }
-  if (filters.toDate) {
-    list = list.filter((r) => r.date <= filters.toDate);
-  }
-  if (filters.search) {
-    const q = filters.search.toLowerCase();
-    list = list.filter((r) => r.name.toLowerCase().includes(q) || r.personId.toLowerCase().includes(q));
-  }
-  return list.sort((a, b) => b.date.localeCompare(a.date));
-}
+import api from '../api/axios';
 
 const attendanceReportsService = {
-  getRecords(filters = {}) {
-    let records;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        records = JSON.parse(raw);
-      } else {
-        records = generateRecords();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-      }
-    } catch {
-      records = [];
-    }
-    return applyFilters(records, filters);
+  getRecords: async (filters = {}) => {
+    const params = {};
+    if (filters.academicYear) params.academicYear = filters.academicYear;
+    if (filters.className) params.className = filters.className;
+    if (filters.status && filters.status !== 'All') params.status = filters.status;
+    if (filters.fromDate) params.fromDate = filters.fromDate;
+    if (filters.toDate) params.toDate = filters.toDate;
+    if (filters.search) params.search = filters.search;
+    if (filters.type && filters.type !== 'All') params.type = filters.type;
+
+    const response = await api.get('/student-attendance/reports', { params });
+    return response.data.data?.records || [];
   },
 
   clearCache() {
-    localStorage.removeItem(STORAGE_KEY);
   },
 
   getStats(records) {
@@ -196,7 +57,7 @@ const attendanceReportsService = {
 
   getTeacherOverview(records) {
     const teacherRecords = records.filter((r) => r.type === 'Teacher');
-    return this.getClassWiseStats(teacherRecords);
+    return attendanceReportsService.getClassWiseStats(teacherRecords);
   },
 
   getPersonSummaries(records) {
@@ -224,8 +85,8 @@ const attendanceReportsService = {
     if (!personRecords.length) return null;
 
     const person = personRecords[0];
-    const stats = this.getStats(personRecords);
-    const monthly = this.getMonthlyTrend(personRecords);
+    const stats = attendanceReportsService.getStats(personRecords);
+    const monthly = attendanceReportsService.getMonthlyTrend(personRecords);
 
     const modeStats = {};
     personRecords.forEach((r) => {
@@ -244,10 +105,6 @@ const attendanceReportsService = {
       records: personRecords,
     };
   },
-
-  ACADEMIC_YEARS,
-  CLASSES: CLASS_NAMES,
-  DEPARTMENTS,
 };
 
 export default attendanceReportsService;

@@ -86,13 +86,6 @@ const TeacherAttendance = () => {
     return () => document.removeEventListener('click', close);
   }, []);
 
-  const TEACHER_NAMES = [
-    'Prof. Ahmed Raza', 'Ms. Fatima Hassan', 'Mr. Imran Ali', 'Dr. Saba Khan',
-    'Mr. Usman Malik', 'Ms. Ayesha Sheikh', 'Prof. Bilal Ahmed', 'Dr. Hira Batool',
-    'Mr. Tariq Mehmood', 'Ms. Sana Javed', 'Prof. Zainab Noor', 'Mr. Kashif Riaz',
-    'Dr. Nimrah Tariq', 'Ms. Sidra Iqbal', 'Mr. Ovais Mughal',
-  ];
-
   const loadTeachers = () => {
     if (!academicYear) {
       toast.error('Please select Academic Year');
@@ -104,18 +97,6 @@ const TeacherAttendance = () => {
     setTeachers([]);
     setAttendanceMap({});
     setTimeout(() => {
-      const yearPrefix = academicYear.split('-')[0];
-      const list = TEACHER_NAMES.map((name, i) => ({
-        _id: `tch_demo_${i + 1}`,
-        fullName: name,
-        teacherId: `TCH-${yearPrefix}-${String(i + 1).padStart(4, '0')}`,
-      }));
-      const map = {};
-      list.forEach(t => {
-        map[t._id] = { status: 'Present', checkIn: '' };
-      });
-      setTeachers(list);
-      setAttendanceMap(map);
       setLoaded(true);
       setLoading(false);
     }, 300);

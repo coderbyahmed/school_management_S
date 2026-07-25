@@ -7,7 +7,7 @@ import {
   ChartBarSquareIcon,
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
-import { ACADEMIC_YEARS } from '../../../utils/classNames';
+import { ACADEMIC_YEARS, CLASS_NAMES, DEPARTMENTS } from '../../../utils/classNames';
 import attendanceReportsService from '../../../services/attendanceReports.service';
 import Spinner from '../../common/Spinner';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
@@ -112,9 +112,17 @@ const AttendanceReports = () => {
   const tableRef = useRef(null);
 
   useEffect(() => {
-    const records = attendanceReportsService.getRecords();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAllRecords(records);
+    let cancelled = false;
+    const loadRecords = async () => {
+      try {
+        const records = await attendanceReportsService.getRecords();
+        if (!cancelled) setAllRecords(records);
+      } catch {
+        if (!cancelled) setAllRecords([]);
+      }
+    };
+    loadRecords();
+    return () => { cancelled = true; };
   }, []);
 
   const filteredRecords = useMemo(() => {
@@ -152,29 +160,37 @@ const AttendanceReports = () => {
   }, [personSummaries]);
 
   const deptOptions = useMemo(() => {
-    if (type === 'All') return [...attendanceReportsService.CLASSES, ...attendanceReportsService.DEPARTMENTS];
-    return attendanceReportsService.CLASSES;
+    if (type === 'All') return [...CLASS_NAMES, ...DEPARTMENTS];
+    return CLASS_NAMES;
   }, [type]);
 
-  const handleGenerateReport = () => {
-    const records = attendanceReportsService.getRecords({
-      type: type === 'All' ? undefined : type === 'Students' ? 'Student' : 'Teacher',
-      academicYear: academicYear || undefined,
-      className: className || undefined,
-      fromDate: fromDate || undefined,
-      toDate: toDate || undefined,
-    });
-    setAllRecords(records);
+  const handleGenerateReport = async () => {
+    try {
+      const records = await attendanceReportsService.getRecords({
+        type: type === 'All' ? undefined : type === 'Students' ? 'Student' : 'Teacher',
+        academicYear: academicYear || undefined,
+        className: className || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      });
+      setAllRecords(records);
+    } catch {
+      setAllRecords([]);
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setType('All');
     setAcademicYear('');
     setClassName('');
     setFromDate('');
     setToDate('');
-    const records = attendanceReportsService.getRecords();
-    setAllRecords(records);
+    try {
+      const records = await attendanceReportsService.getRecords();
+      setAllRecords(records);
+    } catch {
+      setAllRecords([]);
+    }
   };
 
   const buildReportHtml = () => {

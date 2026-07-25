@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import SearchInput from '../../common/SearchInput';
+import { CLASS_NAMES, ACADEMIC_YEARS, DEPARTMENTS } from '../../../utils/classNames';
 import attendanceHistoryService from '../../../services/attendanceHistory.service';
 
 const STATUS_OPTIONS = ['All', 'Present', 'Absent', 'Leave', 'Late'];
@@ -46,9 +47,17 @@ const AttendanceHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const records = attendanceHistoryService.getRecords();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAllRecords(records);
+    let cancelled = false;
+    const loadRecords = async () => {
+      try {
+        const records = await attendanceHistoryService.getRecords();
+        if (!cancelled) setAllRecords(records);
+      } catch {
+        if (!cancelled) setAllRecords([]);
+      }
+    };
+    loadRecords();
+    return () => { cancelled = true; };
   }, []);
 
   const filteredRecords = useMemo(() => {
@@ -78,9 +87,9 @@ const AttendanceHistory = () => {
   }, [filteredRecords]);
 
   const deptOptions = useMemo(() => {
-    if (type === 'Teachers') return attendanceHistoryService.DEPARTMENTS;
-    if (type === 'All') return [...attendanceHistoryService.CLASSES, ...attendanceHistoryService.DEPARTMENTS];
-    return attendanceHistoryService.CLASSES;
+    if (type === 'Teachers') return DEPARTMENTS;
+    if (type === 'All') return [...CLASS_NAMES, ...DEPARTMENTS];
+    return CLASS_NAMES;
   }, [type]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
@@ -95,20 +104,24 @@ const AttendanceHistory = () => {
     return () => clearTimeout(id);
   }, [filteredRecords]);
 
-  const handleSearch = () => {
-    const records = attendanceHistoryService.getRecords({
-      type: type === 'All' ? undefined : type === 'Students' ? 'Student' : 'Teacher',
-      academicYear: academicYear || undefined,
-      className: className || undefined,
-      status: status !== 'All' ? status : undefined,
-      fromDate: fromDate || undefined,
-      toDate: toDate || undefined,
-      search: search || undefined,
-    });
-    setAllRecords(records);
+  const handleSearch = async () => {
+    try {
+      const records = await attendanceHistoryService.getRecords({
+        type: type === 'All' ? undefined : type === 'Students' ? 'Student' : 'Teacher',
+        academicYear: academicYear || undefined,
+        className: className || undefined,
+        status: status !== 'All' ? status : undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+        search: search || undefined,
+      });
+      setAllRecords(records);
+    } catch {
+      setAllRecords([]);
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setType('All');
     setAcademicYear('');
     setClassName('');
@@ -116,8 +129,12 @@ const AttendanceHistory = () => {
     setToDate('');
     setStatus('All');
     setSearch('');
-    const records = attendanceHistoryService.getRecords();
-    setAllRecords(records);
+    try {
+      const records = await attendanceHistoryService.getRecords();
+      setAllRecords(records);
+    } catch {
+      setAllRecords([]);
+    }
   };
 
   const renderPhoto = (record) => (
@@ -248,7 +265,7 @@ const AttendanceHistory = () => {
               <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">All Years</option>
-                {attendanceHistoryService.ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                {ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>

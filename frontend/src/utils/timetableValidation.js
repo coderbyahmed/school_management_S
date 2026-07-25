@@ -6,47 +6,65 @@ export const timeToMinutes = (t) => {
   return h * 60 + m;
 };
 
-export const validatePeriods = (periods) => {
-  const fieldErrors = {};
-  if (!periods || periods.length === 0) return fieldErrors;
+export const validatePeriodTimes = (periods, windowStart, windowEnd) => {
+  const errors = {};
+  if (!periods || periods.length === 0) return errors;
 
+  const startWindowM = windowStart ? timeToMinutes(windowStart) : -1;
+  const endWindowM = windowEnd ? timeToMinutes(windowEnd) : -1;
   const timeSlots = [];
 
   periods.forEach((p) => {
     const row = {};
-    const startM = timeToMinutes(p.startTime);
-    const endM = timeToMinutes(p.endTime);
-    const hasStart = p.startTime !== '';
-    const hasEnd = p.endTime !== '';
 
-    if (p.type === 'Teaching') {
-      if (!hasStart) row.startTime = 'Start time required';
-      if (!hasEnd) row.endTime = 'End time required';
-      if (!p.teacher) row.teacher = 'Teacher required';
-      if (!p.subject) row.subject = 'Subject required';
-    } else {
-      if (!hasStart) row.startTime = 'Start time required';
-      if (!hasEnd) row.endTime = 'End time required';
+    if (!p.startTime || !p.endTime) {
+      errors[p.id] = row;
+      return;
     }
 
-    if (hasStart && hasEnd) {
-      if (endM <= startM) {
-        row.timeOverlap = 'End time must be later than start time';
-      } else {
-        for (const slot of timeSlots) {
-          if (startM < slot.endM && endM > slot.startM) {
-            row.timeOverlap = 'Time overlap detected';
-            if (!fieldErrors[slot.id]) fieldErrors[slot.id] = {};
-            fieldErrors[slot.id].timeOverlap = 'Time overlap detected';
-            break;
-          }
+    const startM = timeToMinutes(p.startTime);
+    const endM = timeToMinutes(p.endTime);
+
+    if (endM <= startM) {
+      row.timeOverlap = 'End time must be after start time.';
+    } else if (endWindowM >= 0 && endM > endWindowM) {
+      row.endTime = 'Period cannot end after timetable end time.';
+    }
+
+    if (!row.timeOverlap && !row.endTime && startWindowM >= 0 && startM < startWindowM) {
+      row.startTime = 'Period cannot start before timetable start time.';
+    }
+
+    if (endM > startM) {
+      for (const slot of timeSlots) {
+        if (startM < slot.endM && endM > slot.startM) {
+          row.timeOverlap = 'This period overlaps with another period.';
+          if (!errors[slot.id]) errors[slot.id] = {};
+          errors[slot.id].timeOverlap = 'This period overlaps with another period.';
+          break;
         }
-        timeSlots.push({ id: p.id, startM, endM });
       }
+      timeSlots.push({ id: p.id, startM, endM });
     }
 
     if (Object.keys(row).length > 0) {
-      fieldErrors[p.id] = row;
+      errors[p.id] = row;
+    }
+  });
+
+  return errors;
+};
+
+export const validatePeriods = (periods, windowStart, windowEnd) => {
+  const fieldErrors = validatePeriodTimes(periods, windowStart, windowEnd);
+
+  periods.forEach((p) => {
+    if (p.type === 'Teaching') {
+      const row = fieldErrors[p.id] || {};
+      let updated = false;
+      if (!p.teacher) { row.teacher = 'Teacher required'; updated = true; }
+      if (!p.subject) { row.subject = 'Subject required'; updated = true; }
+      if (updated) fieldErrors[p.id] = row;
     }
   });
 

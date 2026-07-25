@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 
 const schoolSettingsSchema = new mongoose.Schema(
   {
+    // ──────────────────────────────────────────────
+    // General Information
+    // ──────────────────────────────────────────────
     schoolName: {
       type: String,
       required: [true, 'School name is required'],
@@ -11,11 +14,6 @@ const schoolSettingsSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Short name is required'],
       trim: true,
-    },
-    tagline: {
-      type: String,
-      trim: true,
-      default: '',
     },
     registrationNumber: {
       type: String,
@@ -85,6 +83,10 @@ const schoolSettingsSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+
+    // ──────────────────────────────────────────────
+    // Academic Configuration
+    // ──────────────────────────────────────────────
     currentAcademicYear: {
       type: String,
       required: [true, 'Current academic year is required'],
@@ -95,10 +97,30 @@ const schoolSettingsSchema = new mongoose.Schema(
       enum: ['Morning', 'Evening', 'Both'],
       required: [true, 'School shift is required'],
     },
-    weekendDays: {
-      type: [String],
-      default: ['Sunday'],
+    schoolStartTime: {
+      type: String,
+      trim: true,
+      default: '',
     },
+    schoolEndTime: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    attendanceStartTime: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    attendanceClosingTime: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    // ──────────────────────────────────────────────
+    // Localization
+    // ──────────────────────────────────────────────
     defaultLanguage: {
       type: String,
       trim: true,
@@ -109,6 +131,30 @@ const schoolSettingsSchema = new mongoose.Schema(
       trim: true,
       default: 'Asia/Karachi',
     },
+    currency: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    currencySymbol: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    dateFormat: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    timeFormat: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    // ──────────────────────────────────────────────
+    // Branding & Documents
+    // ──────────────────────────────────────────────
     schoolLogo: {
       type: String,
       default: '',
@@ -149,25 +195,80 @@ const schoolSettingsSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    idCardHeader: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    idCardFooter: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    receiptHeader: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    receiptFooter: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    footerText: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    // ──────────────────────────────────────────────
+    // System Preferences
+    // ──────────────────────────────────────────────
+    autoLogout: {
+      type: Boolean,
+      default: true,
+    },
+    defaultLandingPage: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     enableNotifications: {
       type: Boolean,
       default: true,
     },
-    maintenanceMode: {
-      type: Boolean,
-      default: false,
-    },
-    allowPublicWebsite: {
-      type: Boolean,
-      default: false,
-    },
-    enableParentPortal: {
+    enableEmailNotifications: {
       type: Boolean,
       default: true,
     },
-    enableTeacherPortal: {
+    enableSmsNotifications: {
+      type: Boolean,
+      default: false,
+    },
+    enableWhatsAppNotifications: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ──────────────────────────────────────────────
+    // Login & Splash Screen
+    // ──────────────────────────────────────────────
+    showSchoolLogoOnLogin: {
       type: Boolean,
       default: true,
+    },
+    showSchoolNameOnLogin: {
+      type: Boolean,
+      default: true,
+    },
+    splashEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    loaderStyle: {
+      type: String,
+      trim: true,
+      default: '',
     },
   },
   {

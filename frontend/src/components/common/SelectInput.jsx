@@ -22,16 +22,10 @@ const SelectInput = ({ label, name, value, onChange, options, placeholder = 'Sel
               : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer'
           }`}
         >
-          {disabled ? (
-            <option value="" disabled>{placeholder}</option>
-          ) : (
-            <>
-              <option value="" disabled>{placeholder}</option>
-              {options.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </>
-          )}
+          <option value="" disabled>{placeholder}</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
         </select>
         <ChevronDownIcon className={`absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${disabled ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400'}`} />
       </div>

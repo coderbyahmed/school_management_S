@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import subjectService from '../../../services/subject.service';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const ClassSubjectAssignment = () => {
+  const { academic } = useSchoolConfig();
   const [selectedClass, setSelectedClass] = useState('');
-  const [academicYear, setAcademicYear] = useState('');
+  const [academicYear, setAcademicYear] = useState(() => academic?.currentYear || '');
   const [allSubjects, setAllSubjects] = useState([]);
   const [assignedIds, setAssignedIds] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);

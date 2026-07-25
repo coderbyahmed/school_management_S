@@ -102,8 +102,17 @@ const parsePeriods = (raw) => {
   return parsed;
 };
 
+const validateTimeField = (value, label) => {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!TIMESLOT_REGEX.test(trimmed)) {
+    throw new ApiError(400, `${label} must be in HH:mm format`);
+  }
+  return trimmed;
+};
+
 const validateCreateTimetable = (req, res, next) => {
-  const { academicYear, classId, periods } = req.body;
+  const { academicYear, classId, periods, periodStartTime, periodEndTime } = req.body;
 
   if (!academicYear || !academicYear.trim()) {
     throw new ApiError(400, 'Academic year is required');
@@ -116,15 +125,17 @@ const validateCreateTimetable = (req, res, next) => {
   }
 
   req.body.periods = parsePeriods(periods);
+  req.body.periodStartTime = validateTimeField(periodStartTime, 'periodStartTime');
+  req.body.periodEndTime = validateTimeField(periodEndTime, 'periodEndTime');
 
   next();
 };
 
 const validateUpdateTimetable = (req, res, next) => {
-  const { academicYear, classId, periods } = req.body;
+  const { academicYear, classId, periods, periodStartTime, periodEndTime } = req.body;
 
-  if (!academicYear && !classId && !periods) {
-    throw new ApiError(400, 'At least one field (academicYear, classId, periods) must be provided');
+  if (!academicYear && !classId && !periods && periodStartTime === undefined && periodEndTime === undefined) {
+    throw new ApiError(400, 'At least one field must be provided');
   }
 
   if (academicYear !== undefined) {
@@ -140,6 +151,14 @@ const validateUpdateTimetable = (req, res, next) => {
 
   if (periods !== undefined) {
     req.body.periods = parsePeriods(periods);
+  }
+
+  if (periodStartTime !== undefined) {
+    req.body.periodStartTime = validateTimeField(periodStartTime, 'periodStartTime');
+  }
+
+  if (periodEndTime !== undefined) {
+    req.body.periodEndTime = validateTimeField(periodEndTime, 'periodEndTime');
   }
 
   next();

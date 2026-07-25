@@ -63,6 +63,22 @@ const timetableSchema = new mongoose.Schema(
         message: 'Timetable must have at least one period',
       },
     },
+    periodStartTime: {
+      type: String,
+      default: '',
+      validate: {
+        validator: (v) => !v || TIMESLOT_REGEX.test(v),
+        message: 'Period start time must be in HH:mm format',
+      },
+    },
+    periodEndTime: {
+      type: String,
+      default: '',
+      validate: {
+        validator: (v) => !v || TIMESLOT_REGEX.test(v),
+        message: 'Period end time must be in HH:mm format',
+      },
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

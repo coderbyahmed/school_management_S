@@ -1,20 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import SchoolInformation from './tabs/SchoolInformation';
-import AcademicSettings from './tabs/AcademicSettings';
+import GeneralInformation from './tabs/GeneralInformation';
+import AcademicConfiguration from './tabs/AcademicConfiguration';
 import BrandingDocuments from './tabs/BrandingDocuments';
+import Localization from './tabs/Localization';
 import SystemPreferences from './tabs/SystemPreferences';
+import LoginSplashScreen from './tabs/LoginSplashScreen';
 import schoolSettingsService from '../../services/schoolSettings.service';
 import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
 import Spinner from '../common/Spinner';
 
-const tabs = ['School Information', 'Academic Settings', 'Branding & Documents', 'System Preferences'];
+const TABS = [
+  { id: 'general', label: 'General Information' },
+  { id: 'academic', label: 'Academic Configuration' },
+  { id: 'branding', label: 'Branding & Documents' },
+  { id: 'localization', label: 'Localization' },
+  { id: 'preferences', label: 'System Preferences' },
+  { id: 'login', label: 'Login & Splash Screen' },
+];
 
-const DEFAULT_SCHOOL_INFO = {
-  schoolLogo: null,
+const DEFAULT_GENERAL = {
   schoolName: '',
   shortName: '',
-  schoolTagline: '',
   registrationNumber: '',
   principalName: '',
   schoolEmail: '',
@@ -31,22 +38,17 @@ const DEFAULT_SCHOOL_INFO = {
 const DEFAULT_ACADEMIC = {
   currentAcademicYear: '',
   schoolShift: '',
-  workingDays: [],
   weeklyHolidays: [],
   schoolStartTime: '',
   schoolEndTime: '',
   attendanceStartTime: '',
   attendanceClosingTime: '',
-  defaultLanguage: '',
-  timeZone: '',
-  dateFormat: '',
-  timeFormat: '',
 };
 
 const DEFAULT_BRANDING = {
+  schoolLogo: null,
   adminPanelLogo: null,
   smallLogo: null,
-  splashBackground: null,
   principalSignature: null,
   schoolStamp: null,
   footerText: '',
@@ -60,18 +62,21 @@ const DEFAULT_BRANDING = {
   receiptFooter: '',
 };
 
-const DEFAULT_PREFERENCES = {
+const DEFAULT_LOCALIZATION = {
   currency: '',
   currencySymbol: '',
+  defaultLanguage: '',
+  timeZone: '',
+  dateFormat: '',
+  timeFormat: '',
+};
+
+const DEFAULT_PREFERENCES = {
   defaultTheme: '',
   primaryColor: '#2563eb',
   secondaryColor: '#1e40af',
-  sessionTimeout: 30,
   autoLogout: true,
-  maintenanceMode: false,
   defaultLandingPage: '',
-  showSchoolLogoOnLogin: true,
-  showSchoolNameOnLogin: true,
   enableNotifications: true,
   enableEmailNotifications: true,
   enableSmsNotifications: false,
@@ -81,11 +86,17 @@ const DEFAULT_PREFERENCES = {
   enableTeacherPortal: false,
 };
 
-const mapApiToSchoolInfo = (api) => ({
-  schoolLogo: api.schoolLogo || null,
+const DEFAULT_LOGIN = {
+  showSchoolLogoOnLogin: true,
+  showSchoolNameOnLogin: true,
+  loginTheme: '',
+  splashEnabled: true,
+  loaderStyle: '',
+};
+
+const mapApiToGeneral = (api) => ({
   schoolName: api.schoolName || '',
   shortName: api.shortName || '',
-  schoolTagline: api.tagline || '',
   registrationNumber: api.registrationNumber || '',
   principalName: api.principalName || '',
   schoolEmail: api.schoolEmail || '',
@@ -102,38 +113,65 @@ const mapApiToSchoolInfo = (api) => ({
 const mapApiToAcademic = (api) => ({
   currentAcademicYear: api.currentAcademicYear || '',
   schoolShift: api.schoolShift || '',
-  workingDays: [],
   weeklyHolidays: api.weekendDays || [],
-  schoolStartTime: '',
-  schoolEndTime: '',
-  attendanceStartTime: '',
-  attendanceClosingTime: '',
-  defaultLanguage: api.defaultLanguage || '',
-  timeZone: api.timezone || '',
-  dateFormat: '',
-  timeFormat: '',
+  schoolStartTime: api.schoolStartTime || '',
+  schoolEndTime: api.schoolEndTime || '',
+  attendanceStartTime: api.attendanceStartTime || '',
+  attendanceClosingTime: api.attendanceClosingTime || '',
 });
 
 const mapApiToBranding = (api) => ({
+  schoolLogo: api.adminPanelLogo || null,
   adminPanelLogo: api.adminPanelLogo || null,
   smallLogo: api.smallLogo || null,
-  splashBackground: api.splashBackground || null,
   principalSignature: api.principalSignature || null,
   schoolStamp: api.schoolStamp || null,
-  footerText: '',
+  footerText: api.footerText || '',
   pdfHeader: api.pdfHeader || '',
   pdfFooter: api.pdfFooter || '',
   reportCardHeader: api.reportCardHeader || '',
   certificateHeader: api.certificateHeader || '',
-  idCardHeader: '',
-  idCardFooter: '',
-  receiptHeader: '',
-  receiptFooter: '',
+  idCardHeader: api.idCardHeader || '',
+  idCardFooter: api.idCardFooter || '',
+  receiptHeader: api.receiptHeader || '',
+  receiptFooter: api.receiptFooter || '',
+});
+
+const mapApiToLocalization = (api) => ({
+  currency: api.currency || '',
+  currencySymbol: api.currencySymbol || '',
+  defaultLanguage: api.defaultLanguage || '',
+  timeZone: api.timezone || '',
+  dateFormat: api.dateFormat || '',
+  timeFormat: api.timeFormat || '',
+});
+
+const mapApiToPreferences = (api) => ({
+  defaultTheme: api.defaultTheme || '',
+  primaryColor: api.primaryColor || '#2563eb',
+  secondaryColor: api.secondaryColor || '#1e40af',
+  autoLogout: api.autoLogout ?? true,
+  defaultLandingPage: api.defaultLandingPage || '',
+  enableNotifications: api.enableNotifications ?? true,
+  enableEmailNotifications: api.enableEmailNotifications ?? true,
+  enableSmsNotifications: api.enableSmsNotifications ?? false,
+  enableWhatsAppNotifications: api.enableWhatsAppNotifications ?? false,
+  allowPublicWebsite: api.allowPublicWebsite ?? false,
+  enableParentPortal: api.enableParentPortal ?? false,
+  enableTeacherPortal: api.enableTeacherPortal ?? false,
+});
+
+const mapApiToLogin = (api) => ({
+  showSchoolLogoOnLogin: api.showSchoolLogoOnLogin ?? true,
+  showSchoolNameOnLogin: api.showSchoolNameOnLogin ?? true,
+  loginTheme: api.loginTheme || '',
+  splashEnabled: api.splashEnabled ?? true,
+  loaderStyle: api.loaderStyle || '',
 });
 
 const SchoolSettings = () => {
   const { refresh } = useSchoolConfig();
-  const [activeTab, setActiveTab] = useState('School Information');
+  const [activeTab, setActiveTab] = useState(TABS[0].id);
   const [apiSettings, setApiSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -152,45 +190,22 @@ const SchoolSettings = () => {
   }, []);
 
   useEffect(() => {
-    fetchSettings(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchSettings();
   }, [fetchSettings]);
 
-  const activeTabIndex = tabs.indexOf(activeTab);
-
-  const schoolInfoData = apiSettings ? mapApiToSchoolInfo(apiSettings) : DEFAULT_SCHOOL_INFO;
+  const generalData = apiSettings ? mapApiToGeneral(apiSettings) : DEFAULT_GENERAL;
   const academicData = apiSettings ? mapApiToAcademic(apiSettings) : DEFAULT_ACADEMIC;
   const brandingData = apiSettings ? mapApiToBranding(apiSettings) : DEFAULT_BRANDING;
-
-  const mapApiToPreferences = (api) => ({
-    currency: '',
-    currencySymbol: '',
-    defaultTheme: '',
-    primaryColor: '#2563eb',
-    secondaryColor: '#1e40af',
-    sessionTimeout: 30,
-    autoLogout: true,
-    maintenanceMode: api.maintenanceMode ?? false,
-    defaultLandingPage: '',
-    showSchoolLogoOnLogin: true,
-    showSchoolNameOnLogin: true,
-    enableNotifications: api.enableNotifications ?? true,
-    enableEmailNotifications: true,
-    enableSmsNotifications: false,
-    enableWhatsAppNotifications: false,
-    allowPublicWebsite: api.allowPublicWebsite ?? false,
-    enableParentPortal: api.enableParentPortal ?? false,
-    enableTeacherPortal: api.enableTeacherPortal ?? false,
-  });
-
+  const localizationData = apiSettings ? mapApiToLocalization(apiSettings) : DEFAULT_LOCALIZATION;
   const preferencesData = apiSettings ? mapApiToPreferences(apiSettings) : DEFAULT_PREFERENCES;
+  const loginData = apiSettings ? mapApiToLogin(apiSettings) : DEFAULT_LOGIN;
 
-  const handleSaveSchoolInfo = async (formData) => {
+  const handleSaveGeneral = async (formData) => {
     setSaving(true);
     try {
       const payload = {
         schoolName: formData.schoolName,
         shortName: formData.shortName,
-        tagline: formData.schoolTagline,
         registrationNumber: formData.registrationNumber,
         principalName: formData.principalName,
         schoolEmail: formData.schoolEmail,
@@ -221,8 +236,10 @@ const SchoolSettings = () => {
         currentAcademicYear: formData.currentAcademicYear,
         schoolShift: formData.schoolShift,
         weekendDays: formData.weeklyHolidays,
-        defaultLanguage: formData.defaultLanguage,
-        timezone: formData.timeZone,
+        schoolStartTime: formData.schoolStartTime,
+        schoolEndTime: formData.schoolEndTime,
+        attendanceStartTime: formData.attendanceStartTime,
+        attendanceClosingTime: formData.attendanceClosingTime,
       };
       const res = await schoolSettingsService.updateAcademicSettings(payload);
       setApiSettings(res.data.settings);
@@ -243,6 +260,11 @@ const SchoolSettings = () => {
         pdfFooter: formData.pdfFooter,
         reportCardHeader: formData.reportCardHeader,
         certificateHeader: formData.certificateHeader,
+        idCardHeader: formData.idCardHeader,
+        idCardFooter: formData.idCardFooter,
+        receiptHeader: formData.receiptHeader,
+        receiptFooter: formData.receiptFooter,
+        footerText: formData.footerText,
       };
       const res = await schoolSettingsService.updateBrandingSettings(payload);
       setApiSettings(res.data.settings);
@@ -269,12 +291,44 @@ const SchoolSettings = () => {
     }
   };
 
+  const handleSaveLocalization = async (formData) => {
+    setSaving(true);
+    try {
+      const academicPayload = {
+        defaultLanguage: formData.defaultLanguage,
+        timezone: formData.timeZone,
+        dateFormat: formData.dateFormat,
+        timeFormat: formData.timeFormat,
+      };
+      const preferencesPayload = {
+        currency: formData.currency,
+        currencySymbol: formData.currencySymbol,
+      };
+      const academicRes = await schoolSettingsService.updateAcademicSettings(academicPayload);
+      await schoolSettingsService.updateSystemPreferences(preferencesPayload);
+      setApiSettings(academicRes.data.settings);
+      toast.success('Localization settings saved successfully');
+      refresh();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to save localization settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSavePreferences = async (formData) => {
     setSaving(true);
     try {
       const payload = {
+        defaultTheme: formData.defaultTheme,
+        primaryColor: formData.primaryColor,
+        secondaryColor: formData.secondaryColor,
+        autoLogout: formData.autoLogout,
+        defaultLandingPage: formData.defaultLandingPage,
         enableNotifications: formData.enableNotifications,
-        maintenanceMode: formData.maintenanceMode,
+        enableEmailNotifications: formData.enableEmailNotifications,
+        enableSmsNotifications: formData.enableSmsNotifications,
+        enableWhatsAppNotifications: formData.enableWhatsAppNotifications,
         allowPublicWebsite: formData.allowPublicWebsite,
         enableParentPortal: formData.enableParentPortal,
         enableTeacherPortal: formData.enableTeacherPortal,
@@ -290,29 +344,50 @@ const SchoolSettings = () => {
     }
   };
 
+  const handleSaveLogin = async (formData) => {
+    setSaving(true);
+    try {
+      const payload = {
+        showSchoolLogoOnLogin: formData.showSchoolLogoOnLogin,
+        showSchoolNameOnLogin: formData.showSchoolNameOnLogin,
+        loginTheme: formData.loginTheme,
+        splashEnabled: formData.splashEnabled,
+        loaderStyle: formData.loaderStyle,
+      };
+      const res = await schoolSettingsService.updateSystemPreferences(payload);
+      setApiSettings(res.data.settings);
+      toast.success('Login & splash settings saved successfully');
+      refresh();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to save login & splash settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">School Settings</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure global school information, academics, branding, and system preferences</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure global school information, academics, branding, localization, system preferences, and login screen</p>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-        <nav className="flex gap-1 min-w-max">
-          {tabs.map((tab) => (
+      <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+          {TABS.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === tab
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                activeTab === tab.id
+                  ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
-        </nav>
+        </div>
       </div>
 
       {loading ? (
@@ -321,23 +396,21 @@ const SchoolSettings = () => {
         </div>
       ) : (
         <>
-          {activeTabIndex === 0 && (
-            <SchoolInformation
-              data={schoolInfoData}
-              onSave={handleSaveSchoolInfo}
-              onImageUpload={handleImageUpload}
+          {activeTab === 'general' && (
+            <GeneralInformation
+              data={generalData}
+              onSave={handleSaveGeneral}
               saving={saving}
-              uploadingField={uploadingField}
             />
           )}
-          {activeTabIndex === 1 && (
-            <AcademicSettings
+          {activeTab === 'academic' && (
+            <AcademicConfiguration
               data={academicData}
               onSave={handleSaveAcademic}
               saving={saving}
             />
           )}
-          {activeTabIndex === 2 && (
+          {activeTab === 'branding' && (
             <BrandingDocuments
               data={brandingData}
               onSave={handleSaveBranding}
@@ -346,10 +419,24 @@ const SchoolSettings = () => {
               uploadingField={uploadingField}
             />
           )}
-          {activeTabIndex === 3 && (
+          {activeTab === 'localization' && (
+            <Localization
+              data={localizationData}
+              onSave={handleSaveLocalization}
+              saving={saving}
+            />
+          )}
+          {activeTab === 'preferences' && (
             <SystemPreferences
               data={preferencesData}
               onSave={handleSavePreferences}
+              saving={saving}
+            />
+          )}
+          {activeTab === 'login' && (
+            <LoginSplashScreen
+              data={loginData}
+              onSave={handleSaveLogin}
               saving={saving}
             />
           )}

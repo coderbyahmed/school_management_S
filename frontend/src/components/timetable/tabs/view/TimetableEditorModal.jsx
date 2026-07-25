@@ -30,7 +30,17 @@ const getSelectCls = (errs, field, disabled) => {
   return selectNormal;
 };
 
-const TimetableEditorModal = ({ timetableData, onSave, onClose }) => {
+const mapPeriodToPayload = (p) => ({
+  periodNo: p.periodNum,
+  type: p.type === 'Break' ? 'break' : 'teaching',
+  startTime: p.startTime,
+  endTime: p.endTime,
+  teacherId: p.type === 'Teaching' ? p.teacher : null,
+  subjectId: p.type === 'Teaching' ? p.subject : null,
+});
+
+const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => {
+  const timetableId = timetableData._id;
   const classId = timetableData.classId?._id || timetableData.classId;
 
   const [periods, setPeriods] = useState(() =>
@@ -96,17 +106,31 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose }) => {
     setDeleteConfirmTarget({ id, periodNum });
   }, []);
 
-  const confirmDelete = useCallback(() => {
-    if (!deleteConfirmTarget) return;
-    setPeriods((prev) => {
-      const filtered = prev.filter((p) => p.id !== deleteConfirmTarget.id);
-      filtered.forEach((p, i) => { p.periodNum = i + 1; });
-      return filtered;
-    });
-    setDeleteConfirmTarget(null);
-  }, [deleteConfirmTarget]);
+  const confirmDelete = useCallback(async () => {
+    if (!deleteConfirmTarget || !timetableId) return;
+    const { id } = deleteConfirmTarget;
+    const filtered = periods.filter((p) => p.id !== id);
+    filtered.forEach((p, i) => { p.periodNum = i + 1; });
+    setSaving(true);
+    try {
+      await timetableService.updateTimetable(timetableId, {
+        periods: filtered.map(mapPeriodToPayload),
+        periodStartTime: timetableData.periodStartTime || '',
+        periodEndTime: timetableData.periodEndTime || '',
+      });
+      setPeriods(filtered);
+      setDeleteConfirmTarget(null);
+      if (onRefresh) onRefresh();
+      toast.success('Period deleted successfully');
+    } catch (err) {
+      const serverMsg = err?.response?.data?.message || 'Failed to delete period';
+      toast.error(serverMsg);
+    } finally {
+      setSaving(false);
+    }
+  }, [deleteConfirmTarget, periods, timetableId, timetableData.periodStartTime, timetableData.periodEndTime]);
 
-  const fieldErrors = useMemo(() => validatePeriods(periods), [periods]);
+  const fieldErrors = useMemo(() => validatePeriods(periods, timetableData.periodStartTime, timetableData.periodEndTime), [periods, timetableData.periodStartTime, timetableData.periodEndTime]);
   const isFormValid = useMemo(() => isTimetableFormValid('x', 'x', periods, fieldErrors), [periods, fieldErrors]);
   const overlap = useMemo(() => hasOverlapError(fieldErrors), [fieldErrors]);
 
@@ -166,6 +190,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose }) => {
               <div className="min-w-[80px] flex-1">
                 <label className={labelCls}>Start</label>
                 <input type="time" value={period.startTime} onChange={(e) => updatePeriod(period.id, 'startTime', e.target.value)} className={`${getFieldCls(errs, 'startTime')} [color-scheme:light] dark:[color-scheme:dark]`} />
+                {errs?.startTime && <p className={errTextCls}>{errs.startTime}</p>}
               </div>
 
               <div className="min-w-[80px] flex-1">
@@ -224,7 +249,8 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose }) => {
 
               <button
                 onClick={() => handleDeleteClick(period.id, period.periodNum)}
-                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors self-start mt-3.5 cursor-pointer flex-shrink-0"
+                disabled={saving}
+                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors self-start mt-3.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
                 title="Delete period"
               >
                 <TrashIcon className="h-3.5 w-3.5" />

@@ -5,50 +5,71 @@ import { useAuth } from './AuthContext';
 const SchoolConfigContext = createContext();
 
 const DEFAULTS = {
-  schoolInfo: { name: '', shortName: '', tagline: '', registrationNumber: '', principalName: '', email: '', contact: '', whatsapp: '', website: '', address: '', city: '', province: '', country: '', mapLocation: '', logo: null },
-  academic: { currentYear: '', shift: 'Morning', weekends: ['Sunday'], language: 'English', timezone: 'Asia/Karachi' },
-  branding: { adminLogo: null, smallLogo: null, splashBackground: null, signature: null, stamp: null, pdfHeader: '', pdfFooter: '', reportCardHeader: '', certificateHeader: '' },
-  preferences: { enableNotifications: true, maintenanceMode: false, allowPublicWebsite: false, enableParentPortal: true, enableTeacherPortal: true },
+  schoolInfo: { name: '', shortName: '', registrationNumber: '', principalName: '', email: '', contact: '', whatsapp: '', website: '', address: '', city: '', province: '', country: '', mapLocation: '', logo: null },
+  academic: { currentYear: '', shift: 'Morning', language: 'English', timezone: 'Asia/Karachi', schoolStartTime: '', schoolEndTime: '', attendanceStartTime: '', attendanceClosingTime: '' },
+  branding: { adminLogo: null, smallLogo: null, signature: null, stamp: null, pdfHeader: '', pdfFooter: '', reportCardHeader: '', certificateHeader: '', idCardHeader: '', idCardFooter: '', receiptHeader: '', receiptFooter: '', footerText: '' },
+  localization: { currency: '', currencySymbol: '', dateFormat: '', timeFormat: '' },
+  preferences: { autoLogout: true, defaultLandingPage: '', enableNotifications: true, enableEmailNotifications: true, enableSmsNotifications: false, enableWhatsAppNotifications: false },
+  login: { showSchoolLogoOnLogin: true, showSchoolNameOnLogin: true, splashEnabled: true, loaderStyle: '' },
 };
 
 export const SchoolConfigProvider = ({ children }) => {
-  const [config, setConfig] = useState({ ...DEFAULTS, loading: true });
+  const [config, setConfig] = useState({ ...DEFAULTS, loading: true, loaded: false });
   const { user } = useAuth();
 
   const loadSettings = useCallback(async () => {
     setConfig((prev) => ({ ...prev, loading: true }));
     try {
       if (!user) throw new Error('Not authenticated');
+
       const res = await schoolSettingsService.getSchoolSettings();
       const s = res.data.settings || {};
+      localStorage.setItem('autoLogout', s.autoLogout ? 'true' : 'false');
+
       setConfig({
         schoolInfo: {
-          name: s.schoolName || '', shortName: s.shortName || '', tagline: s.tagline || '',
+          name: s.schoolName || '', shortName: s.shortName || '',
           registrationNumber: s.registrationNumber || '', principalName: s.principalName || '',
           email: s.schoolEmail || '', contact: s.contactNumber || '', whatsapp: s.whatsappNumber || '',
-          website: s.website || '', address: s.address || '', city: s.city || '', province: s.province || '',
-          country: s.country || '', mapLocation: s.googleMapLocation || '', logo: s.schoolLogo || null,
+          website: s.website || '', address: s.address || '', city: s.city || '',
+          province: s.province || '', country: s.country || '',
+          mapLocation: s.googleMapLocation || '', logo: s.schoolLogo || null,
         },
         academic: {
           currentYear: s.currentAcademicYear || '', shift: s.schoolShift || 'Morning',
-          weekends: s.weekendDays || ['Sunday'], language: s.defaultLanguage || 'English',
-          timezone: s.timezone || 'Asia/Karachi',
+          language: s.defaultLanguage || 'English', timezone: s.timezone || 'Asia/Karachi',
+          schoolStartTime: s.schoolStartTime || '', schoolEndTime: s.schoolEndTime || '',
+          attendanceStartTime: s.attendanceStartTime || '', attendanceClosingTime: s.attendanceClosingTime || '',
         },
         branding: {
           adminLogo: s.adminPanelLogo || null, smallLogo: s.smallLogo || null,
-          splashBackground: s.splashBackground || null,
           signature: s.principalSignature || null, stamp: s.schoolStamp || null,
           pdfHeader: s.pdfHeader || '', pdfFooter: s.pdfFooter || '',
           reportCardHeader: s.reportCardHeader || '', certificateHeader: s.certificateHeader || '',
+          idCardHeader: s.idCardHeader || '', idCardFooter: s.idCardFooter || '',
+          receiptHeader: s.receiptHeader || '', receiptFooter: s.receiptFooter || '',
+          footerText: s.footerText || '',
+        },
+        localization: {
+          currency: s.currency || '', currencySymbol: s.currencySymbol || '',
+          dateFormat: s.dateFormat || '', timeFormat: s.timeFormat || '',
         },
         preferences: {
+          autoLogout: s.autoLogout ?? true,
+          defaultLandingPage: s.defaultLandingPage || '',
           enableNotifications: s.enableNotifications ?? true,
-          maintenanceMode: s.maintenanceMode ?? false,
-          allowPublicWebsite: s.allowPublicWebsite ?? false,
-          enableParentPortal: s.enableParentPortal ?? true,
-          enableTeacherPortal: s.enableTeacherPortal ?? true,
+          enableEmailNotifications: s.enableEmailNotifications ?? true,
+          enableSmsNotifications: s.enableSmsNotifications ?? false,
+          enableWhatsAppNotifications: s.enableWhatsAppNotifications ?? false,
+        },
+        login: {
+          showSchoolLogoOnLogin: s.showSchoolLogoOnLogin ?? true,
+          showSchoolNameOnLogin: s.showSchoolNameOnLogin ?? true,
+          splashEnabled: s.splashEnabled ?? true,
+          loaderStyle: s.loaderStyle || '',
         },
         loading: false,
+        loaded: true,
       });
     } catch {
       try {
@@ -57,17 +78,19 @@ export const SchoolConfigProvider = ({ children }) => {
         setConfig((prev) => ({
           ...prev,
           schoolInfo: { ...prev.schoolInfo, name: pub.schoolName || '', logo: pub.logo || null, principalName: pub.principalName || '' },
-          branding: { ...prev.branding, adminLogo: pub.adminPanelLogo || null, splashBackground: pub.splashBackground || null },
+          branding: { ...prev.branding, adminLogo: pub.adminPanelLogo || null },
           loading: false,
+          loaded: true,
         }));
       } catch {
-        setConfig((prev) => ({ ...prev, loading: false }));
+        setConfig((prev) => ({ ...prev, loading: false, loaded: false }));
       }
     }
   }, [user]);
 
-  useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadSettings(); }, [loadSettings]);
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   return (
     <SchoolConfigContext.Provider value={{ ...config, refresh: loadSettings }}>

@@ -19,7 +19,7 @@ const resolveTeacherName = (t) => {
 };
 
 const AllClassesTimetable = () => {
-  const { selectedYear, setSelectedYear } = useTimetableYear();
+  const { selectedYear, setSelectedYear, refreshKey } = useTimetableYear();
   const [currentPage, setCurrentPage] = useState(0);
   const [allTimetables, setAllTimetables] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -40,7 +40,7 @@ const AllClassesTimetable = () => {
       })
       .catch(() => toast.error('Failed to load timetables'))
       .finally(() => setLoading(false));
-  }, [selectedYear]);
+  }, [selectedYear, refreshKey]);
 
   useEffect(() => {
     if (allTimetables.length === 0) return;

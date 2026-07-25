@@ -1,8 +1,7 @@
-const CardInfoRow = ({ label, value, muted = false, detailsFontSize = 12, fontWeight = 600, textColor = '#1f2937' }) => (
-  <div className="flex justify-between items-center py-1.5 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-    <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: detailsFontSize }}>{label}</span>
-    <span className={`${muted ? 'text-gray-400 dark:text-gray-500' : ''}`}
-      style={{ fontSize: detailsFontSize, fontWeight, color: muted ? undefined : textColor }}>
+const CardInfoRow = ({ label, value, detailsFontSize = 11, fontWeight = 600, textColor = '#1f2937' }) => (
+  <div className="flex justify-start items-center py-1" style={{ fontSize: detailsFontSize, lineHeight: 1.5 }}>
+    <span className="text-gray-400 flex-shrink-0" style={{ width: 80, fontSize: detailsFontSize }}>{label}</span>
+    <span className="font-semibold" style={{ fontSize: detailsFontSize, fontWeight, color: textColor }}>
       {value || '—'}
     </span>
   </div>

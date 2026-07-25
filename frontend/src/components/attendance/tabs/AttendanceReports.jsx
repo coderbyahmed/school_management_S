@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import {
   CheckCircleIcon, XCircleIcon, ClockIcon, CalendarDaysIcon,
@@ -10,7 +10,9 @@ import StatCard from '../../common/StatCard';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import attendanceReportsService from '../../../services/attendanceReports.service';
 import Spinner from '../../common/Spinner';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
+const PAGE_SIZE = 10;
 const TYPE_OPTIONS = ['All', 'Students', 'Teachers'];
 
 function getInitials(name) {
@@ -96,6 +98,7 @@ const ClassBarChart = ({ data }) => {
 };
 
 const AttendanceReports = () => {
+  const { schoolInfo } = useSchoolConfig();
   const [allRecords, setAllRecords] = useState([]);
   const [type, setType] = useState('All');
   const [academicYear, setAcademicYear] = useState('');
@@ -105,6 +108,7 @@ const AttendanceReports = () => {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [personSummary, setPersonSummary] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const tableRef = useRef(null);
 
   useEffect(() => {
@@ -135,6 +139,18 @@ const AttendanceReports = () => {
   const classWiseStats = useMemo(() => attendanceReportsService.getClassWiseStats(filteredRecords), [filteredRecords]);
   const teacherOverview = useMemo(() => attendanceReportsService.getTeacherOverview(filteredRecords), [filteredRecords]);
 
+  const totalPages = Math.max(1, Math.ceil(personSummaries.length / PAGE_SIZE));
+
+  const paginatedSummaries = useMemo(
+    () => personSummaries.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [personSummaries, currentPage]
+  );
+
+  useEffect(() => {
+    const id = setTimeout(() => setCurrentPage(1), 0);
+    return () => clearTimeout(id);
+  }, [personSummaries]);
+
   const deptOptions = useMemo(() => {
     if (type === 'All') return [...attendanceReportsService.CLASSES, ...attendanceReportsService.DEPARTMENTS];
     return attendanceReportsService.CLASSES;
@@ -161,30 +177,101 @@ const AttendanceReports = () => {
     setAllRecords(records);
   };
 
+  const buildReportHtml = () => {
+    const schoolName = schoolInfo?.name || 'School Name';
+    const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const title = 'Attendance Report';
+    const isTeacher = type === 'Teachers';
+
+    const filterInfo = [];
+    if (academicYear) filterInfo.push(`Academic Year: ${academicYear}`);
+    if (className) filterInfo.push(isTeacher ? `Department: ${className}` : `Class: ${className}`);
+    if (fromDate) filterInfo.push(`From: ${fromDate}`);
+    if (toDate) filterInfo.push(`To: ${toDate}`);
+
+    const cols = isTeacher
+      ? ['Name', 'ID', 'Present', 'Absent', 'Leave', 'Late', 'Attendance %']
+      : ['Name', 'ID', 'Class', 'Present', 'Absent', 'Leave', 'Late', 'Attendance %'];
+
+    const rowsHtml = paginatedSummaries.map((p) => {
+      const cells = [
+        `<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:10px;font-weight:600;color:#1f2937;">${p.name}</td>`,
+        `<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:10px;font-family:monospace;color:#4b5563;">${p.personId}</td>`,
+      ];
+      if (!isTeacher) {
+        cells.push(`<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:10px;color:#6b7280;">${p.classOrDept}</td>`);
+      }
+      cells.push(
+        `<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:10px;font-family:monospace;color:#16a34a;font-weight:600;text-align:center;">${p.present}</td>`,
+        `<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:10px;font-family:monospace;color:#dc2626;font-weight:600;text-align:center;">${p.absent}</td>`,
+        `<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:10px;font-family:monospace;color:#ca8a04;font-weight:600;text-align:center;">${p.leave}</td>`,
+        `<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:10px;font-family:monospace;color:#ea580c;font-weight:600;text-align:center;">${p.late}</td>`,
+        `<td style="padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;font-family:monospace;font-weight:700;text-align:center;color:${p.percentage >= 80 ? '#16a34a' : p.percentage >= 60 ? '#ca8a04' : '#dc2626'};">${p.percentage}%</td>`
+      );
+      return `<tr style="background:#ffffff;">${cells.join('')}</tr>`;
+    }).join('');
+
+    const headerCells = cols.map((c) =>
+      `<th style="background:#1e40af;color:white;padding:8px 10px;font-size:10px;font-weight:700;text-align:${c === 'Present' || c === 'Absent' || c === 'Leave' || c === 'Late' || c === 'Attendance %' ? 'center' : 'left'};text-transform:uppercase;letter-spacing:0.5px;">${c}</th>`
+    ).join('');
+
+    const filterSection = filterInfo.length
+      ? `<div style="text-align:center;font-size:10px;color:#6b7280;margin-bottom:14px;">${filterInfo.join(' &nbsp;|&nbsp; ')}</div>`
+      : '';
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  </style>
+</head>
+<body>
+  <div style="max-width:100%;margin:0 auto;">
+    <div style="background:linear-gradient(135deg,#1e3a5f,#1e40af);padding:18px 24px;border-radius:4px 4px 0 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h1 style="color:white;font-size:18px;font-weight:700;letter-spacing:0.3px;margin:0;">${schoolName}</h1>
+          <p style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:3px;">${title}</p>
+        </div>
+        <div style="text-align:right;">
+          <p style="color:rgba(255,255,255,0.7);font-size:10px;margin:0;">Generated on</p>
+          <p style="color:white;font-size:11px;font-weight:600;margin:0;">${today}</p>
+        </div>
+      </div>
+    </div>
+    ${filterSection}
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:10px;">
+        <thead>${headerCells}</thead>
+        <tbody>
+          ${rowsHtml || `<tr><td colspan="${cols.length}" style="padding:30px;text-align:center;color:#9ca3af;font-size:11px;">No records found</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+    <div style="border-top:1px solid #e5e7eb;margin-top:12px;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
+      <p style="font-size:8px;color:#9ca3af;margin:0;">${schoolName} &mdash; ${title}</p>
+      <p style="font-size:8px;color:#9ca3af;margin:0;">Page 1 of 1</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  };
+
   const handleExportPdf = async () => {
-    if (!filteredRecords.length) { toast.error('No records to export'); return; }
+    if (!paginatedSummaries.length) { toast.error('No records to export on the current page'); return; }
     try {
       const { default: html2pdf } = await import('html2pdf.js');
-      const tableEl = tableRef.current;
-      if (!tableEl) return;
-      const clone = tableEl.cloneNode(true);
-      clone.querySelectorAll('.no-print').forEach((el) => el.remove());
-      const printStyles = `
-        <style>
-          @page { size: A4 landscape; margin: 8mm; }
-          * { box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          table { width: 100%; border-collapse: collapse; font-size: 8px; }
-          th { background: #2563eb; color: white; padding: 5px 6px; text-align: left; }
-          td { padding: 4px 6px; border-bottom: 1px solid #e5e7eb; }
-          h2 { text-align: center; margin-bottom: 12px; color: #1f2937; }
-        </style>`;
-      const html = `<!DOCTYPE html><html><head><title>Attendance Report</title>${printStyles}</head><body><h2>Attendance Report</h2>${clone.outerHTML}<p style="text-align:right;font-size:8px;color:#9ca3af;margin-top:8px;">Generated on ${new Date().toLocaleDateString()}</p></body></html>`;
+      const html = buildReportHtml();
       const el = document.createElement('div');
       el.innerHTML = html;
       document.body.appendChild(el);
       await html2pdf().set({
-        margin: [8, 8, 8, 8],
+        margin: [6, 6, 6, 6],
         filename: `Attendance-Report-${academicYear || 'all'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
@@ -195,26 +282,17 @@ const AttendanceReports = () => {
     } catch { toast.error('Failed to export PDF'); }
   };
 
-  const handlePrint = useCallback(() => {
+  const handlePrint = () => {
+    if (!paginatedSummaries.length) { toast.error('No records to print on the current page'); return; }
     const printWindow = window.open('', '_blank');
     if (!printWindow) { window.print(); return; }
-    const printStyles = `
-      @page { size: A4 landscape; margin: 8mm; }
-      * { box-sizing: border-box; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      table { width: 100%; border-collapse: collapse; font-size: 8px; }
-      th { background: #2563eb; color: white; padding: 5px 6px; text-align: left; }
-      td { padding: 4px 6px; border-bottom: 1px solid #e5e7eb; }
-      h2 { text-align: center; margin-bottom: 12px; color: #1f2937; }`;
-    const clone = tableRef.current.cloneNode(true);
-    clone.querySelectorAll('.no-print').forEach((el) => el.remove());
-    const html = `<!DOCTYPE html><html><head><title>Attendance Report</title><style>${printStyles}</style></head><body><h2>Attendance Report</h2>${clone.outerHTML}<p style="text-align:right;font-size:8px;color:#9ca3af;margin-top:16px;">Generated on ${new Date().toLocaleDateString()}</p></body></html>`;
+    const html = buildReportHtml();
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
-  }, []);
+  };
 
   const handleViewReport = async (person) => {
     setLoadingSummary(true);
@@ -238,6 +316,64 @@ const AttendanceReports = () => {
   const renderPercentageBadge = (pct) => {
     const color = pct >= 80 ? 'text-green-600 dark:text-green-400' : pct >= 60 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
     return <span className={`text-xs font-mono font-semibold ${color}`}>{pct}%</span>;
+  };
+
+  const renderPagination = () => {
+    if (personSummaries.length === 0) return null;
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      if (currentPage <= 3) { start = 2; end = Math.min(4, totalPages - 1); }
+      if (currentPage >= totalPages - 2) { start = Math.max(2, totalPages - 3); end = totalPages - 1; }
+      if (start > 2) pages.push('...');
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (end < totalPages - 1) pages.push('...');
+      pages.push(totalPages);
+    }
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {personSummaries.length} person{personSummaries.length !== 1 ? 's' : ''} — Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => p - 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Previous
+          </button>
+          {pages.map((page, idx) =>
+            page === '...' ? (
+              <span key={`ellipsis-${idx}`} className="px-1.5 text-xs text-gray-400 dark:text-gray-500">...</span>
+            ) : (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`min-w-[28px] px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                {page}
+              </button>
+            )
+          )}
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => p + 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -406,7 +542,7 @@ const AttendanceReports = () => {
                 </td>
               </tr>
             ) : (
-              personSummaries.map((person) => (
+              paginatedSummaries.map((person) => (
                 <tr key={person.personId} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-3 py-3">{renderPhoto(person)}</td>
                   <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{person.name}</td>
@@ -541,12 +677,7 @@ const AttendanceReports = () => {
             )}
           </tbody>
         </table>
-        {personSummaries.length > 0 && (
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 flex items-center justify-between">
-            <span>{personSummaries.length} person{personSummaries.length !== 1 ? 's' : ''}</span>
-            <span className="hidden sm:block">{stats.present} Present | {stats.absent} Absent | {stats.leave} Leave | {stats.late} Late | {stats.percentage}% Attendance</span>
-          </div>
-        )}
+        {renderPagination()}
       </div>
 
       {/* Report Details Modal */}

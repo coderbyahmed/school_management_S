@@ -12,7 +12,7 @@ import timetableService from '../../../../services/timetable.service';
 import { useTimetableYear } from '../../../../contexts/TimetableContext';
 
 const ClassView = () => {
-  const { selectedYear, setSelectedYear } = useTimetableYear();
+  const { selectedYear, setSelectedYear, refreshKey, triggerTimetableRefresh } = useTimetableYear();
   const [className, setClassName] = useState('');
   const [timetableData, setTimetableData] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
@@ -71,7 +71,7 @@ const ClassView = () => {
         setTimetableData(null);
       })
       .finally(() => setLoading(false));
-  }, [selectedYear, className, classMap, loadSubjectNames]);
+  }, [selectedYear, className, classMap, loadSubjectNames, refreshKey]);
 
   const handleFilterChange = useCallback((name, value) => {
     if (name === 'academicYear') setSelectedYear(value);
@@ -91,6 +91,8 @@ const ClassView = () => {
           teacherId: p.type === 'Teaching' ? p.teacher : null,
           subjectId: p.type === 'Teaching' ? p.subject : null,
         })),
+        periodStartTime: timetableData.periodStartTime || '',
+        periodEndTime: timetableData.periodEndTime || '',
       };
       const res = await timetableService.updateTimetable(timetableData._id, payload);
       const updated = res?.data?.timetable;
@@ -101,6 +103,7 @@ const ClassView = () => {
         if (classId) loadSubjectNames(classId);
       }
       setShowEditor(false);
+      triggerTimetableRefresh();
       toast.success('Timetable updated successfully');
       if (serverWarnings.length > 0) {
         toast(
@@ -123,7 +126,7 @@ const ClassView = () => {
         toast.error('Failed to update timetable');
       }
     }
-  }, [timetableData, className, classMap, loadSubjectNames]);
+  }, [timetableData, className, classMap, loadSubjectNames, triggerTimetableRefresh]);
 
   const handleDelete = useCallback(async () => {
     if (!timetableData?._id) return;
@@ -132,13 +135,14 @@ const ClassView = () => {
       await timetableService.deleteTimetable(timetableData._id);
       setTimetableData(null);
       setShowDelete(false);
+      triggerTimetableRefresh();
       toast.success('Timetable deleted successfully');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to delete timetable');
     } finally {
       setDeleting(false);
     }
-  }, [timetableData]);
+  }, [timetableData, triggerTimetableRefresh]);
 
   const resolveSubjectName = (subjectId) => {
     if (!subjectId) return '-';
@@ -234,6 +238,7 @@ const ClassView = () => {
           timetableData={{ ...timetableData, className, academicYear: selectedYear }}
           onSave={handleEditSave}
           onClose={() => setShowEditor(false)}
+          onRefresh={triggerTimetableRefresh}
         />
       )}
 

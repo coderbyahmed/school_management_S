@@ -10,6 +10,7 @@ const TimetableContext = createContext();
 export const TimetableProvider = ({ children }) => {
   const { academic } = useSchoolConfig();
   const [selectedYear, setSelectedYearState] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const initialized = useRef(false);
 
   const setSelectedYear = useCallback((year) => {
@@ -19,6 +20,10 @@ export const TimetableProvider = ({ children }) => {
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
+  }, []);
+
+  const triggerTimetableRefresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
   }, []);
 
   useEffect(() => {
@@ -37,7 +42,7 @@ export const TimetableProvider = ({ children }) => {
   }, [academic?.currentYear]);
 
   return (
-    <TimetableContext.Provider value={{ selectedYear, setSelectedYear }}>
+    <TimetableContext.Provider value={{ selectedYear, setSelectedYear, refreshKey, triggerTimetableRefresh }}>
       {children}
     </TimetableContext.Provider>
   );

@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useMemo } from 'react';
 import {
   CheckCircleIcon, XCircleIcon, ClockIcon, CalendarDaysIcon,
-  UserGroupIcon, ArrowPathIcon, DocumentArrowDownIcon,
+  UserGroupIcon, ArrowPathIcon,
   PrinterIcon, EyeIcon, MagnifyingGlassIcon, ChevronDownIcon, XMarkIcon,
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
@@ -10,6 +9,7 @@ import SearchInput from '../../common/SearchInput';
 import attendanceHistoryService from '../../../services/attendanceHistory.service';
 
 const STATUS_OPTIONS = ['All', 'Present', 'Absent', 'Leave', 'Late'];
+const PAGE_SIZE = 10;
 const TYPE_OPTIONS = ['All', 'Students', 'Teachers'];
 
 const STATUS_STYLES = {
@@ -43,7 +43,7 @@ const AttendanceHistory = () => {
   const [status, setStatus] = useState('All');
   const [search, setSearch] = useState('');
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const tableRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const records = attendanceHistoryService.getRecords();
@@ -67,8 +67,6 @@ const AttendanceHistory = () => {
     return list;
   }, [allRecords, type, academicYear, className, fromDate, toDate, status, search]);
 
-  const stats = useMemo(() => attendanceHistoryService.getStats(filteredRecords), [filteredRecords]);
-
   const dashboardStats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     return {
@@ -84,6 +82,18 @@ const AttendanceHistory = () => {
     if (type === 'All') return [...attendanceHistoryService.CLASSES, ...attendanceHistoryService.DEPARTMENTS];
     return attendanceHistoryService.CLASSES;
   }, [type]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
+
+  const paginatedRecords = useMemo(
+    () => filteredRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filteredRecords, currentPage]
+  );
+
+  useEffect(() => {
+    const id = setTimeout(() => setCurrentPage(1), 0);
+    return () => clearTimeout(id);
+  }, [filteredRecords]);
 
   const handleSearch = () => {
     const records = attendanceHistoryService.getRecords({
@@ -108,94 +118,6 @@ const AttendanceHistory = () => {
     setSearch('');
     const records = attendanceHistoryService.getRecords();
     setAllRecords(records);
-  };
-
-  const handleExportPdf = async () => {
-    if (!filteredRecords.length) { toast.error('No records to export'); return; }
-    try {
-      const { default: html2pdf } = await import('html2pdf.js');
-      const tableEl = tableRef.current;
-      if (!tableEl) return;
-
-      const printStyles = `
-        <style>
-          @page { size: A4 landscape; margin: 8mm; }
-          * { box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          table { width: 100%; border-collapse: collapse; font-size: 9px; }
-          th { background: #2563eb; color: white; padding: 6px 8px; text-align: left; }
-          td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
-          .badge { display: inline-block; padding: 1px 6px; border-radius: 9999px; font-size: 8px; font-weight: 600; }
-          h2 { text-align: center; margin-bottom: 12px; color: #1f2937; }
-        </style>
-      `;
-
-      const clone = tableEl.cloneNode(true);
-      clone.querySelectorAll('.no-print').forEach((el) => el.remove());
-
-      const html = `
-        <!DOCTYPE html>
-        <html><head><title>Attendance History</title>${printStyles}</head>
-        <body>
-          <h2>Attendance History Report</h2>
-          ${clone.outerHTML}
-          <p style="text-align:right;font-size:8px;color:#9ca3af;margin-top:8px;">Generated on ${new Date().toLocaleDateString()}</p>
-        </body></html>
-      `;
-
-      const el = document.createElement('div');
-      el.innerHTML = html;
-      document.body.appendChild(el);
-
-      await html2pdf().set({
-        margin: [8, 8, 8, 8],
-        filename: `Attendance-History-${academicYear || 'all'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      }).from(el).save();
-
-      document.body.removeChild(el);
-      toast.success('PDF exported successfully');
-    } catch {
-      toast.error('Failed to export PDF');
-    }
-  };
-
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) { window.print(); return; }
-
-    const printStyles = `
-      @page { size: A4 landscape; margin: 8mm; }
-      * { box-sizing: border-box; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      table { width: 100%; border-collapse: collapse; font-size: 9px; }
-      th { background: #2563eb; color: white; padding: 6px 8px; text-align: left; }
-      td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
-      .badge { display: inline-block; padding: 1px 6px; border-radius: 9999px; font-size: 8px; font-weight: 600; }
-      h2 { text-align: center; margin-bottom: 12px; color: #1f2937; }
-      .print-footer { text-align: right; font-size: 8px; color: #9ca3af; margin-top: 8px; }
-    `;
-
-    const clone = tableRef.current.cloneNode(true);
-    clone.querySelectorAll('.no-print').forEach((el) => el.remove());
-
-    const html = `
-      <!DOCTYPE html>
-      <html><head><title>Attendance History</title><style>${printStyles}</style></head>
-      <body>
-        <h2>Attendance History Report</h2>
-        ${clone.outerHTML}
-        <p class="print-footer">Generated on ${new Date().toLocaleDateString()}</p>
-      </body></html>
-    `;
-
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 500);
   };
 
   const renderPhoto = (record) => (
@@ -231,6 +153,64 @@ const AttendanceHistory = () => {
       <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium border ${colors[mode] || colors.Manual}`}>
         {mode}
       </span>
+    );
+  };
+
+  const renderPagination = () => {
+    if (filteredRecords.length === 0) return null;
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      if (currentPage <= 3) { start = 2; end = Math.min(4, totalPages - 1); }
+      if (currentPage >= totalPages - 2) { start = Math.max(2, totalPages - 3); end = totalPages - 1; }
+      if (start > 2) pages.push('...');
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (end < totalPages - 1) pages.push('...');
+      pages.push(totalPages);
+    }
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {filteredRecords.length} record{filteredRecords.length !== 1 ? 's' : ''} — Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => p - 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Previous
+          </button>
+          {pages.map((page, idx) =>
+            page === '...' ? (
+              <span key={`ellipsis-${idx}`} className="px-1.5 text-xs text-gray-400 dark:text-gray-500">...</span>
+            ) : (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`min-w-[28px] px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                {page}
+              </button>
+            )
+          )}
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => p + 1)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     );
   };
 
@@ -319,18 +299,6 @@ const AttendanceHistory = () => {
             <ArrowPathIcon className="h-4 w-4" />
             Reset
           </button>
-          <button onClick={handleExportPdf}
-            disabled={!filteredRecords.length}
-            className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer">
-            <DocumentArrowDownIcon className="h-4 w-4" />
-            Export PDF
-          </button>
-          <button onClick={handlePrint}
-            disabled={!filteredRecords.length}
-            className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer">
-            <PrinterIcon className="h-4 w-4" />
-            Print
-          </button>
           <div className="ml-auto">
             <SearchInput placeholder="Search by name or ID..." value={search} onChange={setSearch} />
           </div>
@@ -338,7 +306,7 @@ const AttendanceHistory = () => {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-auto" ref={tableRef}>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800">
@@ -366,7 +334,7 @@ const AttendanceHistory = () => {
                 </td>
               </tr>
             ) : (
-              filteredRecords.map((record) => (
+              paginatedRecords.map((record) => (
                 <tr key={record.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-3 py-3">{renderPhoto(record)}</td>
                   <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{record.name}</td>
@@ -435,12 +403,7 @@ const AttendanceHistory = () => {
             )}
           </tbody>
         </table>
-        {filteredRecords.length > 0 && (
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 flex items-center justify-between">
-            <span>{filteredRecords.length} record{filteredRecords.length !== 1 ? 's' : ''}</span>
-            <span>{stats.present} Present | {stats.absent} Absent | {stats.leave} Leave | {stats.late} Late</span>
-          </div>
-        )}
+        {renderPagination()}
       </div>
 
       {/* Details Modal */}

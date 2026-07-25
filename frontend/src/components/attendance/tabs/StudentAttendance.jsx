@@ -38,9 +38,20 @@ const formatTime = () => {
   return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
+const STUDENT_NAMES = [
+  'Ahmed Khan', 'Sara Ali', 'Muhammad Usman', 'Fatima Zahra', 'Ali Raza',
+  'Ayesha Bibi', 'Hassan Javed', 'Zainab Malik', 'Omar Farooq', 'Hira Batool',
+  'Hamza Sheikh', 'Mahnoor Ahmed', 'Bilal Hussain', 'Laiba Noor', 'Tahir Iqbal',
+  'Sana Mirza', 'Rayan Akhtar', 'Iqra Aziz', 'Zayan Siddiqui', 'Eman Tariq',
+  'Aryan Bhatti', 'Rida Fatima', 'Shahmir Ali', 'Dua Hasan', 'Rohail Shah',
+  'Minahil Zafar', 'Saim Riaz', 'Aleena Khan', 'Huzaifa Khalid', 'Amna Rizvi',
+  'Arham Sheikh', 'Sehrish Ali', 'Ibrahim Hashmi', 'Fiza Qureshi', 'Rayyan Ansari',
+  'Noor Fatima', 'Moin Abbas', 'Sidra Iqbal', 'Rafay Mansoor', 'Hania Amir',
+];
+
 const StudentAttendance = () => {
   const [academicYear, setAcademicYear] = useState('');
-  const [className, setClassName] = useState('');
+  const [className, setClassName] = useState('All Classes');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceMethod, setAttendanceMethod] = useState('Manual Attendance');
   const [students, setStudents] = useState([]);
@@ -87,6 +98,24 @@ const StudentAttendance = () => {
     setStudents([]);
     setAttendanceMap({});
     setTimeout(() => {
+      const yearPrefix = academicYear.split('-')[0];
+      const shuffled = [...STUDENT_NAMES].sort(() => Math.random() - 0.5);
+      const isAll = className === 'All Classes';
+      const count = isAll ? shuffled.length : Math.min(shuffled.length, 18);
+      const list = shuffled.slice(0, count).map((name, i) => ({
+        _id: `std_demo_${isAll ? 'all' : className.replace(/\s/g, '_')}_${i + 1}`,
+        fullName: name,
+        studentId: `STD-${yearPrefix}-${String(i + 1).padStart(4, '0')}`,
+        class: isAll ? CLASS_NAMES[i % CLASS_NAMES.length] : className,
+        academicYear,
+      }));
+      const now = formatTime();
+      const map = {};
+      list.forEach(s => {
+        map[s._id] = { status: 'Present', checkIn: now };
+      });
+      setStudents(list);
+      setAttendanceMap(map);
       setLoaded(true);
       setLoading(false);
     }, 300);
@@ -450,7 +479,7 @@ const StudentAttendance = () => {
             name="className"
             value={className}
             onChange={handleClassNameChange}
-            options={CLASS_NAMES}
+            options={['All Classes', ...CLASS_NAMES]}
             placeholder="Select class"
           />
           <DateInput

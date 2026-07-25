@@ -18,6 +18,16 @@ export const AuthProvider = ({ children }) => {
     let mounted = true;
 
     const initAuth = async () => {
+      const autoLogout = localStorage.getItem('autoLogout') === 'true';
+      if (autoLogout) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        if (mounted) setLoading(false);
+        return;
+      }
+
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
         if (mounted) setLoading(false);

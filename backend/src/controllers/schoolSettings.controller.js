@@ -20,50 +20,7 @@ const getSchoolSettings = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    message: 'School settings fetched successfully',
-    data: { settings },
-  });
-});
-
-const updateSchoolInformation = asyncHandler(async (req, res) => {
-  const settings = await schoolSettingsService.updateSchoolInformation(req.body);
-
-  return res.status(200).json({
-    success: true,
-    message: 'School information updated successfully',
-    data: { settings },
-  });
-});
-
-const updateAcademicSettings = asyncHandler(async (req, res) => {
-  const settings = await schoolSettingsService.updateAcademicSettings(req.body);
-
-  return res.status(200).json({
-    success: true,
-    message: 'Academic settings updated successfully',
-    data: { settings },
-  });
-});
-
-const updateBrandingSettings = asyncHandler(async (req, res) => {
-  const settings = await schoolSettingsService.updateBrandingSettings(req.body);
-
-  return res.status(200).json({
-    success: true,
-    message: 'Branding settings updated successfully',
-    data: { settings },
-  });
-});
-
-const updateSchoolImage = asyncHandler(async (req, res) => {
-  const { field } = req.params;
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const settings = await schoolSettingsService.updateSchoolImage(field, req.file, baseUrl);
-  if (settings[field]) settings[field] = toFullUrl(req, settings[field]);
-
-  return res.status(200).json({
-    success: true,
-    message: 'Image updated successfully',
+    message: 'School settings fetched successfully.',
     data: { settings },
   });
 });
@@ -84,12 +41,55 @@ const getPublicSchoolSettings = asyncHandler(async (req, res) => {
   });
 });
 
+const updateSchoolInformation = asyncHandler(async (req, res) => {
+  const settings = await schoolSettingsService.updateGeneralInformation(req.body);
+
+  return res.status(200).json({
+    success: true,
+    message: 'School information updated successfully.',
+    data: { settings },
+  });
+});
+
+const updateAcademicSettings = asyncHandler(async (req, res) => {
+  const settings = await schoolSettingsService.updateAcademicConfiguration(req.body);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Academic settings updated successfully.',
+    data: { settings },
+  });
+});
+
+const updateBrandingSettings = asyncHandler(async (req, res) => {
+  const settings = await schoolSettingsService.updateBrandingDocuments(req.body);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Branding settings updated successfully.',
+    data: { settings },
+  });
+});
+
 const updateSystemPreferences = asyncHandler(async (req, res) => {
   const settings = await schoolSettingsService.updateSystemPreferences(req.body);
 
   return res.status(200).json({
     success: true,
-    message: 'System preferences updated successfully',
+    message: 'System preferences updated successfully.',
+    data: { settings },
+  });
+});
+
+const updateSchoolImage = asyncHandler(async (req, res) => {
+  const { field } = req.params;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const settings = await schoolSettingsService.updateSchoolImage(field, req.file, baseUrl);
+  if (settings[field]) settings[field] = toFullUrl(req, settings[field]);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Image updated successfully.',
     data: { settings },
   });
 });

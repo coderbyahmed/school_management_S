@@ -207,7 +207,7 @@ const checkConflicts = async (periods, classId, excludeTimetableId) => {
 };
 
 const createTimetable = async (data, userId) => {
-  const { academicYear, classId, periods } = data;
+  const { academicYear, classId, periods, periodStartTime, periodEndTime } = data;
 
   await validateClassExists(classId);
   await validateTeachersExist(periods);
@@ -229,6 +229,8 @@ const createTimetable = async (data, userId) => {
       academicYear,
       classId,
       periods,
+      periodStartTime: periodStartTime || '',
+      periodEndTime: periodEndTime || '',
       createdBy: userId,
       updatedBy: userId,
     });
@@ -299,7 +301,7 @@ const updateTimetable = async (id, data, userId) => {
   const existing = await Timetable.findById(id);
   if (!existing) throw new ApiError(404, 'Timetable not found');
 
-  const { academicYear, classId, periods } = data;
+  const { academicYear, classId, periods, periodStartTime, periodEndTime } = data;
 
   if (classId) await validateClassExists(classId);
 
@@ -333,6 +335,8 @@ const updateTimetable = async (id, data, userId) => {
 
   if (academicYear) updateFields.academicYear = academicYear;
   if (classId) updateFields.classId = classId;
+  if (periodStartTime !== undefined) updateFields.periodStartTime = periodStartTime;
+  if (periodEndTime !== undefined) updateFields.periodEndTime = periodEndTime;
   if (userId) updateFields.updatedBy = userId;
 
   try {

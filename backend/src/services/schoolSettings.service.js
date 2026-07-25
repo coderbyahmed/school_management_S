@@ -14,9 +14,14 @@ const deleteFileAtPath = (relativePath) => {
   const fullPath = path.resolve(__dirname, '../..', relativePath);
   try {
     if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-  } catch (err) { console.error('Failed to delete file at path', relativePath, err); }
+  } catch {
+    /* file may have been moved or already deleted */
+  }
 };
 
+// ──────────────────────────────────────────────
+// Singleton — always returns the single document
+// ──────────────────────────────────────────────
 const getSchoolSettings = async () => {
   try {
     return await SchoolSettings.getSettings();
@@ -29,26 +34,18 @@ const getSchoolSettings = async () => {
   }
 };
 
-const updateSchoolInformation = async (data) => {
-  const allowed = [
-    'schoolName',
-    'shortName',
-    'tagline',
-    'registrationNumber',
-    'principalName',
-    'schoolEmail',
-    'contactNumber',
-    'whatsappNumber',
-    'website',
-    'address',
-    'city',
-    'province',
-    'country',
-    'googleMapLocation',
-  ];
+// ──────────────────────────────────────────────
+// General Information
+// ──────────────────────────────────────────────
+const GENERAL_ALLOWED = [
+  'schoolName', 'shortName', 'registrationNumber', 'principalName',
+  'schoolEmail', 'contactNumber', 'whatsappNumber', 'website',
+  'address', 'city', 'province', 'country', 'googleMapLocation',
+];
 
+const updateGeneralInformation = async (data) => {
   const updateFields = {};
-  for (const key of allowed) {
+  for (const key of GENERAL_ALLOWED) {
     if (data[key] !== undefined) {
       updateFields[key] = data[key];
     }
@@ -76,17 +73,19 @@ const updateSchoolInformation = async (data) => {
   }
 };
 
-const updateAcademicSettings = async (data) => {
-  const allowed = [
-    'currentAcademicYear',
-    'schoolShift',
-    'weekendDays',
-    'defaultLanguage',
-    'timezone',
-  ];
+// ──────────────────────────────────────────────
+// Academic Configuration (+ Localization fields)
+// ──────────────────────────────────────────────
+const ACADEMIC_ALLOWED = [
+  'currentAcademicYear', 'schoolShift',
+  'schoolStartTime', 'schoolEndTime',
+  'attendanceStartTime', 'attendanceClosingTime',
+  'defaultLanguage', 'timezone', 'dateFormat', 'timeFormat',
+];
 
+const updateAcademicConfiguration = async (data) => {
   const updateFields = {};
-  for (const key of allowed) {
+  for (const key of ACADEMIC_ALLOWED) {
     if (data[key] !== undefined) {
       updateFields[key] = data[key];
     }
@@ -114,16 +113,18 @@ const updateAcademicSettings = async (data) => {
   }
 };
 
-const updateBrandingSettings = async (data) => {
-  const allowed = [
-    'pdfHeader',
-    'pdfFooter',
-    'reportCardHeader',
-    'certificateHeader',
-  ];
+// ──────────────────────────────────────────────
+// Branding & Documents
+// ──────────────────────────────────────────────
+const BRANDING_ALLOWED = [
+  'pdfHeader', 'pdfFooter', 'reportCardHeader', 'certificateHeader',
+  'idCardHeader', 'idCardFooter', 'receiptHeader', 'receiptFooter',
+  'footerText',
+];
 
+const updateBrandingDocuments = async (data) => {
   const updateFields = {};
-  for (const key of allowed) {
+  for (const key of BRANDING_ALLOWED) {
     if (data[key] !== undefined) {
       updateFields[key] = data[key];
     }
@@ -150,18 +151,22 @@ const updateBrandingSettings = async (data) => {
     throw error;
   }
 };
+
+// ──────────────────────────────────────────────
+// System Preferences (+ Login/Splash + Currency)
+// ──────────────────────────────────────────────
+const PREFERENCES_ALLOWED = [
+  'autoLogout', 'defaultLandingPage',
+  'enableNotifications', 'enableEmailNotifications',
+  'enableSmsNotifications', 'enableWhatsAppNotifications',
+  'showSchoolLogoOnLogin', 'showSchoolNameOnLogin',
+  'splashEnabled', 'loaderStyle',
+  'currency', 'currencySymbol',
+];
 
 const updateSystemPreferences = async (data) => {
-  const allowed = [
-    'enableNotifications',
-    'maintenanceMode',
-    'allowPublicWebsite',
-    'enableParentPortal',
-    'enableTeacherPortal',
-  ];
-
   const updateFields = {};
-  for (const key of allowed) {
+  for (const key of PREFERENCES_ALLOWED) {
     if (data[key] !== undefined) {
       updateFields[key] = data[key];
     }
@@ -189,9 +194,11 @@ const updateSystemPreferences = async (data) => {
   }
 };
 
+// ──────────────────────────────────────────────
+// Image Upload
+// ──────────────────────────────────────────────
 const ALLOWED_IMAGE_FIELDS = [
   'schoolLogo', 'adminPanelLogo', 'smallLogo', 'principalSignature', 'schoolStamp',
-  'pdfHeader', 'pdfFooter', 'reportCardHeader', 'certificateHeader',
 ];
 
 const updateSchoolImage = async (field, file, baseUrl = '') => {
@@ -237,9 +244,9 @@ const updateSchoolImage = async (field, file, baseUrl = '') => {
 
 export default {
   getSchoolSettings,
-  updateSchoolInformation,
-  updateAcademicSettings,
-  updateBrandingSettings,
+  updateGeneralInformation,
+  updateAcademicConfiguration,
+  updateBrandingDocuments,
   updateSystemPreferences,
   updateSchoolImage,
 };

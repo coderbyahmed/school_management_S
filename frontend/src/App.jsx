@@ -1,10 +1,13 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { SchoolConfigProvider } from './contexts/SchoolConfigContext';
+import { SchoolConfigProvider, useSchoolConfig } from './contexts/SchoolConfigContext';
 import { LoaderProvider } from './contexts/LoaderContext';
 import SplashScreen from './components/common/SplashScreen';
+import FullPageLoader from './components/common/FullPageLoader';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ADMIN_MODULES } from './constants/adminModules';
 
 import LoginPage from './pages/auth/Login';
 import ForgotPasswordPage from './pages/auth/ForgotPassword';
@@ -27,20 +30,42 @@ import FeeReports from './pages/admin/fee/Reports';
 import SchoolSettings from './pages/admin/SchoolSettings';
 
 function IndexRedirect() {
-  const { user, role, loading, DASHBOARD_ROUTES } = useAuth();
-  if (loading) return null;
-  if (user && role) {
+  const { user, role, loading: authLoading, DASHBOARD_ROUTES } = useAuth();
+  const { loading: configLoading, preferences } = useSchoolConfig();
+
+  if (authLoading) return null;
+  if (!user || !role) return <Navigate to="/login" replace />;
+
+  if (role !== 'admin') {
     return <Navigate to={DASHBOARD_ROUTES[role] || '/login'} replace />;
   }
-  return <Navigate to="/login" replace />;
-}
 
+  if (configLoading) return <FullPageLoader />;
+
+  const landingPage = preferences?.defaultLandingPage;
+  const route = ADMIN_MODULES[landingPage] || '/admin';
+  return <Navigate to={route} replace />;
+}
 function AppContent() {
   const { loading: authLoading } = useAuth();
+  const { loaded: configLoaded, login: loginConfig } = useSchoolConfig();
+  const splashEnabled = configLoaded ? (loginConfig?.splashEnabled ?? true) : true;
+  const loaderStyle = configLoaded ? (loginConfig?.loaderStyle || '') : '';
+
+  const [splashTimerExpired, setSplashTimerExpired] = useState(false);
+
+  useEffect(() => {
+    if (authLoading || !splashEnabled) return;
+    const resetId = setTimeout(() => setSplashTimerExpired(false), 0);
+    const timerId = setTimeout(() => setSplashTimerExpired(true), 1200);
+    return () => { clearTimeout(resetId); clearTimeout(timerId); };
+  }, [authLoading, splashEnabled]);
+
+  const splashVisible = authLoading || (splashEnabled && !splashTimerExpired);
 
   return (
     <>
-      <SplashScreen visible={authLoading} />
+      <SplashScreen visible={splashVisible} loaderStyle={loaderStyle} />
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         <Route path="/login" element={<LoginPage />} />

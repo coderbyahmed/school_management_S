@@ -5,23 +5,23 @@ import SelectInput from '../../common/SelectInput';
 import Alert from '../../common/Alert';
 import classService from '../../../services/class.service';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const statusOptions = ['Active', 'Inactive'];
 
-const initialState = {
-  className: '',
-  academicYear: '',
-  status: 'Active',
-};
-
-const getInitialForm = (editData) => editData ? {
+const getInitialForm = (editData, configYear) => editData ? {
   className: editData.className || '',
   academicYear: editData.academicYear || '',
   status: editData.status || 'Active',
-} : initialState;
+} : {
+  className: '',
+  academicYear: configYear || '',
+  status: 'Active',
+};
 
 const AddClass = ({ editData, onSuccess }) => {
-  const [form, setForm] = useState(() => getInitialForm(editData));
+  const { academic } = useSchoolConfig();
+  const [form, setForm] = useState(() => getInitialForm(editData, academic?.currentYear));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,7 +30,7 @@ const AddClass = ({ editData, onSuccess }) => {
   };
 
   const resetForm = () => {
-    setForm(getInitialForm(editData));
+    setForm(getInitialForm(editData, academic?.currentYear));
     setError('');
   };
 
@@ -59,11 +59,7 @@ const AddClass = ({ editData, onSuccess }) => {
 
   const handleCancel = () => {
     if (editData) {
-      setForm({
-        className: editData.className || '',
-        academicYear: editData.academicYear || '',
-        status: editData.status || 'Active',
-      });
+      setForm(getInitialForm(editData));
       setError('');
     } else {
       resetForm();

@@ -2,9 +2,8 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import CardSection from '../../common/CardSection';
 import SelectInput from '../../common/SelectInput';
-import { ADMIN_MODULES } from '../../../constants/adminModules';
 
-const LANDING_PAGES = Object.keys(ADMIN_MODULES);
+const LOADER_STYLES = ['Spinner', 'Pulse', 'Progress Bar', 'Skeleton'];
 
 const Toggle = ({ label, checked, onChange, disabled = false }) => (
   <div className="mb-4">
@@ -31,7 +30,7 @@ const Toggle = ({ label, checked, onChange, disabled = false }) => (
   </div>
 );
 
-const SystemPreferences = ({ data, onSave, saving }) => {
+const LoginSplashScreen = ({ data, onSave, saving }) => {
   const [form, setForm] = useState(() => ({ ...data }));
   const [editing, setEditing] = useState(false);
 
@@ -52,22 +51,25 @@ const SystemPreferences = ({ data, onSave, saving }) => {
 
   return (
     <div className="space-y-6">
-      <CardSection title="Security & Notifications">
+      <CardSection title="Login Page">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <Toggle label="Show School Logo on Login" checked={form.showSchoolLogoOnLogin} onChange={() => setForm((p) => ({ ...p, showSchoolLogoOnLogin: !p.showSchoolLogoOnLogin }))} disabled={!editing} />
+          <Toggle label="Show School Name on Login" checked={form.showSchoolNameOnLogin} onChange={() => setForm((p) => ({ ...p, showSchoolNameOnLogin: !p.showSchoolNameOnLogin }))} disabled={!editing} />
+        </div>
+      </CardSection>
+
+      <CardSection title="Splash Screen">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <Toggle label="Enable Splash Screen" checked={form.splashEnabled} onChange={() => setForm((p) => ({ ...p, splashEnabled: !p.splashEnabled }))} disabled={!editing} />
           <SelectInput
-            label="Default Landing Page"
-            name="defaultLandingPage"
-            value={form.defaultLandingPage}
-            onChange={handleChange('defaultLandingPage')}
-            options={LANDING_PAGES}
-            placeholder="Select page"
+            label="Loader Style"
+            name="loaderStyle"
+            value={form.loaderStyle}
+            onChange={handleChange('loaderStyle')}
+            options={LOADER_STYLES}
+            placeholder="Select style"
             disabled={!editing}
           />
-          <Toggle label="Auto Logout" checked={form.autoLogout} onChange={() => setForm((p) => ({ ...p, autoLogout: !p.autoLogout }))} disabled={!editing} />
-          <Toggle label="Enable Notifications" checked={form.enableNotifications} onChange={() => setForm((p) => ({ ...p, enableNotifications: !p.enableNotifications }))} disabled={!editing} />
-          <Toggle label="Email Notifications" checked={form.enableEmailNotifications} onChange={() => setForm((p) => ({ ...p, enableEmailNotifications: !p.enableEmailNotifications }))} disabled={!editing} />
-          <Toggle label="SMS Notifications" checked={form.enableSmsNotifications} onChange={() => setForm((p) => ({ ...p, enableSmsNotifications: !p.enableSmsNotifications }))} disabled={!editing} />
-          <Toggle label="WhatsApp Notifications" checked={form.enableWhatsAppNotifications} onChange={() => setForm((p) => ({ ...p, enableWhatsAppNotifications: !p.enableWhatsAppNotifications }))} disabled={!editing} />
         </div>
       </CardSection>
 
@@ -93,4 +95,4 @@ const SystemPreferences = ({ data, onSave, saving }) => {
   );
 };
 
-export default SystemPreferences;
+export default LoginSplashScreen;

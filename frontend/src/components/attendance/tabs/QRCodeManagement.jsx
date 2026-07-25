@@ -35,7 +35,7 @@ const IDCardManagement = () => {
 
   const [allStudents, setAllStudents] = useState([]);
   const [academicYear, setAcademicYear] = useState('');
-  const [className, setClassName] = useState('');
+  const [className, setClassName] = useState('All Classes');
   const [search, setSearch] = useState('');
   const [cardFilter, setCardFilter] = useState('All');
 
@@ -65,7 +65,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
 
   const setConfigProp = (key, value) => {
     setActiveConfig((prev) => ({ ...prev, [key]: value }));
-    if (key === 'cardWidth' || key === 'cardHeight') {
+    if (key === 'cardWidth' || key === 'cardHeight' || key === 'cardPadding' || key === 'borderRadius') {
       const otherSetter = designerPreviewSide === 'front' ? setBackConfig : setFrontConfig;
       otherSetter((prev) => ({ ...prev, [key]: value }));
     }
@@ -82,8 +82,6 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     }
   }, [designerOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
-
   const getCardStatus = (student) => {
     if (student.cardStatus === 'Printed') return 'Printed';
     if (student.qrStatus === 'Generated') return 'Generated';
@@ -93,7 +91,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
   const filtered = useMemo(() => {
     let list = allStudents;
     if (academicYear) list = list.filter((s) => s.academicYear === academicYear);
-    if (className) list = list.filter((s) => s.class === className);
+    if (className && className !== 'All Classes') list = list.filter((s) => s.class === className);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((s) => s.fullName.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q));
@@ -158,6 +156,13 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     }, 400);
   };
 
+  useEffect(() => {
+    if (!academicYear || !className) return;
+    const id = setTimeout(() => handleLoadStudents(), 0);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [academicYear, className]);
+
   const handleGenerateMissingCards = () => {
     let count = 0;
     setAllStudents((prev) =>
@@ -202,12 +207,15 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     if (!printWindow) { toast.error('Popup blocked'); return; }
 
     const Template = activeTemplate === 'horizontal' ? HorizontalTemplate : VerticalTemplate;
-    const cardsHtml = students.map((s) => Template.toHtml(s, SCHOOL_INFO, frontConfig)).join('');
+    const cardsHtml = students.map((s) => Template.toHtml(s, SCHOOL_INFO, frontConfig, backConfig)).join('');
 
     const printCss = `
-      @page { size: A4; margin: 10mm; }
+      @page { size: A4; margin: 5mm; }
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
     `;
 
     printWindow.document.open();
@@ -225,14 +233,14 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     try {
       const { default: html2pdf } = await import('html2pdf.js');
       const Template = activeTemplate === 'horizontal' ? HorizontalTemplate : VerticalTemplate;
-      const cardHtml = Template.toHtml(student, SCHOOL_INFO, frontConfig);
+      const cardHtml = Template.toHtml(student, SCHOOL_INFO, frontConfig, backConfig);
 
       const element = document.createElement('div');
       element.innerHTML = cardHtml;
       document.body.appendChild(element);
 
       await html2pdf().set({
-        margin: [8, 8, 8, 8],
+        margin: 0,
         filename: `ID-Card-${student.studentId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
@@ -369,10 +377,10 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             <div className="relative">
               <select
                 value={className}
-                onChange={(e) => setClassName(e.target.value)}
+                onChange={(e) => { setClassName(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
               >
-                <option value="">Select class</option>
+                <option value="All Classes">All Classes</option>
                 {CLASS_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />

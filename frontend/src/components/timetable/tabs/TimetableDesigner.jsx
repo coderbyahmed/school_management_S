@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
-import timetableTemplateService from '../../../services/timetableTemplate.service';
 import timetableService from '../../../services/timetable.service';
+import timetableDesignService from '../../../services/timetableDesign.service';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 import { useTimetableYear } from '../../../contexts/TimetableContext';
@@ -11,16 +11,6 @@ const GROUPS = {
   2: { name: 'Group 2', classes: ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'] },
   3: { name: 'Group 3', classes: ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'] },
 };
-
-
-
-const TEMPLATES = [
-  { id: 'classic', name: 'Classic School', primary: '#1d4ed8', bg: '#ffffff', accent: '#eff6ff', cell: '#ffffff', text: '#1f2937', border: '#e5e7eb', group: '#f8fafc', time: '#eff6ff', headerText: '#ffffff', desc: 'Traditional blue-themed school design' },
-  { id: 'modern', name: 'Modern Blue', primary: '#2563eb', bg: '#ffffff', accent: '#dbeafe', cell: '#f8fafc', text: '#0f172a', border: '#bfdbfe', group: '#dbeafe', time: '#dbeafe', headerText: '#ffffff', desc: 'Clean modern blue gradient design' },
-  { id: 'professional', name: 'Professional Gray', primary: '#475569', bg: '#ffffff', accent: '#f1f5f9', cell: '#ffffff', text: '#1e293b', border: '#cbd5e1', group: '#f1f5f9', time: '#f1f5f9', headerText: '#ffffff', desc: 'Corporate gray-scale professional look' },
-  { id: 'green', name: 'Green Academic', primary: '#15803d', bg: '#ffffff', accent: '#f0fdf4', cell: '#fafafa', text: '#14532d', border: '#bbf7d0', group: '#f0fdf4', time: '#f0fdf4', headerText: '#ffffff', desc: 'Natural green academic theme' },
-  { id: 'minimal', name: 'Minimal Clean', primary: '#0f172a', bg: '#ffffff', accent: '#f8fafc', cell: '#ffffff', text: '#0f172a', border: '#e2e8f0', group: '#f8fafc', time: '#f8fafc', headerText: '#ffffff', desc: 'Clean minimal black & white design' },
-];
 
 const FONT_OPTIONS = ['Inter', 'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Courier New', 'Calibri', 'Segoe UI'];
 
@@ -32,50 +22,27 @@ const FONT_WEIGHT_OPTIONS = [
 const ALIGN_OPTIONS = [
   { value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' },
 ];
-const BORDER_STYLE_OPTIONS = ['solid', 'dashed', 'dotted', 'double'];
 const PADDING_OPTIONS = [
   { value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' },
 ];
+const PAPER_SIZE_OPTIONS = ['A4', 'A3', 'Letter', 'Legal'];
+const LINE_HEIGHT_OPTIONS = ['1', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.8', '2'];
+const VERTICAL_OPTIONS = [
+  { value: 'top', label: 'Top' }, { value: 'center', label: 'Center' }, { value: 'bottom', label: 'Bottom' },
+];
 
-const HEADER_INIT = {
-  schoolName: { text: 'School Name', align: 'left', fontFamily: 'Inter', fontSize: '24px', fontWeight: '700', color: '#ffffff' },
-  principalName: { text: 'Principal Name', align: 'left', fontFamily: 'Inter', fontSize: '12px', fontWeight: '400', color: '#ffffff' },
-  academicYear: { text: '2026', align: 'left', fontFamily: 'Inter', fontSize: '10px', fontWeight: '400', color: '#ffffff' },
-  logo: { show: true, dataUrl: null },
-  container: { bgColor: '#1d4ed8', borderColor: '#1d4ed8', borderRadius: '0px', padding: '14px 20px', shadow: false },
-};
-const TITLE_INIT = {
-  text: 'Teachers Period Time Table', align: 'left', fontFamily: 'Inter', fontSize: '12px', fontWeight: '700', color: '#ffffff',
-};
-const TABLE_HEADERS_INIT = {
-  time: { bg: '#1d4ed8', color: '#ffffff', fontFamily: 'Inter', fontSize: '10px', fontWeight: '700', align: 'center' },
-  class: { bg: '#1d4ed8', color: '#ffffff', fontFamily: 'Inter', fontSize: '10px', fontWeight: '700', align: 'center' },
-  subject: { bg: '#1d4ed8', color: '#ffffff', fontFamily: 'Inter', fontSize: '10px', fontWeight: '700', align: 'center' },
-  teacher: { bg: '#1d4ed8', color: '#ffffff', fontFamily: 'Inter', fontSize: '10px', fontWeight: '700', align: 'center' },
-};
-const PERIOD_CELLS_INIT = {
-  subjectBg: '#ffffff', subjectColor: '#374151', teacherBg: '#ffffff', teacherColor: '#374151',
-  altRowBg: '#f8fafc', fontFamily: 'Inter', fontSize: '10px', fontWeight: '400',
-};
-const BREAK_ROW_INIT = {
-  bg: '#f8fafc', color: '#374151', fontFamily: 'Inter', fontSize: '10px', fontWeight: '600', borderRadius: '8px',
-};
-const TABLE_LAYOUT_INIT = {
-  rowHeight: 48, colWidth: 130, cellPadding: 'medium', borderThickness: '1px', borderStyle: 'solid', borderColor: '#e5e7eb',
-};
+
 
 const ChevronSvg = ({ open }) => <svg className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>;
 const CloseSvg = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
 const SettingsSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
 const LogoSvg = () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>;
-const ImageSvg = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
-const PaintSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>;
 const TypeSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>;
-const LayoutSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>;
 const GridSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
-const PrintSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>;
-const ResetSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
+const PaintSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>;
 const EyeSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
+const PrintSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>;
+const DownloadSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
 
 const ColorPicker = ({ label, value, onChange }) => (
   <div className="flex items-center justify-between">
@@ -124,64 +91,304 @@ const SelectField = ({ label, value, onChange, options }) => (
   </div>
 );
 
-const StyleGroup = ({ label, align, fontFamily, fontSize, fontWeight, color, onChange }) => (
-  <div className="space-y-1.5 p-2 bg-gray-50 dark:bg-gray-700/20 rounded-lg">
-    <p className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</p>
-    <div className="grid grid-cols-2 gap-1.5">
-      <SelectField label="Align" value={align} onChange={(e) => onChange('align', e.target.value)} options={ALIGN_OPTIONS} />
-      <SelectField label="Font" value={fontFamily} onChange={(e) => onChange('fontFamily', e.target.value)} options={FONT_OPTIONS} />
-      <SelectField label="Size" value={fontSize} onChange={(e) => onChange('fontSize', e.target.value)} options={FONT_SIZE_OPTIONS} />
-      <SelectField label="Weight" value={fontWeight} onChange={(e) => onChange('fontWeight', e.target.value)} options={FONT_WEIGHT_OPTIONS} />
-    </div>
-    <ColorPicker label="Text Color" value={color} onChange={(v) => onChange('color', v)} />
-  </div>
-);
-
 const TimetableDesigner = () => {
-  const { schoolInfo } = useSchoolConfig();
+  const { schoolInfo, branding, academic } = useSchoolConfig();
   const { selectedYear, setSelectedYear } = useTimetableYear();
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState('classic');
-  const [header, setHeader] = useState({
-    ...HEADER_INIT,
-    schoolName: { ...HEADER_INIT.schoolName, text: schoolInfo.name || HEADER_INIT.schoolName.text },
-    principalName: { ...HEADER_INIT.principalName, text: schoolInfo.principalName || HEADER_INIT.principalName.text },
-  });
-  const [title, setTitle] = useState(TITLE_INIT);
-  const [tableHeaders, setTableHeaders] = useState(TABLE_HEADERS_INIT);
-  const [periodCells, setPeriodCells] = useState(PERIOD_CELLS_INIT);
-  const [breakRow, setBreakRow] = useState(BREAK_ROW_INIT);
-  const [tableLayout, setTableLayout] = useState(TABLE_LAYOUT_INIT);
-  const [mergedPairs, setMergedPairs] = useState([]);
-  const [showSignature, setShowSignature] = useState(false);
-  const [showFooter, setShowFooter] = useState(true);
-  const [watermark, setWatermark] = useState(false);
+
+  // --- Mutable state ---
   const [orientation, setOrientation] = useState('landscape');
   const [marginTop, setMarginTop] = useState('15mm');
   const [marginBottom, setMarginBottom] = useState('15mm');
   const [marginLeft, setMarginLeft] = useState('10mm');
   const [marginRight, setMarginRight] = useState('10mm');
-  const [showMergeModal, setShowMergeModal] = useState(false);
-  const [mergeSelections, setMergeSelections] = useState([]);
-  const [mergeEnabled, setMergeEnabled] = useState(false);
-  const [openSections, setOpenSections] = useState({ templates: true, header: false, title: false, tableHeaders: false, periodCells: false, breakRow: false, tableLayout: false, merge: false, print: false });
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [savedTemplateId, setSavedTemplateId] = useState(null);
-  const [savedTemplates, setSavedTemplates] = useState([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [savingTemplate, setSavingTemplate] = useState(false);
-  const [saveName, setSaveName] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-  const [renameModal, setRenameModal] = useState({ show: false, template: null, newName: '' });
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState({ show: false, template: null });
   const [selectedGroup, setSelectedGroup] = useState(1);
   const [groupTimetables, setGroupTimetables] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupError, setGroupError] = useState('');
-  const [pdfExporting, setPdfExporting] = useState(false);
-  const fileInputRef = useRef(null);
   const panelRef = useRef(null);
+  const [pdfExporting, setPdfExporting] = useState(false);
+
+  // --- Logo ---
+  const [logoShow, setLogoShow] = useState(true);
+  const [logoSize, setLogoSize] = useState(40);
+  const [logoWidth, setLogoWidth] = useState(40);
+  const [logoHeight, setLogoHeight] = useState(40);
+  const [logoPosition, setLogoPosition] = useState('left');
+  const [logoVerticalPosition, setLogoVerticalPosition] = useState('center');
+
+  // --- School Name ---
+  const [schoolNameShow, setSchoolNameShow] = useState(true);
+  const [schoolNameFontSize, setSchoolNameFontSize] = useState('14px');
+  const [schoolNameFontWeight, setSchoolNameFontWeight] = useState('700');
+  const [schoolNameColor, setSchoolNameColor] = useState('#ffffff');
+  const [schoolNameAlign, setSchoolNameAlign] = useState('left');
+  const [schoolNameVerticalPos, setSchoolNameVerticalPos] = useState('center');
+  const [schoolNameLetterSpacing, setSchoolNameLetterSpacing] = useState(0);
+  const [schoolNameLineHeight, setSchoolNameLineHeight] = useState('1.2');
+
+  // --- Academic Year ---
+  const [academicYearShow, setAcademicYearShow] = useState(true);
+  const [academicYearFontSize, setAcademicYearFontSize] = useState('10px');
+  const [academicYearFontWeight, setAcademicYearFontWeight] = useState('400');
+  const [academicYearColor, setAcademicYearColor] = useState('#ffffff');
+  const [academicYearAlign, setAcademicYearAlign] = useState('left');
+  const [academicYearVerticalPos, setAcademicYearVerticalPos] = useState('center');
+
+  // --- Timetable Title ---
+  const [timetableTitle, setTimetableTitle] = useState('');
+  const [titleFontSize, setTitleFontSize] = useState('14px');
+  const [titleFontWeight, setTitleFontWeight] = useState('400');
+  const [titleColor, setTitleColor] = useState('#ffffff');
+  const [titleAlign, setTitleAlign] = useState('left');
+  const [titleVerticalPos, setTitleVerticalPos] = useState('center');
+  const [titleLetterSpacing, setTitleLetterSpacing] = useState(0);
+
+  // --- Header Spacing ---
+  const [headerPaddingTop, setHeaderPaddingTop] = useState(14);
+  const [headerPaddingBottom, setHeaderPaddingBottom] = useState(14);
+  const [headerPaddingLeft, setHeaderPaddingLeft] = useState(20);
+  const [headerPaddingRight, setHeaderPaddingRight] = useState(20);
+  const [logoTitleGap, setLogoTitleGap] = useState(12);
+  const [nameTitleGap, setNameTitleGap] = useState(4);
+
+  // --- Table / Design state ---
+  const [borderWidth, setBorderWidth] = useState('1');
+  const [borderRadius, setBorderRadius] = useState('0');
+  const [cellPadding, setCellPadding] = useState('medium');
+  const [alternateRowColor, setAlternateRowColor] = useState(true);
+  const [gridLines, setGridLines] = useState(true);
+  const [headerFontSize, setHeaderFontSize] = useState('14px');
+  const [tableFontSize, setTableFontSize] = useState('12px');
+  const [fontWeight, setFontWeight] = useState('400');
+  const [fontFamily, setFontFamily] = useState('Inter');
+  const [headerBgColor, setHeaderBgColor] = useState('#1d4ed8');
+  const [headerTextColor, setHeaderTextColor] = useState('#ffffff');
+  const [tableHeaderBg, setTableHeaderBg] = useState('#1d4ed8');
+  const [tableHeaderText, setTableHeaderText] = useState('#ffffff');
+  const [periodCellColor, setPeriodCellColor] = useState('#ffffff');
+  const [breakCellColor, setBreakCellColor] = useState('#f8fafc');
+  const [paperSize, setPaperSize] = useState('A4');
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [designLoaded, setDesignLoaded] = useState(false);
+
+  // --- Load saved design on mount ---
+  useEffect(() => {
+    if (designLoaded) return;
+    (async () => {
+      try {
+        const res = await timetableDesignService.getDesign();
+        const d = res?.data?.design;
+        if (!d) { setDesignLoaded(true); return; }
+
+        // Logo
+        if (d.logo) {
+          setLogoShow(d.logo.show ?? true);
+          setLogoSize(d.logo.size ?? 40);
+          setLogoWidth(d.logo.width ?? 40);
+          setLogoHeight(d.logo.height ?? 40);
+          setLogoPosition(d.logo.position ?? 'left');
+          setLogoVerticalPosition(d.logo.verticalPosition ?? 'center');
+        }
+
+        // School Name
+        if (d.schoolName) {
+          setSchoolNameShow(d.schoolName.show ?? true);
+          setSchoolNameFontSize(d.schoolName.fontSize ?? '14px');
+          setSchoolNameFontWeight(d.schoolName.fontWeight ?? '700');
+          setSchoolNameColor(d.schoolName.color ?? '#ffffff');
+          setSchoolNameAlign(d.schoolName.align ?? 'left');
+          setSchoolNameVerticalPos(d.schoolName.verticalPos ?? 'center');
+          setSchoolNameLetterSpacing(d.schoolName.letterSpacing ?? 0);
+          setSchoolNameLineHeight(d.schoolName.lineHeight ?? '1.2');
+        }
+
+        // Academic Year
+        if (d.academicYear) {
+          setAcademicYearShow(d.academicYear.show ?? true);
+          setAcademicYearFontSize(d.academicYear.fontSize ?? '10px');
+          setAcademicYearFontWeight(d.academicYear.fontWeight ?? '400');
+          setAcademicYearColor(d.academicYear.color ?? '#ffffff');
+          setAcademicYearAlign(d.academicYear.align ?? 'left');
+          setAcademicYearVerticalPos(d.academicYear.verticalPos ?? 'center');
+        }
+
+        // Title
+        if (d.title) {
+          setTimetableTitle(d.title.text ?? '');
+          setTitleFontSize(d.title.fontSize ?? '14px');
+          setTitleFontWeight(d.title.fontWeight ?? '400');
+          setTitleColor(d.title.color ?? '#ffffff');
+          setTitleAlign(d.title.align ?? 'left');
+          setTitleVerticalPos(d.title.verticalPos ?? 'center');
+          setTitleLetterSpacing(d.title.letterSpacing ?? 0);
+        }
+
+        // Header Spacing
+        if (d.headerSpacing) {
+          setHeaderPaddingTop(d.headerSpacing.paddingTop ?? 14);
+          setHeaderPaddingBottom(d.headerSpacing.paddingBottom ?? 14);
+          setHeaderPaddingLeft(d.headerSpacing.paddingLeft ?? 20);
+          setHeaderPaddingRight(d.headerSpacing.paddingRight ?? 20);
+          setLogoTitleGap(d.headerSpacing.logoTitleGap ?? 12);
+          setNameTitleGap(d.headerSpacing.nameTitleGap ?? 4);
+        }
+
+        // Table
+        if (d.table) {
+          setBorderWidth(d.table.borderWidth ?? '1');
+          setBorderRadius(d.table.borderRadius ?? '0');
+          setCellPadding(d.table.cellPadding ?? 'medium');
+          setAlternateRowColor(d.table.alternateRowColor ?? true);
+          setGridLines(d.table.gridLines ?? true);
+        }
+
+        // Fonts
+        if (d.fonts) {
+          setHeaderFontSize(d.fonts.headerFontSize ?? '14px');
+          setTableFontSize(d.fonts.tableFontSize ?? '12px');
+          setFontWeight(d.fonts.fontWeight ?? '400');
+          setFontFamily(d.fonts.fontFamily ?? 'Inter');
+        }
+
+        // Colors
+        if (d.colors) {
+          setHeaderBgColor(d.colors.headerBg ?? '#1d4ed8');
+          setHeaderTextColor(d.colors.headerText ?? '#ffffff');
+          setTableHeaderBg(d.colors.tableHeaderBg ?? '#1d4ed8');
+          setTableHeaderText(d.colors.tableHeaderText ?? '#ffffff');
+          setPeriodCellColor(d.colors.periodCell ?? '#ffffff');
+          setBreakCellColor(d.colors.breakCell ?? '#f8fafc');
+        }
+
+        // Page
+        if (d.page) {
+          setPaperSize(d.page.paperSize ?? 'A4');
+          setOrientation(d.page.orientation ?? 'landscape');
+          setMarginTop(d.page.marginTop ?? '15mm');
+          setMarginBottom(d.page.marginBottom ?? '15mm');
+          setMarginLeft(d.page.marginLeft ?? '10mm');
+          setMarginRight(d.page.marginRight ?? '10mm');
+        }
+
+        setDesignLoaded(true);
+      } catch {
+        setDesignLoaded(true);
+      }
+    })();
+  }, [designLoaded]);
+
+  // --- Derive preview objects from live control state ---
+  const header = useMemo(() => ({
+    logo: {
+      show: logoShow,
+      dataUrl: logoShow ? (branding?.smallLogo || null) : null,
+      size: logoSize,
+      width: logoWidth,
+      height: logoHeight,
+      position: logoPosition,
+      verticalPosition: logoVerticalPosition,
+    },
+    schoolName: {
+      text: schoolNameShow ? (schoolInfo?.name || 'School Name') : '',
+      fontSize: schoolNameFontSize,
+      fontWeight: schoolNameFontWeight,
+      color: schoolNameColor,
+      align: schoolNameAlign,
+      verticalPos: schoolNameVerticalPos,
+      letterSpacing: schoolNameLetterSpacing,
+      lineHeight: schoolNameLineHeight,
+      fontFamily: fontFamily,
+    },
+    academicYear: {
+      text: academicYearShow ? (academic?.currentYear || selectedYear || '2026') : '',
+      fontSize: academicYearFontSize,
+      fontWeight: academicYearFontWeight,
+      color: academicYearColor,
+      align: academicYearAlign,
+      verticalPos: academicYearVerticalPos,
+      fontFamily: fontFamily,
+    },
+    principalName: {
+      text: schoolInfo?.principalName || '',
+      align: 'left',
+      fontFamily: fontFamily,
+      fontSize: '12px',
+      fontWeight: '400',
+      color: headerTextColor,
+    },
+    container: {
+      bgColor: headerBgColor,
+      borderColor: headerBgColor,
+      borderRadius: borderRadius ? `${borderRadius}px` : '0px',
+      padding: `${headerPaddingTop}px ${headerPaddingRight}px ${headerPaddingBottom}px ${headerPaddingLeft}px`,
+      shadow: false,
+    },
+    spacing: {
+      logoTitleGap: logoTitleGap,
+      nameTitleGap: nameTitleGap,
+    },
+  }), [logoShow, logoSize, logoWidth, logoHeight, logoPosition, logoVerticalPosition, schoolNameShow, schoolInfo?.name, schoolNameFontSize, schoolNameFontWeight, schoolNameColor, schoolNameAlign, schoolNameVerticalPos, schoolNameLetterSpacing, schoolNameLineHeight, academicYearShow, academic?.currentYear, selectedYear, academicYearFontSize, academicYearFontWeight, academicYearColor, academicYearAlign, academicYearVerticalPos, schoolInfo?.principalName, headerBgColor, borderRadius, headerPaddingTop, headerPaddingBottom, headerPaddingLeft, headerPaddingRight, logoTitleGap, nameTitleGap, fontFamily, headerTextColor, branding?.smallLogo]);
+
+  const title = useMemo(() => ({
+    text: timetableTitle || 'Teachers Period Time Table',
+    fontSize: titleFontSize,
+    fontWeight: titleFontWeight,
+    color: titleColor,
+    align: titleAlign,
+    verticalPos: titleVerticalPos,
+    letterSpacing: titleLetterSpacing,
+    fontFamily: fontFamily,
+  }), [timetableTitle, titleFontSize, titleFontWeight, titleColor, titleAlign, titleVerticalPos, titleLetterSpacing, fontFamily]);
+
+  const tableHeaders = useMemo(() => {
+    const col = {
+      bg: tableHeaderBg,
+      color: tableHeaderText,
+      fontFamily: fontFamily,
+      fontSize: tableFontSize,
+      fontWeight: '700',
+      align: 'center',
+    };
+    return { time: { ...col }, class: { ...col }, subject: { ...col }, teacher: { ...col } };
+  }, [tableHeaderBg, tableHeaderText, fontFamily, tableFontSize]);
+
+  const periodCells = useMemo(() => ({
+    subjectBg: periodCellColor,
+    subjectColor: '#374151',
+    teacherBg: periodCellColor,
+    teacherColor: '#374151',
+    altRowBg: alternateRowColor ? '#f8fafc' : periodCellColor,
+    fontFamily: fontFamily,
+    fontSize: tableFontSize,
+    fontWeight: fontWeight,
+  }), [periodCellColor, alternateRowColor, fontFamily, tableFontSize, fontWeight]);
+
+  const breakRow = useMemo(() => ({
+    bg: breakCellColor,
+    color: '#374151',
+    fontFamily: fontFamily,
+    fontSize: tableFontSize,
+    fontWeight: '600',
+    borderRadius: '8px',
+  }), [breakCellColor, fontFamily, tableFontSize]);
+
+  const tableLayout = useMemo(() => ({
+    rowHeight: 48,
+    colWidth: 130,
+    cellPadding: cellPadding,
+    borderThickness: gridLines ? `${borderWidth}px` : '0px',
+    borderStyle: 'solid',
+    borderColor: '#e5e7eb',
+  }), [cellPadding, borderWidth, gridLines]);
+
+  const [openSections, setOpenSections] = useState({
+    headerSettings: true,
+    tableSettings: false,
+    fontSettings: false,
+    colorSettings: false,
+    pageSettings: false,
+  });
 
   const toggleSection = (key) => setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -194,23 +401,6 @@ const TimetableDesigner = () => {
     if (designPanelOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [designPanelOpen]);
-
-  const loadTemplates = useCallback(async () => {
-    setLoadingTemplates(true);
-    try {
-      const res = await timetableTemplateService.getTemplates();
-      setSavedTemplates(res?.data?.templates || []);
-    } catch {
-      // silently fail
-    } finally {
-      setLoadingTemplates(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadTemplates();
-  }, [loadTemplates]);
 
   const loadGroupTimetables = useCallback(async () => {
     const groupClasses = GROUPS[selectedGroup]?.classes || [];
@@ -252,301 +442,64 @@ const TimetableDesigner = () => {
     loadGroupTimetables();
   }, [loadGroupTimetables]);
 
-  const collectSettings = useCallback(() => ({
-    headerSettings: header,
-    tableHeaderSettings: { title, columns: tableHeaders },
-    periodCellSettings: periodCells,
-    breakCellSettings: breakRow,
-    rowSettings: { rowHeight: tableLayout.rowHeight, colWidth: tableLayout.colWidth },
-    layoutSettings: {
-      cellPadding: tableLayout.cellPadding,
-      borderThickness: tableLayout.borderThickness,
-      borderStyle: tableLayout.borderStyle,
-      borderColor: tableLayout.borderColor,
-    },
-    mergeSettings: { mergedPairs, mergeEnabled },
-    printSettings: { showSignature, showFooter, watermark, orientation, marginTop, marginBottom, marginLeft, marginRight },
-  }), [header, title, tableHeaders, periodCells, breakRow, tableLayout, mergedPairs, mergeEnabled, showSignature, showFooter, watermark, orientation, marginTop, marginBottom, marginLeft, marginRight]);
+  const getGroupClassName = () => {
+    const g = GROUPS[selectedGroup];
+    if (!g) return 'Timetable';
+    return g.name.replace(/\s+/g, '-');
+  };
 
-  const applySettings = useCallback((settings) => {
-    if (settings.headerSettings) setHeader(settings.headerSettings);
-    if (settings.tableHeaderSettings) {
-      setTitle(settings.tableHeaderSettings.title || TITLE_INIT);
-      setTableHeaders(settings.tableHeaderSettings.columns || TABLE_HEADERS_INIT);
-    }
-    if (settings.periodCellSettings) setPeriodCells(settings.periodCellSettings);
-    if (settings.breakCellSettings) setBreakRow(settings.breakCellSettings);
-    if (settings.rowSettings) {
-      setTableLayout((prev) => ({
-        ...prev,
-        rowHeight: settings.rowSettings.rowHeight ?? prev.rowHeight,
-        colWidth: settings.rowSettings.colWidth ?? prev.colWidth,
-      }));
-    }
-    if (settings.layoutSettings) {
-      setTableLayout((prev) => ({
-        ...prev,
-        cellPadding: settings.layoutSettings.cellPadding ?? prev.cellPadding,
-        borderThickness: settings.layoutSettings.borderThickness ?? prev.borderThickness,
-        borderStyle: settings.layoutSettings.borderStyle ?? prev.borderStyle,
-        borderColor: settings.layoutSettings.borderColor ?? prev.borderColor,
-      }));
-    }
-    if (settings.mergeSettings) {
-      setMergedPairs(settings.mergeSettings.mergedPairs || []);
-      if (settings.mergeSettings.mergeEnabled !== undefined) setMergeEnabled(settings.mergeSettings.mergeEnabled);
-    }
-    if (settings.printSettings) {
-      if (settings.printSettings.showSignature !== undefined) setShowSignature(settings.printSettings.showSignature);
-      if (settings.printSettings.showFooter !== undefined) setShowFooter(settings.printSettings.showFooter);
-      if (settings.printSettings.watermark !== undefined) setWatermark(settings.printSettings.watermark);
-      if (settings.printSettings.orientation) setOrientation(settings.printSettings.orientation);
-      if (settings.printSettings.marginTop) setMarginTop(settings.printSettings.marginTop);
-      if (settings.printSettings.marginBottom) setMarginBottom(settings.printSettings.marginBottom);
-      if (settings.printSettings.marginLeft) setMarginLeft(settings.printSettings.marginLeft);
-      if (settings.printSettings.marginRight) setMarginRight(settings.printSettings.marginRight);
-    }
-  }, []);
-
-  const autoLoadDefault = useCallback(async (templates) => {
-    const defaultTpl = templates.find((t) => t.isDefault);
-    if (defaultTpl) {
-      try {
-        const res = await timetableTemplateService.getTemplateById(defaultTpl._id);
-        const full = res?.data?.template;
-        if (full) {
-          setSavedTemplateId(full._id);
-          setSaveName(full.name || '');
-          applySettings(full);
-        }
-      } catch {
-        // silent fail on auto-load
-      }
-    }
-  }, [applySettings]);
-
-  useEffect(() => {
-    if (savedTemplates.length > 0 && !savedTemplateId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      autoLoadDefault(savedTemplates);
-    }
-  }, [savedTemplates, savedTemplateId, autoLoadDefault]);
-
-  const handleSaveTemplate = async () => {
-    if (!saveName.trim()) {
-      toast.error('Please enter a template name');
-      return;
-    }
-    setSavingTemplate(true);
+  const handleSave = async () => {
+    setSaveLoading(true);
     try {
-      const settings = collectSettings();
-      if (savedTemplateId) {
-        await timetableTemplateService.updateTemplate(savedTemplateId, { name: saveName.trim(), ...settings });
-        toast.success('Template updated successfully');
-      } else {
-        const res = await timetableTemplateService.createTemplate({ name: saveName.trim(), baseTemplate: selectedTemplate, ...settings });
-        setSavedTemplateId(res?.data?.template?._id || null);
-        toast.success('Template saved successfully');
-      }
-      await loadTemplates();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to save template');
+      const payload = {
+        logo: { show: logoShow, size: logoSize, width: logoWidth, height: logoHeight, position: logoPosition, verticalPosition: logoVerticalPosition },
+        schoolName: { show: schoolNameShow, fontSize: schoolNameFontSize, fontWeight: schoolNameFontWeight, color: schoolNameColor, align: schoolNameAlign, verticalPos: schoolNameVerticalPos, letterSpacing: schoolNameLetterSpacing, lineHeight: schoolNameLineHeight },
+        academicYear: { show: academicYearShow, fontSize: academicYearFontSize, fontWeight: academicYearFontWeight, color: academicYearColor, align: academicYearAlign, verticalPos: academicYearVerticalPos },
+        title: { text: timetableTitle, fontSize: titleFontSize, fontWeight: titleFontWeight, color: titleColor, align: titleAlign, verticalPos: titleVerticalPos, letterSpacing: titleLetterSpacing },
+        headerSpacing: { paddingTop: headerPaddingTop, paddingBottom: headerPaddingBottom, paddingLeft: headerPaddingLeft, paddingRight: headerPaddingRight, logoTitleGap, nameTitleGap },
+        table: { borderWidth, borderRadius, cellPadding, alternateRowColor, gridLines },
+        fonts: { headerFontSize, tableFontSize, fontWeight, fontFamily },
+        colors: { headerBg: headerBgColor, headerText: headerTextColor, tableHeaderBg, tableHeaderText, periodCell: periodCellColor, breakCell: breakCellColor },
+        page: { paperSize, orientation, marginTop, marginBottom, marginLeft, marginRight },
+      };
+      await timetableDesignService.saveDesign(payload);
+      toast.success('Design saved successfully');
+    } catch {
+      toast.error('Failed to save design');
     } finally {
-      setSavingTemplate(false);
+      setSaveLoading(false);
     }
-  };
-
-  const handleResetTemplate = () => {
-    setShowResetConfirm(true);
-  };
-
-  const confirmResetTemplate = async () => {
-    setShowResetConfirm(false);
-    if (!savedTemplateId) {
-      toast.error('No template loaded to reset');
-      return;
-    }
-    try {
-      const res = await timetableTemplateService.getTemplateById(savedTemplateId);
-      const tpl = res?.data?.template;
-      if (tpl) {
-        setSaveName(tpl.name || '');
-        applySettings(tpl);
-        toast.success('Template reset to last saved state');
-      }
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to reset template');
-    }
-  };
-
-  const handleLoadSavedTemplate = async (tpl, silent = false) => {
-    try {
-      const res = await timetableTemplateService.getTemplateById(tpl._id);
-      const full = res?.data?.template;
-      if (!full) return;
-      setSavedTemplateId(full._id);
-      setSaveName(full.name || '');
-      applySettings(full);
-      if (!silent) toast.success(`Loaded template: ${full.name}`);
-    } catch (err) {
-      if (!silent) toast.error(err?.response?.data?.message || 'Failed to load template');
-    }
-  };
-
-  const handleSetDefault = async (tplId) => {
-    try {
-      await timetableTemplateService.updateTemplate(tplId, { isDefault: true });
-      toast.success('Template set as default');
-      await loadTemplates();
-      if (savedTemplateId === tplId) {
-        const res = await timetableTemplateService.getTemplateById(tplId);
-        const full = res?.data?.template;
-        if (full) {
-          setSaveName(full.name || '');
-          applySettings(full);
-        }
-      }
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to set default');
-    }
-  };
-
-  const handleDeleteTemplate = async (tplId, isDefault) => {
-    if (isDefault) {
-      toast.error('Default template cannot be deleted. Select another default template first.');
-      return;
-    }
-    const tpl = savedTemplates.find((t) => t._id === tplId);
-    if (tpl) {
-      setDeleteConfirmModal({ show: true, template: tpl });
-    }
-  };
-
-  const confirmDeleteTemplate = async () => {
-    const tpl = deleteConfirmModal.template;
-    if (!tpl) return;
-    setDeleteConfirmModal({ show: false, template: null });
-    try {
-      await timetableTemplateService.deleteTemplate(tpl._id);
-      toast.success('Template deleted');
-      if (savedTemplateId === tpl._id) {
-        setSavedTemplateId(null);
-        setSaveName('');
-      }
-      await loadTemplates();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to delete template');
-    }
-  };
-
-  const handleDuplicateTemplate = async (tplId) => {
-    try {
-      await timetableTemplateService.duplicateTemplate(tplId);
-      toast.success('Template duplicated successfully');
-      await loadTemplates();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to duplicate template');
-    }
-  };
-
-  const handleRenameTemplate = (tpl) => {
-    setRenameModal({ show: true, template: tpl, newName: tpl.name });
-  };
-
-  const confirmRenameTemplate = async () => {
-    const { template, newName } = renameModal;
-    if (!template || !newName.trim()) {
-      toast.error('Template name is required');
-      return;
-    }
-    if (newName.trim() === template.name) {
-      setRenameModal({ show: false, template: null, newName: '' });
-      return;
-    }
-    setRenameModal({ show: false, template: null, newName: '' });
-    try {
-      await timetableTemplateService.updateTemplate(template._id, { name: newName.trim() });
-      toast.success('Template renamed successfully');
-      if (savedTemplateId === template._id) {
-        setSaveName(newName.trim());
-      }
-      await loadTemplates();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to rename template');
-    }
-  };
-
-  const handleToggleFavorite = async (tpl) => {
-    try {
-      await timetableTemplateService.updateTemplate(tpl._id, { isFavorite: !tpl.isFavorite });
-      toast.success(tpl.isFavorite ? 'Removed from favorites' : 'Added to favorites');
-      await loadTemplates();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to update favorite');
-    }
-  };
-
-  const getProcessedTemplates = () => {
-    let list = [...savedTemplates];
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      list = list.filter((t) => t.name.toLowerCase().includes(q));
-    }
-    list.sort((a, b) => {
-      if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
-      if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
-      if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-      if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-      if (sortBy === 'az') return a.name.localeCompare(b.name);
-      if (sortBy === 'za') return b.name.localeCompare(a.name);
-      return 0;
-    });
-    return list;
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      window.print();
-      return;
-    }
     const previewEl = document.getElementById('designer-preview');
     if (!previewEl) {
       window.print();
       return;
     }
+    const pageSize = `${paperSize}${orientation === 'landscape' ? ' landscape' : ''}`;
     const printCss = `
-      @page {
-        size: ${orientation === 'landscape' ? 'A4 landscape' : 'A4'};
-        margin: ${marginTop} ${marginRight} ${marginBottom} ${marginLeft};
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; padding: 0; font-family: ${periodCells.fontFamily || 'Inter'}, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      table { border-collapse: collapse; width: 100%; page-break-inside: auto; }
-      tr { page-break-inside: avoid; }
-      th, td { page-break-inside: avoid; }
+      @page { size: ${pageSize}; margin: ${marginTop} ${marginRight} ${marginBottom} ${marginLeft}; }
+      body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #designer-preview { margin: 0; padding: 0; min-width: 0 !important; width: 100% !important; }
+      #designer-preview .overflow-x-auto { overflow: visible !important; }
+      #designer-preview tr { page-break-inside: avoid; }
       thead { display: table-header-group; }
-      tfoot { display: table-footer-group; }
       .no-print { display: none !important; }
     `;
-    const content = previewEl.innerHTML;
+    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+    const stylesHtml = Array.from(styles).map((s) => s.outerHTML).join('\n');
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    const content = `<div id="designer-preview">${previewEl.innerHTML}</div>`;
     printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>Print Timetable</title><style>${printCss}</style></head><body>${content}</body></html>`);
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>Print Timetable</title>${stylesHtml}<style>${printCss}</style></head><body>${content}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => printWindow.print(), 300);
-  };
-
-  const getGroupClassName = () => {
-    const g = GROUPS[selectedGroup];
-    if (!g) return 'Timetable';
-    return g.name.replace(/\s+/g, '-');
+    setTimeout(() => printWindow.print(), 500);
   };
 
   const handleExportPdf = async () => {
@@ -555,70 +508,182 @@ const TimetableDesigner = () => {
       return;
     }
     setPdfExporting(true);
+    const removedRules = [];
+    let cloneContainer = null;
     try {
-      const element = document.getElementById('designer-preview');
-      if (!element) return;
+      const original = document.getElementById('designer-preview');
+      if (!original) {
+        toast.error('Preview element not found');
+        return;
+      }
+
       const groupName = getGroupClassName();
       const year = selectedYear || 'Timetable';
-      const html2pdf = (await import('html2pdf.js')).default;
-      const marginNum = (val) => parseInt(val) || 10;
-      const opt = {
-        margin: [marginNum(marginTop), marginNum(marginRight), marginNum(marginBottom), marginNum(marginLeft)],
-        filename: `${groupName}-${year}-Timetable.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true, width: element.scrollWidth, height: element.scrollHeight },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: orientation },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+      const formatMap = { A4: 'a4', A3: 'a3', Letter: 'letter', Legal: 'legal' };
+      const pdfFormat = formatMap[paperSize] || 'a4';
+
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      // Remove problematic CSS rules from stylesheets (belt)
+      for (const ss of document.styleSheets) {
+        try {
+          const rules = ss.cssRules;
+          if (!rules) continue;
+          const toRemove = [];
+          for (let i = 0; i < rules.length; i++) {
+            const text = rules[i].cssText;
+            if (text.includes('oklab') || text.includes('oklch') || (text.includes('color') && text.includes('mix'))) {
+              toRemove.push(i);
+            }
+          }
+          for (const idx of toRemove.reverse()) {
+            removedRules.push({ sheet: ss, rule: rules[idx], index: idx });
+            ss.deleteRule(idx);
+          }
+        } catch { /* empty */ }
+      }
+
+      // Clone the preview off-screen (suspenders)
+      cloneContainer = document.createElement('div');
+      cloneContainer.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1';
+      const clone = original.cloneNode(true);
+      cloneContainer.appendChild(clone);
+      document.body.appendChild(cloneContainer);
+
+      // Walk the clone and normalize unsupported color functions
+      const MODERN_COLOR_FN = /(oklab|oklch|color-mix)\s*\(/i;
+      const COLOR_PROPS = ['color','backgroundColor','borderTopColor','borderRightColor',
+        'borderBottomColor','borderLeftColor','outlineColor','textDecorationColor','caretColor','columnRuleColor'];
+      const COMPOUND_PROPS = ['boxShadow','textShadow'];
+
+      function resolveColor(str) {
+        try {
+          const c = document.createElement('canvas').getContext('2d');
+          c.fillStyle = str;
+          c.fillRect(0, 0, 1, 1);
+          const d = c.getImageData(0, 0, 1, 1).data;
+          return d[3] === 255 ? `rgb(${d[0]},${d[1]},${d[2]})` : `rgba(${d[0]},${d[1]},${d[2]},${(d[3]/255).toFixed(3)})`;
+        } catch { return str; }
+      }
+
+      (function walk(el) {
+        const cs = getComputedStyle(el);
+        for (const p of COLOR_PROPS) {
+          const v = cs.getPropertyValue(p);
+          if (v && MODERN_COLOR_FN.test(v)) {
+            el.style.setProperty(p, resolveColor(v), 'important');
+          }
+        }
+        for (const p of COMPOUND_PROPS) {
+          const v = cs.getPropertyValue(p);
+          if (v && v !== 'none' && MODERN_COLOR_FN.test(v)) {
+            el.style.setProperty(p, v.replace(MODERN_COLOR_FN, (_, fn) => {
+              const start = v.indexOf(fn);
+              if (start === -1) return fn;
+              let depth = 1, i = start + fn.length + 1;
+              while (i < v.length && depth > 0) { if (v[i] === '(') depth++; else if (v[i] === ')') depth--; i++; }
+              return resolveColor(v.slice(start, i));
+            }), 'important');
+          }
+        }
+        for (let i = 0; i < cs.length; i++) {
+          const n = cs[i];
+          if (n.startsWith('--')) {
+            const v = cs.getPropertyValue(n);
+            if (v && MODERN_COLOR_FN.test(v)) {
+              el.style.setProperty(n, v.replace(MODERN_COLOR_FN, (_, fn) => {
+                const start = v.indexOf(fn);
+                if (start === -1) return fn;
+                let depth = 1, i = start + fn.length + 1;
+                while (i < v.length && depth > 0) { if (v[i] === '(') depth++; else if (v[i] === ')') depth--; i++; }
+                return resolveColor(v.slice(start, i));
+              }), 'important');
+            }
+          }
+        }
+        for (const child of el.children) walk(child);
+      })(clone);
+
+      await Promise.all(Array.from(clone.querySelectorAll('img')).map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+      }));
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({ unit: 'mm', format: pdfFormat, orientation: orientation });
+
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+
+      const parseMargin = (val) => {
+        const num = parseFloat(val);
+        if (val.endsWith('mm')) return num;
+        if (val.endsWith('px')) return num * 0.2646;
+        if (val.endsWith('in')) return num * 25.4;
+        return num || 10;
       };
-      await html2pdf().set(opt).from(element).save();
+      const mTop = parseMargin(marginTop);
+      const mBottom = parseMargin(marginBottom);
+      const mLeft = parseMargin(marginLeft);
+      const mRight = parseMargin(marginRight);
+
+      const availW = pdfW - mLeft - mRight;
+      const availH = pdfH - mTop - mBottom;
+      const aspect = canvas.width / canvas.height;
+      const pageAspect = availW / availH;
+
+      let rW, rH;
+      if (aspect > pageAspect) {
+        rW = availW;
+        rH = availW / aspect;
+      } else {
+        rH = availH;
+        rW = availH * aspect;
+      }
+
+      pdf.addImage(imgData, 'JPEG', mLeft + (availW - rW) / 2, mTop + (availH - rH) / 2, rW, rH);
+      pdf.save(`${groupName}-${year}-Timetable.pdf`);
+
       toast.success('PDF exported successfully');
-    } catch {
-      toast.error('Failed to export PDF');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      if (err instanceof Error) {
+        console.error('Stack:', err.stack);
+        try {
+          const el = document.querySelector('#designer-preview *');
+          if (el) {
+            const cs = getComputedStyle(el);
+            for (let i = 0; i < cs.length; i++) {
+              const v = cs.getPropertyValue(cs[i]);
+              if (v && (v.includes('oklab') || v.includes('oklch'))) {
+                console.error('Offending element:', el.tagName, el.className, 'Property:', cs[i], 'Value:', v);
+                break;
+              }
+            }
+          }
+        } catch { /* empty */ }
+      }
+      toast.error(`PDF export failed: ${err?.message || 'Unknown error'}`);
     } finally {
+      for (const { sheet, rule, index } of removedRules) {
+        try { sheet.insertRule(rule.cssText, index); } catch { /* empty */ }
+      }
+      if (cloneContainer && cloneContainer.parentNode) {
+        cloneContainer.parentNode.removeChild(cloneContainer);
+      }
       setPdfExporting(false);
     }
   };
-
-  const applyTemplate = useCallback((tplId) => {
-    const tpl = TEMPLATES.find((t) => t.id === tplId);
-    if (!tpl) return;
-    setSelectedTemplate(tplId);
-    const font = tplId === 'professional' ? 'Arial' : tplId === 'green' ? 'Georgia' : 'Inter';
-    setHeader((prev) => ({
-      schoolName: { ...prev.schoolName, color: tpl.headerText, fontFamily: font },
-      principalName: { ...prev.principalName, color: tpl.headerText, fontFamily: font },
-      academicYear: { ...prev.academicYear, color: tpl.headerText, fontFamily: font },
-      logo: { ...prev.logo },
-      container: { ...prev.container, bgColor: tpl.primary, borderColor: tpl.primary },
-    }));
-    setTitle({ ...TITLE_INIT, color: tpl.headerText, fontFamily: font });
-    setTableHeaders({
-      time: { ...TABLE_HEADERS_INIT.time, bg: tpl.primary, color: tpl.headerText, fontFamily: font },
-      class: { ...TABLE_HEADERS_INIT.class, bg: tpl.primary, color: tpl.headerText, fontFamily: font },
-      subject: { ...TABLE_HEADERS_INIT.subject, bg: tpl.primary, color: tpl.headerText, fontFamily: font },
-      teacher: { ...TABLE_HEADERS_INIT.teacher, bg: tpl.primary, color: tpl.headerText, fontFamily: font },
-    });
-    setPeriodCells({ ...PERIOD_CELLS_INIT, subjectBg: tpl.cell, subjectColor: tpl.text, teacherBg: tpl.cell, teacherColor: tpl.text, altRowBg: tpl.group, fontFamily: font });
-    setBreakRow({ ...BREAK_ROW_INIT, bg: tpl.group, color: tpl.text, fontFamily: font });
-    setTableLayout({ ...TABLE_LAYOUT_INIT, borderColor: tpl.border });
-  }, []);
-
-  const handleLogoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setHeader((prev) => ({ ...prev, logo: { ...prev.logo, dataUrl: ev.target?.result } }));
-    reader.readAsDataURL(file);
-  };
-
-  const handleMerge = () => {
-    if (mergeSelections.length < 2) return;
-    setMergedPairs((prev) => [...prev, [...mergeSelections].sort()]);
-    setMergeSelections([]);
-    setShowMergeModal(false);
-  };
-
-  const handleUnmerge = (idx) => setMergedPairs((prev) => prev.filter((_, i) => i !== idx));
 
   const paddingMap = { small: 'p-2', medium: 'p-4', large: 'p-6' };
   const orientClasses = orientation === 'landscape' ? 'min-w-[900px]' : 'min-w-[600px]';
@@ -681,17 +746,25 @@ const TimetableDesigner = () => {
     return (
       <div className={`${paddingMap[tableLayout.cellPadding]} bg-white rounded-lg overflow-hidden`}>
         <div style={{ backgroundColor: header.container.bgColor, color: header.schoolName.color, padding: header.container.padding, borderRadius: header.container.borderRadius, border: `1px solid ${header.container.borderColor}`, boxShadow: header.container.shadow ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none' }}>
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: header.logo.verticalPosition === 'top' ? 'flex-start' : header.logo.verticalPosition === 'bottom' ? 'flex-end' : 'center', justifyContent: header.logo.position === 'center' ? 'center' : header.logo.position === 'right' ? 'flex-end' : 'flex-start', gap: `${header.spacing.logoTitleGap}px` }}>
             {header.logo.show && (
               <div className="flex-shrink-0">
-                {header.logo.dataUrl ? <img src={header.logo.dataUrl} alt="Logo" className="w-10 h-10 rounded-full object-cover ring-2 ring-white/40" /> : <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><LogoSvg /></div>}
+                {header.logo.dataUrl ? <img src={header.logo.dataUrl} alt="Logo" style={{ width: `${header.logo.width}px`, height: `${header.logo.height}px` }} className="rounded-full object-cover ring-2 ring-white/40" /> : <div style={{ width: `${header.logo.width}px`, height: `${header.logo.height}px` }} className="rounded-full bg-white/20 flex items-center justify-center"><LogoSvg /></div>}
               </div>
             )}
-            <div className="min-w-0">
-              <h1 className="font-bold tracking-wide truncate" style={{ fontFamily: header.schoolName.fontFamily, fontSize: header.schoolName.fontSize, fontWeight: header.schoolName.fontWeight, color: header.schoolName.color, textAlign: header.schoolName.align }}>{header.schoolName.text}</h1>
-              <p className="opacity-90" style={{ fontFamily: title.fontFamily, fontSize: title.fontSize, fontWeight: title.fontWeight, color: title.color, textAlign: title.align }}>{title.text} - {group?.name || 'Group'}</p>
-              <p style={{ fontFamily: header.academicYear.fontFamily, fontSize: header.academicYear.fontSize, fontWeight: header.academicYear.fontWeight, color: header.academicYear.color, textAlign: header.academicYear.align }}>Academic Year: {selectedYear || header.academicYear.text}</p>
-              {header.principalName.text && <p style={{ fontFamily: header.principalName.fontFamily, fontSize: header.principalName.fontSize, fontWeight: header.principalName.fontWeight, color: header.principalName.color, textAlign: header.principalName.align }}>Principal: {header.principalName.text}</p>}
+            <div className="min-w-0" style={{ flex: 1 }}>
+              {header.schoolName.text && (
+                <h1 className="font-bold tracking-wide truncate" style={{ fontFamily: header.schoolName.fontFamily, fontSize: header.schoolName.fontSize, fontWeight: header.schoolName.fontWeight, color: header.schoolName.color, textAlign: header.schoolName.align, letterSpacing: `${header.schoolName.letterSpacing}px`, lineHeight: header.schoolName.lineHeight }}>{header.schoolName.text}</h1>
+              )}
+              {group?.name && (
+                <p className="opacity-90" style={{ fontFamily: title.fontFamily, fontSize: title.fontSize, fontWeight: title.fontWeight, color: title.color, textAlign: title.align, letterSpacing: `${title.letterSpacing}px`, marginTop: header.schoolName.text ? `${header.spacing.nameTitleGap}px` : 0 }}>{title.text} - {group.name}</p>
+              )}
+              {header.academicYear.text && (
+                <p style={{ fontFamily: header.academicYear.fontFamily, fontSize: header.academicYear.fontSize, fontWeight: header.academicYear.fontWeight, color: header.academicYear.color, textAlign: header.academicYear.align }}>Academic Year: {header.academicYear.text}</p>
+              )}
+              {header.principalName.text && (
+                <p style={{ fontFamily: header.principalName.fontFamily, fontSize: header.principalName.fontSize, fontWeight: header.principalName.fontWeight, color: header.principalName.color, textAlign: header.principalName.align }}>Principal: {header.principalName.text}</p>
+              )}
             </div>
           </div>
         </div>
@@ -725,14 +798,13 @@ const TimetableDesigner = () => {
                       {displayClasses.map((name) => {
                         const cell = row.periods[name];
                         return (
-                          <td key={name} style={cellStyle({ backgroundColor: ri % 2 !== 0 ? periodCells.altRowBg : periodCells.subjectBg, color: periodCells.subjectColor, fontWeight: periodCells.fontWeight, fontFamily: periodCells.fontFamily, fontSize: periodCells.fontSize })} className={`text-[10px]${watermark ? ' opacity-80' : ''}`}>
+                          <td key={name} style={cellStyle({ backgroundColor: ri % 2 !== 0 ? periodCells.altRowBg : periodCells.subjectBg, color: periodCells.subjectColor, fontWeight: periodCells.fontWeight, fontFamily: periodCells.fontFamily, fontSize: periodCells.fontSize })} className={`text-[10px]`}>
                             {cell ? (
                               <div className="space-y-0.5">
                                 <span className="block font-semibold truncate" style={{ color: periodCells.subjectColor, fontSize: periodCells.fontSize }}>{cell.t}</span>
                                 <span className="block opacity-60 truncate" style={{ color: periodCells.subjectColor, fontSize: periodCells.fontSize }}>{cell.s}</span>
                               </div>
                             ) : <span className="opacity-20">&mdash;</span>}
-                            {watermark && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 text-[40px] font-bold" style={{ color: periodCells.subjectColor }}>DRAFT</div>}
                           </td>
                         );
                       })}
@@ -747,14 +819,6 @@ const TimetableDesigner = () => {
             </div>
           )}
         </div>
-
-        {showFooter && (
-          <div className="border-t px-4 py-2 text-center" style={{ borderColor: tableLayout.borderColor }}>
-            <p className="text-[9px] font-medium" style={{ color: header.schoolName.color, opacity: 0.6 }}>{header.schoolName.text}</p>
-            <p className="text-[8px]" style={{ color: header.schoolName.color, opacity: 0.4 }}>Phone: (021) 1234-5678 | Email: info@school.edu.pk</p>
-            {showSignature && <p className="text-[9px] mt-1" style={{ color: header.schoolName.color, opacity: 0.6 }}>____________________<br />Principal's Signature</p>}
-          </div>
-        )}
       </div>
     );
   };
@@ -765,14 +829,15 @@ const TimetableDesigner = () => {
     <div className="space-y-4">
       <style>{`
 @media print {
-  #designer-preview { margin: 0; padding: 0; }
-  #designer-preview table { border-collapse: collapse; width: 100%; }
-  #designer-preview tr { page-break-inside: avoid; }
-  .no-print { display: none !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print { display: none !important; }
+  #designer-preview { margin: 0; padding: 0; min-width: 0 !important; width: 100% !important; }
+  #designer-preview .overflow-x-auto { overflow: visible !important; }
+  #designer-preview tr { page-break-inside: avoid; }
+  thead { display: table-header-group; }
 }
       `}</style>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between no-print">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Timetable Designer</h2>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
@@ -792,7 +857,7 @@ const TimetableDesigner = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 no-print">
           <div className="flex items-center gap-2">
             <EyeSvg />
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Live Preview</span>
@@ -819,285 +884,159 @@ const TimetableDesigner = () => {
         </div>
 
         <div className="overflow-y-auto h-[calc(100%-52px)]">
-          <AccordionSection title="Templates" icon={<PaintSvg />} isOpen={openSections.templates} onToggle={() => toggleSection('templates')}>
-            <div className="px-3 pb-1 pt-1">
-              <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Built-in Presets</p>
-            </div>
-            <div className="grid grid-cols-1 gap-1.5 px-3">
-              {TEMPLATES.map((tpl) => (
-                <button key={tpl.id} onClick={() => applyTemplate(tpl.id)} className={`flex items-center gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer text-left ${selectedTemplate === tpl.id ? 'border-blue-500 ring-1 ring-blue-500/20 bg-blue-50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
-                  <div className="w-7 h-7 rounded-md flex-shrink-0 flex items-center justify-center text-white text-[8px] font-bold" style={{ backgroundColor: tpl.primary }}>{tpl.id === 'classic' ? 'CS' : tpl.id === 'modern' ? 'MB' : tpl.id === 'professional' ? 'PG' : tpl.id === 'green' ? 'GA' : 'MC'}</div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-gray-800 dark:text-gray-200">{tpl.name}</p>
-                    <p className="text-[9px] text-gray-400 dark:text-gray-500 truncate">{tpl.desc}</p>
+          {/* Section A — Header Settings */}
+          <AccordionSection title="Header Settings" icon={<TypeSvg />} isOpen={openSections.headerSettings} onToggle={() => toggleSection('headerSettings')}>
+            <div className="space-y-3">
+              {/* --- Logo --- */}
+              <div>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">School Logo</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Show</span>
+                    <Toggle value={logoShow} onChange={setLogoShow} />
                   </div>
-                  {selectedTemplate === tpl.id && <svg className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
-                </button>
-              ))}
-            </div>
-            {savedTemplates.length > 0 && (
-              <>
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Saved Templates</p>
-                  <div className="flex items-center justify-between text-[9px] text-gray-400 dark:text-gray-500 mb-1.5">
-                    <span>Templates: {savedTemplates.length} | Favorites: {savedTemplates.filter((t) => t.isFavorite).length}</span>
-                    {savedTemplates.find((t) => t.isDefault) && <span>Default: {savedTemplates.find((t) => t.isDefault).name}</span>}
+                  <div><FieldLabel>Size</FieldLabel><input type="range" min="16" max="120" value={logoSize} onChange={(e) => { const v = Number(e.target.value); setLogoSize(v); setLogoWidth(v); setLogoHeight(v); }} className="w-full" /></div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div><FieldLabel>Width (px)</FieldLabel><input type="number" value={logoWidth} onChange={(e) => setLogoWidth(Number(e.target.value))} className={INPUT_CLS} /></div>
+                    <div><FieldLabel>Height (px)</FieldLabel><input type="number" value={logoHeight} onChange={(e) => setLogoHeight(Number(e.target.value))} className={INPUT_CLS} /></div>
                   </div>
-                  <div className="flex gap-1 mb-1.5">
-                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search templates..." className="flex-1 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-[9px] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500" />
-                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-[9px] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
-                      <option value="newest">Newest</option>
-                      <option value="oldest">Oldest</option>
-                      <option value="az">A-Z</option>
-                      <option value="za">Z-A</option>
-                    </select>
-                  </div>
+                  <SelectField label="Position" value={logoPosition} onChange={(e) => setLogoPosition(e.target.value)} options={ALIGN_OPTIONS} />
+                  <SelectField label="Vertical Position" value={logoVerticalPosition} onChange={(e) => setLogoVerticalPosition(e.target.value)} options={VERTICAL_OPTIONS} />
                 </div>
-                <div className="grid grid-cols-1 gap-1.5 px-3 pb-2">
-                  {getProcessedTemplates().map((tpl) => (
-                    <div key={tpl._id} className={`p-2.5 rounded-lg border transition-all ${savedTemplateId === tpl._id ? 'border-purple-500 ring-1 ring-purple-500/20 bg-purple-50 dark:bg-purple-900/10' : 'border-gray-200 dark:border-gray-600'}`}>
-                      <div className="flex items-center gap-2.5">
-                        <button onClick={() => handleLoadSavedTemplate(tpl)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer">
-                          <div className="w-7 h-7 rounded-md flex-shrink-0 flex items-center justify-center text-white text-[8px] font-bold bg-gradient-to-br from-purple-500 to-purple-700">{tpl.name?.charAt(0)?.toUpperCase() || 'T'}</div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-medium text-gray-800 dark:text-gray-200 truncate flex items-center gap-1">
-                              {tpl.name}
-                              {tpl.isFavorite && <span className="text-[9px] text-yellow-500">&#9733;</span>}
-                              {tpl.isDefault && <span className="text-[9px] text-amber-600 dark:text-amber-400 whitespace-nowrap">Default</span>}
-                            </p>
-                            <p className="text-[9px] text-gray-400 dark:text-gray-500 truncate">{tpl.baseTemplate || 'Custom'} &middot; {formatDate(tpl.createdAt)}</p>
-                          </div>
-                        </button>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
-                          <button onClick={() => handleToggleFavorite(tpl)} className={`p-1.5 rounded-md transition-all cursor-pointer text-[11px] ${tpl.isFavorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'}`} title={tpl.isFavorite ? 'Remove from favorites' : 'Add to favorites'}>{tpl.isFavorite ? '\u2605' : '\u2606'}</button>
-                          <button onClick={() => handleSetDefault(tpl._id)} className="p-1.5 rounded-md text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all cursor-pointer text-[11px]" title="Set as default">&#9734;</button>
-                          <button onClick={() => handleDuplicateTemplate(tpl._id)} className="p-1.5 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all cursor-pointer text-[11px]" title="Duplicate template">&#128203;</button>
-                          <button onClick={() => handleRenameTemplate(tpl)} className="p-1.5 rounded-md text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/10 transition-all cursor-pointer text-[11px]" title="Rename template">&#9998;</button>
-                          {!tpl.isDefault && (
-                            <button onClick={() => handleDeleteTemplate(tpl._id, tpl.isDefault)} className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all cursor-pointer text-[11px]" title="Delete template">&#10005;</button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {getProcessedTemplates().length === 0 && searchQuery.trim() && (
-                    <p className="text-[9px] text-gray-400 dark:text-gray-500 text-center py-2">No templates match your search</p>
-                  )}
-                </div>
-              </>
-            )}
-            {loadingTemplates && (
-              <div className="px-3 py-2">
-                <p className="text-[9px] text-gray-400 dark:text-gray-500 text-center">Loading templates...</p>
               </div>
-            )}
+
+              <hr className="border-gray-100 dark:border-gray-700/50" />
+
+              {/* --- School Name --- */}
+              <div>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">School Name</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Show</span>
+                    <Toggle value={schoolNameShow} onChange={setSchoolNameShow} />
+                  </div>
+                  <SelectField label="Font Size" value={schoolNameFontSize} onChange={(e) => setSchoolNameFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
+                  <SelectField label="Font Weight" value={schoolNameFontWeight} onChange={(e) => setSchoolNameFontWeight(e.target.value)} options={FONT_WEIGHT_OPTIONS} />
+                  <ColorPicker label="Font Color" value={schoolNameColor} onChange={setSchoolNameColor} />
+                  <SelectField label="Text Alignment" value={schoolNameAlign} onChange={(e) => setSchoolNameAlign(e.target.value)} options={ALIGN_OPTIONS} />
+                  <SelectField label="Vertical Position" value={schoolNameVerticalPos} onChange={(e) => setSchoolNameVerticalPos(e.target.value)} options={VERTICAL_OPTIONS} />
+                  <div><FieldLabel>Letter Spacing (px)</FieldLabel><input type="number" step="0.5" value={schoolNameLetterSpacing} onChange={(e) => setSchoolNameLetterSpacing(Number(e.target.value))} className={INPUT_CLS} /></div>
+                  <SelectField label="Line Height" value={schoolNameLineHeight} onChange={(e) => setSchoolNameLineHeight(e.target.value)} options={LINE_HEIGHT_OPTIONS} />
+                </div>
+              </div>
+
+              <hr className="border-gray-100 dark:border-gray-700/50" />
+
+              {/* --- Academic Year --- */}
+              <div>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Academic Year</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Show</span>
+                    <Toggle value={academicYearShow} onChange={setAcademicYearShow} />
+                  </div>
+                  <SelectField label="Font Size" value={academicYearFontSize} onChange={(e) => setAcademicYearFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
+                  <SelectField label="Font Weight" value={academicYearFontWeight} onChange={(e) => setAcademicYearFontWeight(e.target.value)} options={FONT_WEIGHT_OPTIONS} />
+                  <ColorPicker label="Font Color" value={academicYearColor} onChange={setAcademicYearColor} />
+                  <SelectField label="Text Alignment" value={academicYearAlign} onChange={(e) => setAcademicYearAlign(e.target.value)} options={ALIGN_OPTIONS} />
+                  <SelectField label="Vertical Position" value={academicYearVerticalPos} onChange={(e) => setAcademicYearVerticalPos(e.target.value)} options={VERTICAL_OPTIONS} />
+                </div>
+              </div>
+
+              <hr className="border-gray-100 dark:border-gray-700/50" />
+
+              {/* --- Timetable Title --- */}
+              <div>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Timetable Title</h4>
+                <div className="space-y-2">
+                  <TextField label="Title Text" value={timetableTitle} onChange={(e) => setTimetableTitle(e.target.value)} />
+                  <SelectField label="Font Size" value={titleFontSize} onChange={(e) => setTitleFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
+                  <SelectField label="Font Weight" value={titleFontWeight} onChange={(e) => setTitleFontWeight(e.target.value)} options={FONT_WEIGHT_OPTIONS} />
+                  <ColorPicker label="Font Color" value={titleColor} onChange={setTitleColor} />
+                  <SelectField label="Alignment" value={titleAlign} onChange={(e) => setTitleAlign(e.target.value)} options={ALIGN_OPTIONS} />
+                  <SelectField label="Vertical Position" value={titleVerticalPos} onChange={(e) => setTitleVerticalPos(e.target.value)} options={VERTICAL_OPTIONS} />
+                  <div><FieldLabel>Letter Spacing (px)</FieldLabel><input type="number" step="0.5" value={titleLetterSpacing} onChange={(e) => setTitleLetterSpacing(Number(e.target.value))} className={INPUT_CLS} /></div>
+                </div>
+              </div>
+
+              <hr className="border-gray-100 dark:border-gray-700/50" />
+
+              {/* --- Header Spacing --- */}
+              <div>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Header Spacing</h4>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div><FieldLabel>Top Padding (px)</FieldLabel><input type="number" value={headerPaddingTop} onChange={(e) => setHeaderPaddingTop(Number(e.target.value))} className={INPUT_CLS} /></div>
+                    <div><FieldLabel>Bottom Padding (px)</FieldLabel><input type="number" value={headerPaddingBottom} onChange={(e) => setHeaderPaddingBottom(Number(e.target.value))} className={INPUT_CLS} /></div>
+                    <div><FieldLabel>Left Padding (px)</FieldLabel><input type="number" value={headerPaddingLeft} onChange={(e) => setHeaderPaddingLeft(Number(e.target.value))} className={INPUT_CLS} /></div>
+                    <div><FieldLabel>Right Padding (px)</FieldLabel><input type="number" value={headerPaddingRight} onChange={(e) => setHeaderPaddingRight(Number(e.target.value))} className={INPUT_CLS} /></div>
+                  </div>
+                  <div><FieldLabel>Logo - School Name Gap (px)</FieldLabel><input type="number" value={logoTitleGap} onChange={(e) => setLogoTitleGap(Number(e.target.value))} className={INPUT_CLS} /></div>
+                  <div><FieldLabel>School Name - Title Gap (px)</FieldLabel><input type="number" value={nameTitleGap} onChange={(e) => setNameTitleGap(Number(e.target.value))} className={INPUT_CLS} /></div>
+                </div>
+              </div>
+            </div>
           </AccordionSection>
 
-          <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-700/10">
-            <div className="space-y-2">
-              <TextField label="Template Name" value={saveName} onChange={(e) => setSaveName(e.target.value)} />
-              <div className="flex gap-2">
-                <button onClick={handleSaveTemplate} disabled={savingTemplate || !saveName.trim()} className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-                  {savingTemplate ? 'Saving...' : savedTemplateId ? 'Update Template' : 'Save Template'}
-                </button>
-                <button onClick={handleResetTemplate} disabled={!savedTemplateId} className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">Reset Template</button>
-              </div>
-            </div>
-          </div>
-
-          <AccordionSection title="Header Controls" icon={<ImageSvg />} isOpen={openSections.header} onToggle={() => toggleSection('header')}>
-            <TextField label="School Name" value={header.schoolName.text} onChange={(e) => setHeader((p) => ({ ...p, schoolName: { ...p.schoolName, text: e.target.value } }))} />
-            <StyleGroup label="School Name Style" align={header.schoolName.align} fontFamily={header.schoolName.fontFamily} fontSize={header.schoolName.fontSize} fontWeight={header.schoolName.fontWeight} color={header.schoolName.color} onChange={(f, v) => setHeader((p) => ({ ...p, schoolName: { ...p.schoolName, [f]: v } }))} />
-            <TextField label="Principal Name" value={header.principalName.text} onChange={(e) => setHeader((p) => ({ ...p, principalName: { ...p.principalName, text: e.target.value } }))} />
-            <StyleGroup label="Principal Name Style" align={header.principalName.align} fontFamily={header.principalName.fontFamily} fontSize={header.principalName.fontSize} fontWeight={header.principalName.fontWeight} color={header.principalName.color} onChange={(f, v) => setHeader((p) => ({ ...p, principalName: { ...p.principalName, [f]: v } }))} />
-            <TextField label="Academic Year" value={header.academicYear.text} onChange={(e) => setHeader((p) => ({ ...p, academicYear: { ...p.academicYear, text: e.target.value } }))} />
-            <StyleGroup label="Academic Year Style" align={header.academicYear.align} fontFamily={header.academicYear.fontFamily} fontSize={header.academicYear.fontSize} fontWeight={header.academicYear.fontWeight} color={header.academicYear.color} onChange={(f, v) => setHeader((p) => ({ ...p, academicYear: { ...p.academicYear, [f]: v } }))} />
-            <div><FieldLabel>Logo</FieldLabel>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-              <div className="flex items-center gap-2.5">
-                {header.logo.dataUrl ? <img src={header.logo.dataUrl} alt="Logo" className="w-8 h-8 rounded-full object-cover border border-gray-200" /> : <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center"><ImageSvg /></div>}
-                <button onClick={() => fileInputRef.current?.click()} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[9px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">Upload</button>
-                {header.logo.dataUrl && <button onClick={() => setHeader((p) => ({ ...p, logo: { ...p.logo, dataUrl: null } }))} className="px-2 py-1 rounded-lg text-[9px] font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer">Remove</button>}
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-0.5">
-              <span className="text-xs text-gray-600 dark:text-gray-400">Show in Header</span>
-              <Toggle value={header.logo.show} onChange={(v) => setHeader((p) => ({ ...p, logo: { ...p.logo, show: v } }))} />
-            </div>
-            <hr className="border-gray-100 dark:border-gray-700" />
-            <p className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Container</p>
-            <ColorPicker label="Background" value={header.container.bgColor} onChange={(v) => setHeader((p) => ({ ...p, container: { ...p.container, bgColor: v } }))} />
-            <ColorPicker label="Border Color" value={header.container.borderColor} onChange={(v) => setHeader((p) => ({ ...p, container: { ...p.container, borderColor: v } }))} />
-            <div><FieldLabel>Padding</FieldLabel><input type="text" value={header.container.padding} onChange={(e) => setHeader((p) => ({ ...p, container: { ...p.container, padding: e.target.value } }))} className={INPUT_CLS} /></div>
+          {/* Section B — Table Settings */}
+          <AccordionSection title="Table Settings" icon={<GridSvg />} isOpen={openSections.tableSettings} onToggle={() => toggleSection('tableSettings')}>
+            <div><FieldLabel>Border Width</FieldLabel><input type="text" value={borderWidth} onChange={(e) => setBorderWidth(e.target.value)} className={INPUT_CLS} placeholder="e.g. 1" /></div>
+            <div><FieldLabel>Border Radius</FieldLabel><input type="text" value={borderRadius} onChange={(e) => setBorderRadius(e.target.value)} className={INPUT_CLS} placeholder="e.g. 0" /></div>
+            <SelectField label="Cell Padding" value={cellPadding} onChange={(e) => setCellPadding(e.target.value)} options={PADDING_OPTIONS} />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600 dark:text-gray-400">Shadow</span>
-              <Toggle value={header.container.shadow} onChange={(v) => setHeader((p) => ({ ...p, container: { ...p.container, shadow: v } }))} />
+              <span className="text-xs text-gray-600 dark:text-gray-400">Alternate Row Color</span>
+              <Toggle value={alternateRowColor} onChange={setAlternateRowColor} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-600 dark:text-gray-400">Grid Lines</span>
+              <Toggle value={gridLines} onChange={setGridLines} />
             </div>
           </AccordionSection>
 
-          <AccordionSection title="Timetable Title Controls" icon={<TypeSvg />} isOpen={openSections.title} onToggle={() => toggleSection('title')}>
-            <TextField label="Title Text" value={title.text} onChange={(e) => setTitle((p) => ({ ...p, text: e.target.value }))} />
-            <StyleGroup label="Title Style" align={title.align} fontFamily={title.fontFamily} fontSize={title.fontSize} fontWeight={title.fontWeight} color={title.color} onChange={(f, v) => setTitle((p) => ({ ...p, [f]: v }))} />
+          {/* Section C — Font Settings */}
+          <AccordionSection title="Font Settings" icon={<TypeSvg />} isOpen={openSections.fontSettings} onToggle={() => toggleSection('fontSettings')}>
+            <SelectField label="Header Font Size" value={headerFontSize} onChange={(e) => setHeaderFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
+            <SelectField label="Table Font Size" value={tableFontSize} onChange={(e) => setTableFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
+            <SelectField label="Font Weight" value={fontWeight} onChange={(e) => setFontWeight(e.target.value)} options={FONT_WEIGHT_OPTIONS} />
+            <SelectField label="Font Family" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} options={FONT_OPTIONS} />
           </AccordionSection>
 
-          <AccordionSection title="Table Header Controls" icon={<GridSvg />} isOpen={openSections.tableHeaders} onToggle={() => toggleSection('tableHeaders')}>
-            {Object.entries(tableHeaders).map(([key, col]) => (
-              <div key={key} className="space-y-1.5 p-2 bg-gray-50 dark:bg-gray-700/20 rounded-lg">
-                <p className="text-[9px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{key.charAt(0).toUpperCase() + key.slice(1)} Column</p>
-                <ColorPicker label="Background" value={col.bg} onChange={(v) => setTableHeaders((p) => ({ ...p, [key]: { ...p[key], bg: v } }))} />
-                <ColorPicker label="Text Color" value={col.color} onChange={(v) => setTableHeaders((p) => ({ ...p, [key]: { ...p[key], color: v } }))} />
-                <div className="grid grid-cols-2 gap-1.5">
-                  <SelectField label="Align" value={col.align} onChange={(e) => setTableHeaders((p) => ({ ...p, [key]: { ...p[key], align: e.target.value } }))} options={ALIGN_OPTIONS} />
-                  <SelectField label="Font" value={col.fontFamily} onChange={(e) => setTableHeaders((p) => ({ ...p, [key]: { ...p[key], fontFamily: e.target.value } }))} options={FONT_OPTIONS} />
-                  <SelectField label="Size" value={col.fontSize} onChange={(e) => setTableHeaders((p) => ({ ...p, [key]: { ...p[key], fontSize: e.target.value } }))} options={FONT_SIZE_OPTIONS} />
-                  <SelectField label="Weight" value={col.fontWeight} onChange={(e) => setTableHeaders((p) => ({ ...p, [key]: { ...p[key], fontWeight: e.target.value } }))} options={FONT_WEIGHT_OPTIONS} />
-                </div>
-              </div>
-            ))}
+          {/* Section D — Color Settings */}
+          <AccordionSection title="Color Settings" icon={<PaintSvg />} isOpen={openSections.colorSettings} onToggle={() => toggleSection('colorSettings')}>
+            <ColorPicker label="Header Background" value={headerBgColor} onChange={setHeaderBgColor} />
+            <ColorPicker label="Header Text Color" value={headerTextColor} onChange={setHeaderTextColor} />
+            <ColorPicker label="Table Header Background" value={tableHeaderBg} onChange={setTableHeaderBg} />
+            <ColorPicker label="Table Header Text" value={tableHeaderText} onChange={setTableHeaderText} />
+            <ColorPicker label="Period Cell Color" value={periodCellColor} onChange={setPeriodCellColor} />
+            <ColorPicker label="Break Cell Color" value={breakCellColor} onChange={setBreakCellColor} />
           </AccordionSection>
 
-          <AccordionSection title="Period Cell Controls" icon={<PaintSvg />} isOpen={openSections.periodCells} onToggle={() => toggleSection('periodCells')}>
-            <ColorPicker label="Subject Cell Background" value={periodCells.subjectBg} onChange={(v) => setPeriodCells((p) => ({ ...p, subjectBg: v }))} />
-            <ColorPicker label="Subject Text Color" value={periodCells.subjectColor} onChange={(v) => setPeriodCells((p) => ({ ...p, subjectColor: v }))} />
-            <ColorPicker label="Alt Row Background" value={periodCells.altRowBg} onChange={(v) => setPeriodCells((p) => ({ ...p, altRowBg: v }))} />
-            <hr className="border-gray-100 dark:border-gray-700" />
-            <div className="grid grid-cols-2 gap-1.5">
-              <SelectField label="Font Family" value={periodCells.fontFamily} onChange={(e) => setPeriodCells((p) => ({ ...p, fontFamily: e.target.value }))} options={FONT_OPTIONS} />
-              <SelectField label="Font Size" value={periodCells.fontSize} onChange={(e) => setPeriodCells((p) => ({ ...p, fontSize: e.target.value }))} options={FONT_SIZE_OPTIONS} />
-              <SelectField label="Font Weight" value={periodCells.fontWeight} onChange={(e) => setPeriodCells((p) => ({ ...p, fontWeight: e.target.value }))} options={FONT_WEIGHT_OPTIONS} />
-            </div>
-          </AccordionSection>
-
-          <AccordionSection title="Break Row Controls" icon={<LayoutSvg />} isOpen={openSections.breakRow} onToggle={() => toggleSection('breakRow')}>
-            <ColorPicker label="Background" value={breakRow.bg} onChange={(v) => setBreakRow((p) => ({ ...p, bg: v }))} />
-            <ColorPicker label="Text Color" value={breakRow.color} onChange={(v) => setBreakRow((p) => ({ ...p, color: v }))} />
-            <div className="grid grid-cols-2 gap-1.5">
-              <SelectField label="Font Family" value={breakRow.fontFamily} onChange={(e) => setBreakRow((p) => ({ ...p, fontFamily: e.target.value }))} options={FONT_OPTIONS} />
-              <SelectField label="Font Size" value={breakRow.fontSize} onChange={(e) => setBreakRow((p) => ({ ...p, fontSize: e.target.value }))} options={FONT_SIZE_OPTIONS} />
-              <SelectField label="Font Weight" value={breakRow.fontWeight} onChange={(e) => setBreakRow((p) => ({ ...p, fontWeight: e.target.value }))} options={FONT_WEIGHT_OPTIONS} />
-            </div>
-            <div><FieldLabel>Badge Border Radius</FieldLabel><input type="text" value={breakRow.borderRadius} onChange={(e) => setBreakRow((p) => ({ ...p, borderRadius: e.target.value }))} className={INPUT_CLS} /></div>
-          </AccordionSection>
-
-          <AccordionSection title="Table Layout Controls" icon={<LayoutSvg />} isOpen={openSections.tableLayout} onToggle={() => toggleSection('tableLayout')}>
-            <div><label className="block text-[9px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Row Height: {tableLayout.rowHeight}px</label><input type="range" min="32" max="80" value={tableLayout.rowHeight} onChange={(e) => setTableLayout((p) => ({ ...p, rowHeight: Number(e.target.value) }))} className="w-full h-1 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600" /></div>
-            <div><label className="block text-[9px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">Column Width: {tableLayout.colWidth}px</label><input type="range" min="90" max="200" value={tableLayout.colWidth} onChange={(e) => setTableLayout((p) => ({ ...p, colWidth: Number(e.target.value) }))} className="w-full h-1 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600" /></div>
-            <div><FieldLabel>Cell Padding</FieldLabel><div className="flex gap-1">{PADDING_OPTIONS.map((opt) => <button key={opt.value} onClick={() => setTableLayout((p) => ({ ...p, cellPadding: opt.value }))} className={`flex-1 px-2 py-1.5 rounded-lg text-[9px] font-medium transition-all cursor-pointer capitalize ${tableLayout.cellPadding === opt.value ? 'bg-blue-600 text-white shadow-sm' : 'border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{opt.label}</button>)}</div></div>
-            <div><FieldLabel>Border Thickness</FieldLabel><input type="text" value={tableLayout.borderThickness} onChange={(e) => setTableLayout((p) => ({ ...p, borderThickness: e.target.value }))} className={INPUT_CLS} /></div>
-            <SelectField label="Border Style" value={tableLayout.borderStyle} onChange={(e) => setTableLayout((p) => ({ ...p, borderStyle: e.target.value }))} options={BORDER_STYLE_OPTIONS} />
-            <ColorPicker label="Border Color" value={tableLayout.borderColor} onChange={(v) => setTableLayout((p) => ({ ...p, borderColor: v }))} />
-          </AccordionSection>
-
-          <AccordionSection title="Merge Class Controls" icon={<GridSvg />} isOpen={openSections.merge} onToggle={() => toggleSection('merge')}>
-            <button onClick={() => { setMergeSelections([]); setShowMergeModal(true); }} className="w-full px-2.5 py-2 rounded-lg border border-dashed border-blue-300 dark:border-blue-500 text-[10px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 cursor-pointer">+ Merge Classes</button>
-            {mergedPairs.length === 0 ? <p className="text-[9px] text-gray-400 dark:text-gray-500 text-center py-1">No merged classes</p> : mergedPairs.map((pair, idx) => (
-              <div key={idx} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800">
-                <span className="text-[10px] font-medium text-purple-700 dark:text-purple-300">{pair.join(' / ')}</span>
-                <button onClick={() => handleUnmerge(idx)} className="text-[8px] px-1.5 py-0.5 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer">Unmerge</button>
-              </div>
-            ))}
-          </AccordionSection>
-
-          <AccordionSection title="Print Settings" icon={<PrintSvg />} isOpen={openSections.print} onToggle={() => toggleSection('print')}>
-            <div className="flex items-center justify-between"><span className="text-xs text-gray-600 dark:text-gray-400">Show Signature</span><Toggle value={showSignature} onChange={setShowSignature} /></div>
-            <div className="flex items-center justify-between"><span className="text-xs text-gray-600 dark:text-gray-400">Show Footer</span><Toggle value={showFooter} onChange={setShowFooter} /></div>
-            <div className="flex items-center justify-between"><span className="text-xs text-gray-600 dark:text-gray-400">Watermark</span><Toggle value={watermark} onChange={setWatermark} /></div>
-            <div><FieldLabel>Page Orientation</FieldLabel><div className="flex gap-1">{['portrait', 'landscape'].map((o) => <button key={o} onClick={() => setOrientation(o)} className={`flex-1 px-2 py-1.5 rounded-lg text-[9px] font-medium transition-all cursor-pointer capitalize ${orientation === o ? 'bg-blue-600 text-white shadow-sm' : 'border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{o}</button>)}</div></div>
+          {/* Section E — Page Settings */}
+          <AccordionSection title="Page Settings" icon={<PrintSvg />} isOpen={openSections.pageSettings} onToggle={() => toggleSection('pageSettings')}>
+            <SelectField label="Paper Size" value={paperSize} onChange={(e) => setPaperSize(e.target.value)} options={PAPER_SIZE_OPTIONS} />
+            <div><FieldLabel>Orientation</FieldLabel><div className="flex gap-1">{['portrait', 'landscape'].map((o) => <button key={o} onClick={() => setOrientation(o)} className={`flex-1 px-2 py-1.5 rounded-lg text-[9px] font-medium transition-all cursor-pointer capitalize ${orientation === o ? 'bg-blue-600 text-white shadow-sm' : 'border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{o}</button>)}</div></div>
             <div className="grid grid-cols-2 gap-1.5 mt-2">
               <div><FieldLabel>Margin Top</FieldLabel><input type="text" value={marginTop} onChange={(e) => setMarginTop(e.target.value)} className={INPUT_CLS} placeholder="15mm" /></div>
               <div><FieldLabel>Margin Bottom</FieldLabel><input type="text" value={marginBottom} onChange={(e) => setMarginBottom(e.target.value)} className={INPUT_CLS} placeholder="15mm" /></div>
               <div><FieldLabel>Margin Left</FieldLabel><input type="text" value={marginLeft} onChange={(e) => setMarginLeft(e.target.value)} className={INPUT_CLS} placeholder="10mm" /></div>
               <div><FieldLabel>Margin Right</FieldLabel><input type="text" value={marginRight} onChange={(e) => setMarginRight(e.target.value)} className={INPUT_CLS} placeholder="10mm" /></div>
             </div>
-            <div className="pt-2 space-y-1.5">
-              <button onClick={handlePrint} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"><PrintSvg /> Print Timetable</button>
-              <button onClick={handleExportPdf} disabled={groupTimetables.length === 0 || pdfExporting} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-                {pdfExporting ? 'Exporting PDF...' : 'Export PDF'}
-              </button>
-              <button onClick={() => { const defaultHeader = { ...HEADER_INIT, schoolName: { ...HEADER_INIT.schoolName, text: schoolInfo.name || HEADER_INIT.schoolName.text }, principalName: { ...HEADER_INIT.principalName, text: schoolInfo.principalName || HEADER_INIT.principalName.text } }; setDesignPanelOpen(false); setHeader(defaultHeader); setTitle(TITLE_INIT); setTableHeaders(TABLE_HEADERS_INIT); setPeriodCells(PERIOD_CELLS_INIT); setBreakRow(BREAK_ROW_INIT); setTableLayout(TABLE_LAYOUT_INIT); setMergedPairs([]); setShowSignature(false); setShowFooter(true); setWatermark(false); setOrientation('landscape'); setMarginTop('15mm'); setMarginBottom('15mm'); setMarginLeft('10mm'); setMarginRight('10mm'); setSelectedTemplate('classic'); setSavedTemplateId(null); setSaveName(''); setGroupTimetables([]); setGroupError(''); }} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"><ResetSvg /> Reset Design</button>
-            </div>
           </AccordionSection>
+
+          {/* Bottom Buttons */}
+          <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700/50 space-y-2">
+            <button onClick={handleSave} disabled={saveLoading} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+              {saveLoading ? 'Saving...' : 'Save Design'}
+            </button>
+            <button onClick={handlePrint} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
+              <PrintSvg /> Print Timetable
+            </button>
+            <button onClick={handleExportPdf} disabled={pdfExporting || groupTimetables.length === 0} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+              <DownloadSvg /> {pdfExporting ? 'Exporting PDF...' : 'Download PDF'}
+            </button>
+          </div>
         </div>
       </div>
-
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setShowResetConfirm(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-xs mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Reset Template</h3>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Reset this template?</p>
-            </div>
-            <div className="flex justify-end gap-2 px-4 py-3">
-              <button onClick={() => setShowResetConfirm(false)} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">Cancel</button>
-              <button onClick={confirmResetTemplate} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm cursor-pointer">Reset</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMergeModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setShowMergeModal(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Merge Classes</h3>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Select multiple classes to merge</p>
-            </div>
-            <div className="p-4 space-y-1.5 max-h-52 overflow-y-auto">
-              {(GROUPS[selectedGroup]?.classes || []).map((cls) => {
-                const isMerged = mergedPairs.some((p) => p.includes(cls));
-                const isSelected = mergeSelections.includes(cls);
-                return (
-                  <label key={cls} className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/10' : isMerged ? 'border-gray-200 dark:border-gray-600 opacity-50 cursor-not-allowed' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}`}>
-                    <input type="checkbox" checked={isSelected} disabled={isMerged} onChange={() => setMergeSelections((prev) => prev.includes(cls) ? prev.filter((c) => c !== cls) : [...prev, cls])} className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed" />
-                    <span className={`text-xs ${isMerged ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{cls} {isMerged && <span className="text-[9px] text-gray-400">(in use)</span>}</span>
-                  </label>
-                );
-              })}
-            </div>
-            <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
-              <button onClick={() => setShowMergeModal(false)} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">Cancel</button>
-              <button onClick={handleMerge} disabled={mergeSelections.length < 2} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">Merge ({mergeSelections.length})</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {renameModal.show && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setRenameModal({ show: false, template: null, newName: '' })}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-xs mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Rename Template</h3>
-            </div>
-            <div className="p-4">
-              <FieldLabel>Template Name</FieldLabel>
-              <input type="text" value={renameModal.newName} onChange={(e) => setRenameModal((prev) => ({ ...prev, newName: e.target.value }))} className={INPUT_CLS} autoFocus onKeyDown={(e) => { if (e.key === 'Enter') confirmRenameTemplate(); }} />
-            </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-700">
-              <button onClick={() => setRenameModal({ show: false, template: null, newName: '' })} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">Cancel</button>
-              <button onClick={confirmRenameTemplate} disabled={!renameModal.newName.trim()} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm disabled:opacity-50 cursor-pointer">Rename</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {deleteConfirmModal.show && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setDeleteConfirmModal({ show: false, template: null })}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-xs mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Delete Template</h3>
-            </div>
-            <div className="p-4 space-y-2">
-              <p className="text-[11px] font-medium text-gray-800 dark:text-gray-200">{deleteConfirmModal.template?.name}</p>
-              <p className="text-[9px] text-gray-500 dark:text-gray-400">Created: {formatDate(deleteConfirmModal.template?.createdAt)}</p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">Are you sure you want to permanently delete this template?</p>
-            </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-700">
-              <button onClick={() => setDeleteConfirmModal({ show: false, template: null })} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">Cancel</button>
-              <button onClick={confirmDeleteTemplate} className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm cursor-pointer">Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import {
   ChevronDownIcon, EyeIcon, PencilSquareIcon, TrashIcon,
   XMarkIcon, PlusIcon,
 } from '@heroicons/react/24/outline';
+import ConfirmationModal from '../../common/ConfirmationModal';
 import eventsService from '../../../services/events.service';
 
 const initialForm = {
@@ -24,17 +25,34 @@ const getStatusStyle = (status) => {
   return styles[status] || styles.Upcoming;
 };
 
-const HolidayManagement = ({ onDataChange }) => {
+const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHolidayEdit }) => {
   const [holidays, setHolidays] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ...initialForm });
   const [academicYear, setAcademicYear] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [viewHoliday, setViewHoliday] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const isEditing = !!editHoliday;
 
   useEffect(() => {
     setHolidays(eventsService.getHolidays());
   }, []);
+
+  useEffect(() => {
+    if (editHoliday) {
+      setForm({
+        name: editHoliday.name || '',
+        startDate: editHoliday.startDate || '',
+        endDate: editHoliday.endDate || '',
+        type: editHoliday.type || '',
+        appliesTo: editHoliday.appliesTo || '',
+        description: editHoliday.description || '',
+      });
+      setShowForm(true);
+    }
+  }, [editHoliday]);
 
   const filtered = useMemo(() => {
     let list = holidays;
@@ -60,23 +78,33 @@ const HolidayManagement = ({ onDataChange }) => {
       return;
     }
     const totalDays = calcDays(form.startDate, form.endDate);
-    eventsService.addHoliday({
+    const holidayData = {
       ...form,
-      academicYear: eventsService.ACADEMIC_YEARS[0],
       startDateDisplay: new Date(form.startDate + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       endDateDisplay: new Date(form.endDate + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       totalDays,
-      status: 'Upcoming',
-    });
-    toast.success('Holiday added successfully');
+    };
+    if (isEditing) {
+      eventsService.updateHoliday(editHoliday.id, holidayData);
+      toast.success('Holiday updated successfully');
+      onClearHolidayEdit();
+    } else {
+      eventsService.addHoliday({
+        ...holidayData,
+        academicYear: eventsService.ACADEMIC_YEARS[0],
+        status: 'Upcoming',
+      });
+      toast.success('Holiday added successfully');
+    }
     setForm({ ...initialForm });
     setShowForm(false);
     setHolidays(eventsService.getHolidays());
     onDataChange();
   };
 
-  const handleDelete = (id) => {
-    eventsService.deleteHoliday(id);
+  const handleDelete = () => {
+    eventsService.deleteHoliday(deleteTarget.id);
+    setDeleteTarget(null);
     setHolidays(eventsService.getHolidays());
     onDataChange();
     toast.success('Holiday deleted');
@@ -95,7 +123,7 @@ const HolidayManagement = ({ onDataChange }) => {
 
         {showForm && (
           <div className="mb-5 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-4">New Holiday</h3>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-4">{isEditing ? 'Edit Holiday' : 'New Holiday'}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Holiday Name <span className="text-red-500">*</span></label>
@@ -142,9 +170,9 @@ const HolidayManagement = ({ onDataChange }) => {
             </div>
             <div className="flex gap-3 mt-2">
               <button onClick={handleAdd} className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer">
-                Save Holiday
+                {isEditing ? 'Update Holiday' : 'Save Holiday'}
               </button>
-              <button onClick={() => { setForm({ ...initialForm }); setShowForm(false); }}
+              <button onClick={() => { setForm({ ...initialForm }); setShowForm(false); if (isEditing) onClearHolidayEdit(); }}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">
                 Cancel
               </button>
@@ -218,10 +246,10 @@ const HolidayManagement = ({ onDataChange }) => {
                       <button onClick={() => setViewHoliday(h)} className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title="View">
                         <EyeIcon className="h-4 w-4" />
                       </button>
-                      <button className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title="Edit">
+                      <button onClick={() => onEditHoliday(h)} className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title="Edit">
                         <PencilSquareIcon className="h-4 w-4" />
                       </button>
-                      <button onClick={() => handleDelete(h.id)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title="Delete">
+                      <button onClick={() => setDeleteTarget(h)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title="Delete">
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -277,6 +305,17 @@ const HolidayManagement = ({ onDataChange }) => {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Holiday"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };

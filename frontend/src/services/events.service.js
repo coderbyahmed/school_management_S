@@ -1,7 +1,7 @@
 const EVENTS_KEY = 'events_data';
 const HOLIDAYS_KEY = 'holidays_data';
 
-const ACADEMIC_YEARS = ['2025-26', '2026-27', '2027-28', '2028-29', '2029-30', '2030-31'];
+const ACADEMIC_YEARS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
 const EVENT_CATEGORIES = ['Annual Function', 'Sports Day', 'Independence Day', 'Teachers Day', 'Parents Meeting', 'Science Exhibition', 'Seminar', 'Workshop', 'Competition', 'Examination', 'Orientation', 'Cultural Program', 'Other'];
 const HOLIDAY_TYPES = ['Public Holiday', 'National Holiday', 'Religious Holiday', 'School Holiday', 'Emergency Holiday', 'Summer Vacation', 'Winter Vacation', 'Exam Break'];
 const AUDIENCES = ['All', 'Students', 'Teachers', 'Parents', 'Staff'];
@@ -168,9 +168,27 @@ const eventsService = {
     return true;
   },
 
+  updateEvent(id, updates) {
+    const events = this.getEvents();
+    const idx = events.findIndex((e) => e.id === id);
+    if (idx !== -1) {
+      events[idx] = { ...events[idx], ...updates };
+      localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+    }
+  },
+
   deleteEvent(id) {
     const events = this.getEvents().filter((e) => e.id !== id);
     localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+  },
+
+  updateHoliday(id, updates) {
+    const holidays = this.getHolidays();
+    const idx = holidays.findIndex((h) => h.id === id);
+    if (idx !== -1) {
+      holidays[idx] = { ...holidays[idx], ...updates };
+      localStorage.setItem(HOLIDAYS_KEY, JSON.stringify(holidays));
+    }
   },
 
   deleteHoliday(id) {
@@ -196,13 +214,26 @@ const eventsService = {
     return [...events, ...holidays];
   },
 
-  getGalleryData() {
-    const events = this.getEvents().filter((e) => e.status === 'Completed' || e.status === 'Ongoing');
-    return events.slice(0, 8).map((e) => ({
+  getGalleryData(filters = {}) {
+    let events = this.getEvents();
+
+    if (filters.academicYear) events = events.filter((e) => e.academicYear === filters.academicYear);
+    if (filters.category) events = events.filter((e) => e.category === filters.category);
+    if (filters.month) events = events.filter((e) => new Date(e.date).getMonth() === MONTHS.indexOf(filters.month));
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      events = events.filter((e) => e.name.toLowerCase().includes(q));
+    }
+
+    return events.map((e) => ({
       id: e.id,
       name: e.name,
       banner: e.banner,
       date: e.dateDisplay,
+      category: e.category,
+      description: e.description || '',
+      academicYear: e.academicYear,
+      dateRaw: e.date,
       numPhotos: randomInt(15, 80),
     }));
   },

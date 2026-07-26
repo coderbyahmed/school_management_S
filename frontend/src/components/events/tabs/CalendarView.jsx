@@ -34,6 +34,16 @@ const colorClasses = {
   green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 border-green-200 dark:border-green-800',
 };
 
+const dateCircleColors = {
+  red: 'bg-red-500 text-white shadow-sm',
+  blue: 'bg-blue-500 text-white shadow-sm',
+  orange: 'bg-orange-500 text-white shadow-sm',
+  purple: 'bg-purple-500 text-white shadow-sm',
+  green: 'bg-green-500 text-white shadow-sm',
+};
+
+const COLOR_PRIORITY = ['red', 'orange', 'purple', 'green', 'blue'];
+
 const CalendarView = ({ onDataChange }) => {
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
@@ -118,18 +128,28 @@ const CalendarView = ({ onDataChange }) => {
             const items = getItemsForDate(day);
             const todayFlag = isToday(day);
 
+            let dateColor = null;
+            if (!todayFlag && items.length > 0) {
+              const presentColors = [...new Set(items.map(getItemColor))];
+              dateColor = COLOR_PRIORITY.find((c) => presentColors.includes(c)) || presentColors[0];
+            }
+
             return (
               <div key={day}
                 className={`min-h-[70px] sm:min-h-[90px] lg:min-h-[105px] p-1.5 sm:p-2 lg:p-2.5 rounded-xl border shadow-sm transition-all duration-200 flex flex-col ${
                   todayFlag
                     ? 'border-blue-400 dark:border-blue-500 shadow-blue-100 dark:shadow-blue-900/20 bg-blue-50/80 dark:bg-blue-900/15'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5'
+                    : items.length > 0
+                      ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5'
                 }`}>
                 {/* Date Number */}
                 <div className={`flex-shrink-0 text-sm sm:text-base lg:text-lg font-bold mb-1 ${
                   todayFlag
                     ? 'w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-sm'
-                    : 'text-gray-700 dark:text-gray-200'
+                    : dateColor
+                      ? `w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full ${dateCircleColors[dateColor]}`
+                      : 'text-gray-700 dark:text-gray-200'
                 }`}>
                   {day}
                 </div>

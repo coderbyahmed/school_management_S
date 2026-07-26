@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import StatCard from '../common/StatCard';
 import eventsService from '../../services/events.service';
@@ -8,23 +8,46 @@ import HolidayManagement from './tabs/HolidayManagement';
 import CalendarView from './tabs/CalendarView';
 import EventGallery from './tabs/EventGallery';
 
-const tabs = ['All Events', 'Add Event', 'Holiday Management', 'Calendar View', 'Event Gallery'];
+const tabs = ['Events', 'Add Event', 'Holidays', 'Calendar View', 'Event Gallery'];
 
 const tabComponents = {
-  'All Events': AllEvents,
+  Events: AllEvents,
   'Add Event': AddEvent,
-  'Holiday Management': HolidayManagement,
+  Holidays: HolidayManagement,
   'Calendar View': CalendarView,
   'Event Gallery': EventGallery,
 };
 
 const EventsHolidays = () => {
-  const [activeTab, setActiveTab] = useState('All Events');
+  const [activeTab, setActiveTab] = useState('Events');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [editEvent, setEditEvent] = useState(null);
+  const [editHoliday, setEditHoliday] = useState(null);
 
   const stats = useMemo(() => eventsService.getStats(), [refreshKey]);
 
   const ActiveComponent = tabComponents[activeTab];
+
+  const handleEditEvent = useCallback((event) => {
+    setEditEvent(event);
+    setActiveTab('Add Event');
+  }, []);
+
+  const handleClearEdit = useCallback(() => {
+    setEditEvent(null);
+  }, []);
+
+  const handleEditHoliday = useCallback((holiday) => {
+    setEditHoliday(holiday);
+  }, []);
+
+  const handleClearHolidayEdit = useCallback(() => {
+    setEditHoliday(null);
+  }, []);
+
+  const onDataChange = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -45,7 +68,11 @@ const EventsHolidays = () => {
           {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                if (tab !== 'Add Event') setEditEvent(null);
+                if (tab !== 'Holidays') setEditHoliday(null);
+                setActiveTab(tab);
+              }}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === tab
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
@@ -58,7 +85,16 @@ const EventsHolidays = () => {
         </nav>
       </div>
 
-      <ActiveComponent key={refreshKey} onDataChange={() => setRefreshKey((k) => k + 1)} />
+      <ActiveComponent
+        key={refreshKey}
+        onDataChange={onDataChange}
+        onEditEvent={activeTab === 'Events' ? handleEditEvent : undefined}
+        editEvent={activeTab === 'Add Event' ? editEvent : undefined}
+        onClearEdit={activeTab === 'Add Event' ? handleClearEdit : undefined}
+        editHoliday={activeTab === 'Holidays' ? editHoliday : undefined}
+        onEditHoliday={activeTab === 'Holidays' ? handleEditHoliday : undefined}
+        onClearHolidayEdit={activeTab === 'Holidays' ? handleClearHolidayEdit : undefined}
+      />
     </div>
   );
 };

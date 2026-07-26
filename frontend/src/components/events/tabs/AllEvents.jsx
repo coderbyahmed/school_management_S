@@ -5,6 +5,7 @@ import {
   TrashIcon, XMarkIcon, CalendarDaysIcon, ClockIcon, MapPinIcon,
 } from '@heroicons/react/24/outline';
 import SearchInput from '../../common/SearchInput';
+import ConfirmationModal from '../../common/ConfirmationModal';
 import eventsService from '../../../services/events.service';
 
 const getStatusStyle = (status) => {
@@ -17,13 +18,14 @@ const getStatusStyle = (status) => {
   return styles[status] || styles.Upcoming;
 };
 
-const AllEvents = ({ onDataChange }) => {
+const AllEvents = ({ onDataChange, onEditEvent }) => {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState('');
   const [academicYear, setAcademicYear] = useState('');
   const [category, setCategory] = useState('');
   const [month, setMonth] = useState('');
   const [viewEvent, setViewEvent] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     const data = eventsService.getEvents();
@@ -39,9 +41,10 @@ const AllEvents = ({ onDataChange }) => {
     return list;
   }, [events, search, academicYear, category, month]);
 
-  const handleDelete = (id) => {
-    eventsService.deleteEvent(id);
+  const handleDelete = () => {
+    eventsService.deleteEvent(deleteTarget.id);
     setEvents(eventsService.getEvents());
+    setDeleteTarget(null);
     onDataChange();
     toast.success('Event deleted');
   };
@@ -114,9 +117,13 @@ const AllEvents = ({ onDataChange }) => {
               filtered.map((event) => (
                 <tr key={event.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-3 py-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: event.color }}>
-                      {event.name.charAt(0)}
-                    </div>
+                    {event.banner ? (
+                      <img src={event.banner} alt={event.name} className="w-10 h-10 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: event.color }}>
+                        {event.name.charAt(0)}
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{event.name}</td>
                   <td className="px-3 py-3">
@@ -138,10 +145,10 @@ const AllEvents = ({ onDataChange }) => {
                       <button onClick={() => setViewEvent(event)} className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title="View">
                         <EyeIcon className="h-4 w-4" />
                       </button>
-                      <button className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title="Edit">
+                      <button onClick={() => onEditEvent(event)} className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title="Edit">
                         <PencilSquareIcon className="h-4 w-4" />
                       </button>
-                      <button onClick={() => handleDelete(event.id)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title="Delete">
+                      <button onClick={() => setDeleteTarget(event)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title="Delete">
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -171,9 +178,13 @@ const AllEvents = ({ onDataChange }) => {
             </div>
             <div className="px-5 py-5 max-h-[80vh] overflow-y-auto">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ backgroundColor: viewEvent.color }}>
-                  {viewEvent.name.charAt(0)}
-                </div>
+                {viewEvent.banner ? (
+                  <img src={viewEvent.banner} alt={viewEvent.name} className="w-12 h-12 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ backgroundColor: viewEvent.color }}>
+                    {viewEvent.name.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-base font-semibold text-gray-900 dark:text-white">{viewEvent.name}</h3>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${getStatusStyle(viewEvent.status)}`}>
@@ -216,6 +227,18 @@ const AllEvents = ({ onDataChange }) => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Event"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };

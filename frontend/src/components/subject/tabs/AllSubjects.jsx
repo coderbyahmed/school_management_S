@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from '../../../hooks/useLocalization';
 import { BookOpenIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import FilterDropdown from '../../common/FilterDropdown';
@@ -15,12 +16,12 @@ import subjectService from '../../../services/subject.service';
 
 const ITEMS_PER_PAGE = 10;
 
-const statusOptions = ['All', 'Active', 'Inactive'];
-
 const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseView }) => {
+  const { t } = useTranslation();
+  const statusOptions = [t('all'), t('active'), t('inactive')];
   const [view, setView] = useState('table');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState(t('all'));
   const [currentPage, setCurrentPage] = useState(1);
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
       const result = await subjectService.getAllSubjects();
       setSubjects(result.data?.subjects || []);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to load subjects';
+      const msg = err.response?.data?.message || t('failedToLoad');
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -45,7 +46,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
 
   const filteredSubjects = subjects.filter((s) => {
     if (search && !s.subjectName?.toLowerCase().includes(search.toLowerCase())) return false;
-    if (statusFilter !== 'All' && s.status !== statusFilter) return false;
+    if (statusFilter !== t('all') && s.status !== statusFilter) return false;
     return true;
   });
 
@@ -56,7 +57,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
   );
 
   const handleReset = () => {
-    setStatusFilter('All');
+    setStatusFilter(t('all'));
     setSearch('');
     setCurrentPage(1);
   };
@@ -66,12 +67,12 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
 
     try {
       await subjectService.deleteSubject(deletingSubject._id);
-      toast.success('Subject deleted successfully');
+      toast.success(t('deletedSuccessfully'));
       setDeletingSubject(null);
       setLoading(true);
       await fetchSubjects();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to delete subject';
+      const msg = err.response?.data?.message || t('failedToDelete');
       toast.error(msg);
     }
   };
@@ -81,12 +82,12 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
   const inactiveSubjects = subjects.filter((s) => s.status === 'Inactive').length;
 
   const tableColumns = [
-    { key: 'subjectName', label: 'Subject Name' },
-    { key: 'subjectCode', label: 'Subject Code' },
-    { key: 'classes', label: 'Assigned Classes' },
-    { key: 'teachers', label: 'Assigned Teachers' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions', className: 'text-right' },
+    { key: 'subjectName', label: t('subjectName') },
+    { key: 'subjectCode', label: t('subjectCode') },
+    { key: 'classes', label: t('classSubjectAssignment') },
+    { key: 'teachers', label: t('teacherSubjectAssignment') },
+    { key: 'status', label: t('status') },
+    { key: 'actions', label: t('actions'), className: 'text-right' },
   ];
 
   const renderTableRow = (subject) => (
@@ -126,7 +127,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
     return (
       <div className="flex items-center justify-between pt-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {Math.min(filteredSubjects.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filteredSubjects.length)} of {filteredSubjects.length}
+          {Math.min(filteredSubjects.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filteredSubjects.length)} {t('of')} {filteredSubjects.length}
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -134,7 +135,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
             disabled={currentPage === 1}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page) => (
             <button
@@ -154,7 +155,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
             disabled={currentPage === totalPages}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -164,7 +165,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
   if (loading) {
     return (
       <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-        <p className="text-sm">Loading subjects...</p>
+        <p className="text-sm">{t('loadingSubjects')}</p>
       </div>
     );
   }
@@ -172,10 +173,10 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Subjects</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('allSubjects')}</h1>
         <div className="w-full sm:w-56">
           <SearchInput
-            placeholder="Search Subject Name"
+            placeholder={t('search')}
             value={search}
             onChange={(v) => { setSearch(v); setCurrentPage(1); }}
           />
@@ -183,15 +184,15 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard icon={BookOpenIcon} label="Total Subjects" value={totalSubjects} color="blue" />
-        <StatCard icon={CheckCircleIcon} label="Active Subjects" value={activeSubjects} color="green" />
-        <StatCard icon={XCircleIcon} label="Inactive Subjects" value={inactiveSubjects} color="red" />
+        <StatCard icon={BookOpenIcon} label={t('total') + ' ' + t('subject') + 's'} value={totalSubjects} color="blue" />
+        <StatCard icon={CheckCircleIcon} label={t('active') + ' ' + t('subject') + 's'} value={activeSubjects} color="green" />
+        <StatCard icon={XCircleIcon} label={t('inactive') + ' ' + t('subject') + 's'} value={inactiveSubjects} color="red" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
         <div className="w-full sm:w-36">
           <FilterDropdown
-            label="Status"
+            label={t('status')}
             options={statusOptions}
             value={statusFilter}
             onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
@@ -202,7 +203,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
           className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer sm:self-end"
         >
           <ArrowPathIcon className="h-4 w-4" />
-          Reset
+          {t('reset')}
         </button>
         <div className="sm:ml-auto">
           <ViewToggle view={view} onChange={setView} />
@@ -226,7 +227,7 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
         <>
           {paginatedSubjects.length === 0 ? (
             <div className="text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <p className="text-sm">No subjects found</p>
+              <p className="text-sm">{t('noSubjects')}</p>
             </div>
           ) : (
             <>
@@ -256,10 +257,10 @@ const AllSubjects = ({ onViewDetails, onEditSubject, selectedSubject, onCloseVie
       <ConfirmationModal
         isOpen={!!deletingSubject}
         onClose={() => setDeletingSubject(null)}
-        title="Delete Subject"
-        message="Are you sure you want to delete this subject? It will also be removed from all class and teacher assignments."
-        confirmLabel="Confirm Delete"
-        cancelLabel="Cancel"
+        title={t('delete')}
+        message={t('confirmDelete')}
+        confirmLabel={t('confirmDeleteLabel')}
+        cancelLabel={t('cancel')}
         variant="danger"
         onConfirm={handleDelete}
       />

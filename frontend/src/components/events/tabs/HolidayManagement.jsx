@@ -1,11 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import toast from 'react-hot-toast';
 import {
   ChevronDownIcon, EyeIcon, PencilSquareIcon, TrashIcon,
   XMarkIcon, PlusIcon,
 } from '@heroicons/react/24/outline';
 import ConfirmationModal from '../../common/ConfirmationModal';
+import Button from '../../common/Button';
 import eventsService from '../../../services/events.service';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,20 +31,46 @@ const getStatusStyle = (status) => {
 };
 
 const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHolidayEdit }) => {
+  const { t } = useTranslation();
+  const { academic } = useSchoolConfig();
   const [holidays, setHolidays] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ...initialForm });
-  const [academicYear, setAcademicYear] = useState('');
+  const [academicYear, setAcademicYear] = useState(academic.currentYear);
   const [typeFilter, setTypeFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewHoliday, setViewHoliday] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isEditing = !!editHoliday;
 
+  const fetchHolidays = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { page: currentPage, limit: ITEMS_PER_PAGE };
+      if (academicYear) params.academicYear = academicYear;
+      if (typeFilter) params.type = typeFilter;
+      const result = await eventsService.getHolidays(params);
+      setHolidays(result.holidays || []);
+      setTotalPages(result.pagination?.totalPages || 1);
+      setTotalItems(result.pagination?.totalItems || 0);
+    } catch {
+      setHolidays([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [academicYear, typeFilter, currentPage]);
+
   useEffect(() => {
-    setHolidays(eventsService.getHolidays());
-  }, []);
+    fetchHolidays();
+  }, [fetchHolidays]);
 
   useEffect(() => {
     if (editHoliday) {
@@ -57,16 +86,6 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
     }
   }, [editHoliday]);
 
-  const filtered = useMemo(() => {
-    let list = holidays;
-    if (academicYear) list = list.filter((h) => h.academicYear === academicYear);
-    if (typeFilter) list = list.filter((h) => h.type === typeFilter);
-    return list;
-  }, [holidays, academicYear, typeFilter]);
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const calcDays = (s, e) => {
@@ -74,46 +93,51 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
     return Math.floor((new Date(e) - new Date(s)) / (1000 * 60 * 60 * 24)) + 1;
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.name || !form.startDate || !form.endDate || !form.type) {
-      toast.error('Please fill required fields');
+      toast.error(t('pleaseFillRequired'));
       return;
     }
     if (new Date(form.endDate) < new Date(form.startDate)) {
-      toast.error('End date must be after start date');
+      toast.error(t('endDateAfterStart'));
       return;
     }
-    const totalDays = calcDays(form.startDate, form.endDate);
-    const holidayData = {
-      ...form,
-      startDateDisplay: new Date(form.startDate + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      endDateDisplay: new Date(form.endDate + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      totalDays,
-    };
-    if (isEditing) {
-      eventsService.updateHoliday(editHoliday.id, holidayData);
-      toast.success('Holiday updated successfully');
-      onClearHolidayEdit();
-    } else {
-      eventsService.addHoliday({
-        ...holidayData,
-        academicYear: eventsService.ACADEMIC_YEARS[0],
-        status: 'Upcoming',
-      });
-      toast.success('Holiday added successfully');
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        academicYear: academic.currentYear || eventsService.ACADEMIC_YEARS[0],
+      };
+      if (isEditing) {
+        await eventsService.updateHoliday(editHoliday._id, payload);
+        toast.success(`${t('holiday')} ${t('updatedSuccessfully')}`);
+        onClearHolidayEdit();
+      } else {
+        await eventsService.createHoliday(payload);
+        toast.success(`${t('holiday')} ${t('savedSuccessfully')}`);
+      }
+      setForm({ ...initialForm });
+      setShowForm(false);
+      onDataChange();
+    } catch (err) {
+      const msg = err.response?.data?.message || t('failedToSave');
+      toast.error(msg);
+    } finally {
+      setSaving(false);
     }
-    setForm({ ...initialForm });
-    setShowForm(false);
-    setHolidays(eventsService.getHolidays());
-    onDataChange();
   };
 
-  const handleDelete = () => {
-    eventsService.deleteHoliday(deleteTarget.id);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await eventsService.deleteHoliday(deleteTarget._id);
+      toast.success(t('holidayDeleted'));
+    } catch {
+      toast.error(t('failedToDelete'));
+    }
     setDeleteTarget(null);
-    setHolidays(eventsService.getHolidays());
+    setDeleting(false);
     onDataChange();
-    toast.success('Holiday deleted');
   };
 
   const renderPagination = () => {
@@ -127,7 +151,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
     return (
       <div className="flex items-center justify-between pt-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {Math.min(filtered.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+          {t('page')} {Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} {t('of')} {totalItems}
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -135,7 +159,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
             disabled={currentPage === 1}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page) => (
             <button
@@ -155,7 +179,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
             disabled={currentPage === totalPages}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -166,67 +190,67 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
     <div className="space-y-5">
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Holidays</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">{t('holiday')}s</h2>
           <button onClick={() => setShowForm(!showForm)}
             className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-sm transition-all flex items-center gap-2 cursor-pointer">
-            <PlusIcon className="h-4 w-4" /> {showForm ? 'Cancel' : 'Add Holiday'}
+            <PlusIcon className="h-4 w-4" /> {showForm ? t('cancel') : t('addHoliday')}
           </button>
         </div>
 
         {showForm && (
           <div className="mb-5 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-4">{isEditing ? 'Edit Holiday' : 'New Holiday'}</h3>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-4">{isEditing ? t('editHoliday') : t('newHoliday')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Holiday Name <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('holidayName')} <span className="text-red-500">*</span></label>
                 <input type="text" value={form.name} onChange={(e) => update('name', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Enter holiday name" />
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder={t('holidayName')} />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('startDate')} <span className="text-red-500">*</span></label>
                 <input type="date" value={form.startDate} onChange={(e) => update('startDate', e.target.value)}
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">End Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('endDate')} <span className="text-red-500">*</span></label>
                 <input type="date" value={form.endDate} onChange={(e) => update('endDate', e.target.value)}
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Holiday Type <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('holidayType')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <select value={form.type} onChange={(e) => update('type', e.target.value)}
                     className="appearance-none w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                    <option value="" disabled>Select type</option>
+                    <option value="" disabled>{t('selectType')}</option>
                     {eventsService.HOLIDAY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 </div>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Applies To</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('appliesTo')}</label>
                 <div className="relative">
                   <select value={form.appliesTo} onChange={(e) => update('appliesTo', e.target.value)}
                     className="appearance-none w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                    <option value="" disabled>Select</option>
+                    <option value="" disabled>{t('select')}</option>
                     {eventsService.AUDIENCES.map((a) => <option key={a} value={a}>{a}</option>)}
                   </select>
                   <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 </div>
               </div>
               <div className="mb-4 sm:col-span-2 lg:col-span-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('description')}</label>
                 <input type="text" value={form.description} onChange={(e) => update('description', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Optional description" />
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder={t('notes')} />
               </div>
             </div>
             <div className="flex gap-3 mt-2">
-              <button onClick={handleAdd} className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer">
-                {isEditing ? 'Update Holiday' : 'Save Holiday'}
-              </button>
+              <Button onClick={handleAdd} loading={saving} className="!w-auto !px-5">
+                {isEditing ? t('updateHoliday') : t('saveHoliday')}
+              </Button>
               <button onClick={() => { setForm({ ...initialForm }); setShowForm(false); if (isEditing) onClearHolidayEdit(); }}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -234,22 +258,22 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Academic Year</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('academicYearLabel')}</label>
             <div className="relative mt-1">
               <select value={academicYear} onChange={(e) => { setAcademicYear(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Years</option>
+                <option value="">{t('allYears')}</option>
                 {eventsService.ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Holiday Type</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('holidayType')}</label>
             <div className="relative mt-1">
               <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Types</option>
+                <option value="">{t('allTypes')}</option>
                 {eventsService.HOLIDAY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -262,22 +286,22 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800">
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Holiday Name</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Start Date</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">End Date</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Total Days</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Holiday Type</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Applies To</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Status</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Actions</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('holidayName')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('startDate')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('endDate')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('totalDays')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('holidayType')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('appliesTo')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('status')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {paginated.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">No holidays found</td></tr>
+            {holidays.length === 0 ? (
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">{t('noHolidaysFound')}</td></tr>
             ) : (
-              paginated.map((h) => (
-                <tr key={h.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              holidays.map((h) => (
+                <tr key={h._id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{h.name}</td>
                   <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{h.startDateDisplay}</td>
                   <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{h.endDateDisplay}</td>
@@ -295,13 +319,13 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setViewHoliday(h)} className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title="View">
+                      <button onClick={() => setViewHoliday(h)} className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title={t('view')}>
                         <EyeIcon className="h-4 w-4" />
                       </button>
-                      <button onClick={() => onEditHoliday(h)} className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title="Edit">
+                      <button onClick={() => onEditHoliday(h)} className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title={t('edit')}>
                         <PencilSquareIcon className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setDeleteTarget(h)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title="Delete">
+                      <button onClick={() => setDeleteTarget(h)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title={t('delete')}>
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -311,9 +335,9 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
             )}
           </tbody>
         </table>
-        {filtered.length > 0 && (
+        {totalItems > 0 && (
           <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500">
-            {filtered.length} holiday{filtered.length !== 1 ? 's' : ''}
+            {totalItems} {totalItems !== 1 ? `${t('holiday')}s` : t('holiday')}
           </div>
         )}
       </div>
@@ -326,7 +350,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">Holiday Details</h2>
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t('holidayDetails')}</h2>
               <button onClick={() => setViewHoliday(null)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -335,13 +359,13 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
               <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">{viewHoliday.name}</h3>
               <div className="space-y-3">
                 {[
-                  ['Type', viewHoliday.type],
-                  ['Start Date', viewHoliday.startDateDisplay],
-                  ['End Date', viewHoliday.endDateDisplay],
-                  ['Total Days', viewHoliday.totalDays],
-                  ['Applies To', viewHoliday.appliesTo],
-                  ['Academic Year', viewHoliday.academicYear],
-                  ['Status', viewHoliday.status],
+                  [t('type'), viewHoliday.type],
+                  [t('startDate'), viewHoliday.startDateDisplay],
+                  [t('endDate'), viewHoliday.endDateDisplay],
+                  [t('totalDays'), viewHoliday.totalDays],
+                  [t('appliesTo'), viewHoliday.appliesTo],
+                  [t('academicYearLabel'), viewHoliday.academicYear],
+                  [t('status'), viewHoliday.status],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <span className="text-xs text-gray-500">{label}</span>
@@ -350,7 +374,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
                 ))}
                 {viewHoliday.description && (
                   <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">Description</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('description')}</p>
                     <p className="text-xs text-gray-700 dark:text-gray-300">{viewHoliday.description}</p>
                   </div>
                 )}
@@ -362,13 +386,14 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title="Delete Holiday"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        onClose={() => { if (!deleting) setDeleteTarget(null); }}
+        title={t('deleteHoliday')}
+        message={t('deleteHolidayConfirm', { name: deleteTarget?.name })}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
         variant="danger"
         onConfirm={handleDelete}
+        loading={deleting}
       />
     </div>
   );

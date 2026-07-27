@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from '../../../hooks/useLocalization';
 import { BookOpenIcon, CheckCircleIcon, XCircleIcon, UsersIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import FilterDropdown from '../../common/FilterDropdown';
@@ -15,14 +16,13 @@ import { ACADEMIC_YEARS } from '../../../utils/classNames';
 
 const ITEMS_PER_PAGE = 10;
 
-const academicYearOptions = ['All Years', ...ACADEMIC_YEARS];
-
-const statusOptions = ['All', 'Active', 'Inactive'];
-
 const AllClasses = ({ onViewDetails, onEditClass }) => {
+  const { t } = useTranslation();
+  const academicYearOptions = [t('allYears'), ...ACADEMIC_YEARS];
+  const statusOptions = [t('all'), t('active'), t('inactive')];
   const [view, setView] = useState('table');
-  const [academicYearFilter, setAcademicYearFilter] = useState('All Years');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [academicYearFilter, setAcademicYearFilter] = useState(t('allYears'));
+  const [statusFilter, setStatusFilter] = useState(t('all'));
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [classes, setClasses] = useState([]);
@@ -34,7 +34,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
       const result = await classService.getAllClasses();
       setClasses(result.data?.classes || []);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to load classes';
+      const msg = err.response?.data?.message || t('failedToLoad');
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -80,8 +80,8 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
   );
 
   const handleReset = () => {
-    setAcademicYearFilter('All Years');
-    setStatusFilter('All');
+    setAcademicYearFilter(t('allYears'));
+    setStatusFilter(t('all'));
     setSearchQuery('');
     setCurrentPage(1);
   };
@@ -91,12 +91,12 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
 
     try {
       await classService.deleteClass(deletingClass._id);
-      toast.success('Class deleted successfully');
+      toast.success(t('deletedSuccessfully'));
       setDeletingClass(null);
       setLoading(true);
       await fetchClasses();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to delete class';
+      const msg = err.response?.data?.message || t('failedToDelete');
       toast.error(msg);
     }
   };
@@ -109,11 +109,11 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
   };
 
   const tableColumns = [
-    { key: 'className', label: 'Class Name' },
-    { key: 'academicYear', label: 'Academic Year' },
-    { key: 'students', label: 'Total Students' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions', className: 'text-right' },
+    { key: 'className', label: t('className') },
+    { key: 'academicYear', label: t('academicYearLabel') },
+    { key: 'students', label: t('totalStudentsInClass') },
+    { key: 'status', label: t('status') },
+    { key: 'actions', label: t('actions'), className: 'text-right' },
   ];
 
   const renderTableRow = (classData) => (
@@ -152,7 +152,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
     return (
       <div className="flex items-center justify-between pt-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {Math.min(filteredClasses.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filteredClasses.length)} of {filteredClasses.length}
+          {Math.min(filteredClasses.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filteredClasses.length)} {t('of')} {filteredClasses.length}
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -160,7 +160,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
             disabled={currentPage === 1}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page) => (
             <button
@@ -180,7 +180,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
             disabled={currentPage === totalPages}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -190,7 +190,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
   if (loading) {
     return (
       <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-        <p className="text-sm">Loading classes...</p>
+        <p className="text-sm">{t('loadingClasses')}</p>
       </div>
     );
   }
@@ -198,20 +198,20 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Classes</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('allClassesTitle')}</h1>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={BookOpenIcon} label="Total Classes" value={statistics.totalClasses} color="blue" />
-        <StatCard icon={CheckCircleIcon} label="Active Classes" value={statistics.activeClasses} color="green" />
-        <StatCard icon={XCircleIcon} label="Inactive Classes" value={statistics.inactiveClasses} color="red" />
-        <StatCard icon={UsersIcon} label="Total Students" value={statistics.totalStudents} color="yellow" />
+        <StatCard icon={BookOpenIcon} label={t('totalClasses')} value={statistics.totalClasses} color="blue" />
+        <StatCard icon={CheckCircleIcon} label={t('active')} value={statistics.activeClasses} color="green" />
+        <StatCard icon={XCircleIcon} label={t('inactive')} value={statistics.inactiveClasses} color="red" />
+        <StatCard icon={UsersIcon} label={t('totalStudentsInClass')} value={statistics.totalStudents} color="yellow" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
         <div className="w-full sm:w-44">
           <FilterDropdown
-            label="Academic Year"
+            label={t('academicYearLabel')}
             options={academicYearOptions}
             value={academicYearFilter}
             onChange={(v) => { setAcademicYearFilter(v); setCurrentPage(1); }}
@@ -219,7 +219,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
         </div>
         <div className="w-full sm:w-36">
           <FilterDropdown
-            label="Status"
+            label={t('statusLabel')}
             options={statusOptions}
             value={statusFilter}
             onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
@@ -227,7 +227,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
         </div>
         <div className="w-full sm:w-56">
           <SearchInput
-            placeholder="Search Class"
+            placeholder={t('search')}
             value={searchQuery}
             onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }}
           />
@@ -237,7 +237,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
           className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer sm:self-end"
         >
           <ArrowPathIcon className="h-4 w-4" />
-          Reset
+          {t('reset')}
         </button>
         <div className="sm:ml-auto">
           <ViewToggle view={view} onChange={setView} />
@@ -261,7 +261,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
         <>
           {paginatedClasses.length === 0 ? (
             <div className="text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <p className="text-sm">No classes found</p>
+              <p className="text-sm">{t('noClasses')}</p>
             </div>
           ) : (
             <>
@@ -285,10 +285,10 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
       <ConfirmationModal
         isOpen={!!deletingClass}
         onClose={() => setDeletingClass(null)}
-        title="Delete Class"
-        message="Are you sure you want to delete this class?"
-        confirmLabel="Confirm Delete"
-        cancelLabel="Cancel"
+        title={t('delete')}
+        message={t('confirmDelete')}
+        confirmLabel={t('confirmDeleteLabel')}
+        cancelLabel={t('cancel')}
         variant="danger"
         onConfirm={handleDelete}
       />

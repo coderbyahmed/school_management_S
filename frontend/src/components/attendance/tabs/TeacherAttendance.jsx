@@ -12,6 +12,7 @@ import Modal from '../../common/Modal';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import Spinner from '../../common/Spinner';
+import { useFormatTime } from '../../../hooks/useLocalization';
 
 const STATUS_OPTIONS = ['Present', 'Absent', 'Leave', 'Late'];
 const ATTENDANCE_MODES = ['Manual', 'Biometric Device'];
@@ -33,12 +34,8 @@ const STATUS_COLORS = {
 
 const PAGE_SIZE = 10;
 
-const formatTime = () => {
-  const now = new Date();
-  return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-};
-
 const TeacherAttendance = () => {
+  const formatTime = useFormatTime();
   const [academicYear, setAcademicYear] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);

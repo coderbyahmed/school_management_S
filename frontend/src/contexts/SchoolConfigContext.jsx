@@ -6,10 +6,12 @@ const SchoolConfigContext = createContext();
 
 const DEFAULTS = {
   schoolInfo: { name: '', shortName: '', registrationNumber: '', principalName: '', email: '', contact: '', whatsapp: '', website: '', address: '', city: '', province: '', country: '', mapLocation: '', logo: null },
-  academic: { currentYear: '', shift: 'Morning', language: 'English', timezone: 'Asia/Karachi', schoolStartTime: '', schoolEndTime: '', attendanceStartTime: '', attendanceClosingTime: '' },
+  academic: { currentYear: '', shift: 'Morning', language: 'English', schoolStartTime: '', schoolEndTime: '', attendanceStartTime: '', attendanceClosingTime: '' },
   branding: { adminLogo: null, smallLogo: null, signature: null, stamp: null, pdfHeader: '', pdfFooter: '', reportCardHeader: '', certificateHeader: '', idCardHeader: '', idCardFooter: '', receiptHeader: '', receiptFooter: '', footerText: '' },
-  localization: { currency: '', currencySymbol: '', dateFormat: '', timeFormat: '' },
+  localization: { currency: '', currencySymbol: '', defaultLanguage: 'English', timeFormat: '' },
   preferences: { autoLogout: true, defaultLandingPage: '', enableNotifications: true, enableEmailNotifications: true, enableSmsNotifications: false, enableWhatsAppNotifications: false },
+  attendanceRules: { allowEditAfterSubmit: false, editTimeLimit: 1, autoMarkAbsent: false, lateAllowed: false, lateGracePeriod: 5, allowLeaveMarking: true, allowHalfDayLeave: false },
+  weekendSettings: { enabled: true, days: ['Saturday', 'Sunday'] },
   login: { showSchoolLogoOnLogin: true, showSchoolNameOnLogin: true, splashEnabled: true, loaderStyle: '' },
 };
 
@@ -37,7 +39,7 @@ export const SchoolConfigProvider = ({ children }) => {
         },
         academic: {
           currentYear: s.currentAcademicYear || '', shift: s.schoolShift || 'Morning',
-          language: s.defaultLanguage || 'English', timezone: s.timezone || 'Asia/Karachi',
+          language: s.defaultLanguage || 'English',
           schoolStartTime: s.schoolStartTime || '', schoolEndTime: s.schoolEndTime || '',
           attendanceStartTime: s.attendanceStartTime || '', attendanceClosingTime: s.attendanceClosingTime || '',
         },
@@ -52,7 +54,8 @@ export const SchoolConfigProvider = ({ children }) => {
         },
         localization: {
           currency: s.currency || '', currencySymbol: s.currencySymbol || '',
-          dateFormat: s.dateFormat || '', timeFormat: s.timeFormat || '',
+          defaultLanguage: s.defaultLanguage || 'English',
+          timeFormat: s.timeFormat || '',
         },
         preferences: {
           autoLogout: s.autoLogout ?? true,
@@ -61,6 +64,19 @@ export const SchoolConfigProvider = ({ children }) => {
           enableEmailNotifications: s.enableEmailNotifications ?? true,
           enableSmsNotifications: s.enableSmsNotifications ?? false,
           enableWhatsAppNotifications: s.enableWhatsAppNotifications ?? false,
+        },
+        attendanceRules: {
+          allowEditAfterSubmit: s.allowEditAfterSubmit ?? false,
+          editTimeLimit: s.editTimeLimit ?? 1,
+          autoMarkAbsent: s.autoMarkAbsent ?? false,
+          lateAllowed: s.lateAllowed ?? false,
+          lateGracePeriod: s.lateGracePeriod ?? 5,
+          allowLeaveMarking: s.allowLeaveMarking ?? true,
+          allowHalfDayLeave: s.allowHalfDayLeave ?? false,
+        },
+        weekendSettings: {
+          enabled: s.weekendEnabled ?? true,
+          days: s.weekendDays || ['Saturday', 'Sunday'],
         },
         login: {
           showSchoolLogoOnLogin: s.showSchoolLogoOnLogin ?? true,

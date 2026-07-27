@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import toast from 'react-hot-toast';
 import { UsersIcon, UserGroupIcon, UserMinusIcon, UserPlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
@@ -19,16 +20,18 @@ import Spinner from '../../common/Spinner';
 
 const ITEMS_PER_PAGE = 10;
 
-const classOptions = ['All Classes', ...CLASS_NAMES];
-
-const statusOptions = ['All', 'Active', 'Inactive'];
-
 const AllStudents = () => {
+  const { t } = useTranslation();
+
+  const classOptions = [t('allClasses'), ...CLASS_NAMES];
+
+  const statusOptions = [t('all'), t('active'), t('inactive')];
+
   const [view, setView] = useState('table');
   const [search, setSearch] = useState('');
   const [studentIdFilter, setStudentIdFilter] = useState('');
-  const [classFilter, setClassFilter] = useState('All Classes');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [classFilter, setClassFilter] = useState(t('allClasses'));
+  const [statusFilter, setStatusFilter] = useState(t('all'));
   const [currentPage, setCurrentPage] = useState(1);
   const [students, setStudents] = useState([]);
   const [pagination, setPagination] = useState({ totalStudents: 0, totalPages: 0, currentPage: 1 });
@@ -55,7 +58,7 @@ const AllStudents = () => {
       setStudents(result.data.students);
       setPagination(result.data.pagination);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to load students';
+      const msg = err.response?.data?.message || t('failedToLoad');
       setFetchError(msg);
       setStudents([]);
     } finally {
@@ -71,8 +74,8 @@ const AllStudents = () => {
   }, [currentPage, classFilter, statusFilter, search, studentIdFilter, fetchStudents]);
 
   const handleReset = () => {
-    setClassFilter('All Classes');
-    setStatusFilter('All');
+    setClassFilter(t('allClasses'));
+    setStatusFilter(t('all'));
     setSearch('');
     setStudentIdFilter('');
     setCurrentPage(1);
@@ -88,11 +91,11 @@ const AllStudents = () => {
     setDeleteLoading(true);
     try {
       await studentService.deleteStudent(deletingStudent.studentId);
-      toast.success('Student deleted successfully');
+      toast.success(t('deletedSuccessfully'));
       setDeletingStudent(null);
       fetchStudents();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete student');
+      toast.error(err.response?.data?.message || t('failedToDelete'));
     } finally {
       setDeleteLoading(false);
     }
@@ -104,13 +107,13 @@ const AllStudents = () => {
   const newAdmissions = students.filter((s) => ['Nursery', 'Montessori', 'KG 1'].includes(s.class)).length;
 
   const tableColumns = [
-    { key: 'student', label: 'Student' },
-    { key: 'id', label: 'Student ID' },
-    { key: 'class', label: 'Class' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'parentPhone', label: 'Parent Phone' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions', className: 'text-right' },
+    { key: 'student', label: t('student') },
+    { key: 'id', label: t('studentIdLabel') },
+    { key: 'class', label: t('class') },
+    { key: 'gender', label: t('gender') },
+    { key: 'parentPhone', label: t('parentPhone') },
+    { key: 'status', label: t('status') },
+    { key: 'actions', label: t('actions'), className: 'text-right' },
   ];
 
   const renderTableRow = (student) => (
@@ -126,7 +129,7 @@ const AllStudents = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">{student.fullName}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Son of {student.fatherName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('sonOf')}{student.fatherName}</p>
           </div>
         </div>
       </td>
@@ -171,7 +174,7 @@ const AllStudents = () => {
     return (
       <div className="flex items-center justify-between pt-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {startRecord}–{endRecord} of {pagination.totalStudents}
+          {t('showing')} {startRecord}–{endRecord} {t('of')} {pagination.totalStudents}
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -179,7 +182,7 @@ const AllStudents = () => {
             disabled={safeCurrentPage === 1 || loading}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {start > 1 && (
             <>
@@ -212,7 +215,7 @@ const AllStudents = () => {
             disabled={safeCurrentPage === totalPages || loading}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -228,10 +231,10 @@ const AllStudents = () => {
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Students</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('studentManagement')}</h1>
         <div className="w-full sm:w-56">
           <SearchInput
-            placeholder="Student ID"
+            placeholder={t('studentIdLabel')}
             value={studentIdFilter}
             onChange={(v) => { setStudentIdFilter(v); setCurrentPage(1); }}
           />
@@ -239,16 +242,16 @@ const AllStudents = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={UsersIcon} label="Total Students" value={totalStudents} color="blue" />
-        <StatCard icon={UserGroupIcon} label="Active Students" value={activeStudents} color="green" />
-        <StatCard icon={UserMinusIcon} label="Inactive Students" value={inactiveStudents} color="red" />
-        <StatCard icon={UserPlusIcon} label="New Admissions" value={newAdmissions} color="yellow" />
+        <StatCard icon={UsersIcon} label={t('totalStudents')} value={totalStudents} color="blue" />
+        <StatCard icon={UserGroupIcon} label={t('activeStudents')} value={activeStudents} color="green" />
+        <StatCard icon={UserMinusIcon} label={t('inactiveStudents')} value={inactiveStudents} color="red" />
+        <StatCard icon={UserPlusIcon} label={t('newAdmissions')} value={newAdmissions} color="yellow" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
         <div className="w-full sm:w-44">
           <FilterDropdown
-            label="Class"
+            label={t('class')}
             options={classOptions}
             value={classFilter}
             onChange={(v) => { setClassFilter(v); setCurrentPage(1); }}
@@ -256,7 +259,7 @@ const AllStudents = () => {
         </div>
         <div className="w-full sm:w-36">
           <FilterDropdown
-            label="Status"
+            label={t('status')}
             options={statusOptions}
             value={statusFilter}
             onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
@@ -264,10 +267,10 @@ const AllStudents = () => {
         </div>
         <div className="w-full sm:w-56">
           <label className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">
-            Search (ID, Name, Father Name)
+            {t('searchNameOrId')}
           </label>
           <SearchInput
-            placeholder="Search..."
+            placeholder={t('search')}
             value={search}
             onChange={(v) => { setSearch(v); setCurrentPage(1); }}
           />
@@ -277,7 +280,7 @@ const AllStudents = () => {
           className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer sm:self-end"
         >
           <ArrowPathIcon className="h-4 w-4" />
-          Reset
+          {t('reset')}
         </button>
         <div className="sm:ml-auto">
           <ViewToggle view={view} onChange={setView} />
@@ -300,7 +303,7 @@ const AllStudents = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {students.length === 0 ? (
                   <div className="col-span-full text-center py-8 text-gray-400 dark:text-gray-500">
-                    No records found
+                    {t('noData')}
                   </div>
                 ) : (
                   students.map((student) => (
@@ -337,10 +340,10 @@ const AllStudents = () => {
       <ConfirmationModal
         isOpen={!!deletingStudent}
         onClose={() => setDeletingStudent(null)}
-        title="Delete Student"
-        message={`Are you sure you want to delete ${deletingStudent?.fullName || 'this student'}?`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={`${t('delete')} ${t('student')}`}
+        message={`${t('confirmDelete')}`}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
         variant="danger"
         loading={deleteLoading}
         onConfirm={handleDeleteConfirm}

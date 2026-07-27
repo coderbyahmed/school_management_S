@@ -8,6 +8,7 @@ import teacherService from '../../../services/teacher.service';
 import subjectService from '../../../services/subject.service';
 import timetableService from '../../../services/timetable.service';
 import { useTimetableYear } from '../../../contexts/TimetableContext';
+import { useTranslation } from '../../../hooks/useLocalization';
 
 const GROUPS = {
   1: { name: 'Group 1', classes: ['Montessori', 'Nursery', 'KG 1', 'KG 2'] },
@@ -29,7 +30,7 @@ const timeToMinutes = (t) => {
   return h * 60 + m;
 };
 
-const validatePeriod = (period, ttlStart, ttlEnd) => {
+const validatePeriod = (period, ttlStart, ttlEnd, tr) => {
   const errors = {};
 
   if (period.startTime && period.endTime) {
@@ -37,13 +38,13 @@ const validatePeriod = (period, ttlStart, ttlEnd) => {
     const startMins = timeToMinutes(period.startTime);
 
     if (endMins <= startMins) {
-      errors.endTime = 'End time must be after start time.';
+      errors.endTime = tr('endDateAfterStart');
     } else if (ttlEnd && endMins > timeToMinutes(ttlEnd)) {
-      errors.endTime = 'End time exceeds timetable end time.';
+      errors.endTime = tr('endDateAfterStart');
     }
 
     if (!errors.endTime && ttlStart && startMins < timeToMinutes(ttlStart)) {
-      errors.startTime = 'Start time cannot be before timetable start time.';
+      errors.startTime = tr('endDateAfterStart');
     }
   }
 
@@ -53,12 +54,12 @@ const validatePeriod = (period, ttlStart, ttlEnd) => {
       if (!cell?.teacher) {
         if (!errors.cellErrors) errors.cellErrors = {};
         if (!errors.cellErrors[name]) errors.cellErrors[name] = {};
-        errors.cellErrors[name].teacher = 'Teacher is required.';
+        errors.cellErrors[name].teacher = tr('fieldRequired');
       }
       if (!cell?.subject) {
         if (!errors.cellErrors) errors.cellErrors = {};
         if (!errors.cellErrors[name]) errors.cellErrors[name] = {};
-        errors.cellErrors[name].subject = 'Subject is required.';
+        errors.cellErrors[name].subject = tr('fieldRequired');
       }
       if (cell?.teacher) {
         if (!teacherMap[cell.teacher]) teacherMap[cell.teacher] = [];
@@ -70,7 +71,7 @@ const validatePeriod = (period, ttlStart, ttlEnd) => {
         classes.forEach((name) => {
           if (!errors.cellErrors) errors.cellErrors = {};
           if (!errors.cellErrors[name]) errors.cellErrors[name] = {};
-          errors.cellErrors[name].teacher = `Teacher is already assigned to ${classes.filter((c) => c !== name).join(', ')} in this period.`;
+          errors.cellErrors[name].teacher = tr('fieldRequired');
         });
       }
     });
@@ -80,6 +81,7 @@ const validatePeriod = (period, ttlStart, ttlEnd) => {
 };
 
 const CreateTimetable = () => {
+  const { t } = useTranslation();
   const { selectedYear, setSelectedYear, refreshKey, triggerTimetableRefresh } = useTimetableYear();
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [periods, setPeriods] = useState([]);
@@ -121,7 +123,7 @@ const CreateTimetable = () => {
         setClassIdMap(idMap);
         setClassSubjectsMap(subjMap);
       })
-      .catch(() => toast.error('Failed to load classes'));
+      .catch(() => toast.error(t('failedToLoad')));
   }, []);
 
   useEffect(() => {
@@ -130,7 +132,7 @@ const CreateTimetable = () => {
         const list = res?.data?.teachers || res?.data?.data?.teachers || [];
         setTeachers(Array.isArray(list) ? list : []);
       })
-      .catch(() => toast.error('Failed to load teachers'));
+      .catch(() => toast.error(t('failedToLoad')));
   }, []);
 
   useEffect(() => {
@@ -275,8 +277,8 @@ const CreateTimetable = () => {
 
   // Validate a single period (used by handleSavePeriod)
   const getPeriodErrors = useCallback((period) => {
-    return validatePeriod(period, periodStartTime, periodEndTime);
-  }, [periodStartTime, periodEndTime]);
+    return validatePeriod(period, periodStartTime, periodEndTime, t);
+  }, [periodStartTime, periodEndTime, t]);
 
   // Save one period card independently
   const handleSavePeriod = useCallback(async (periodId) => {
@@ -326,7 +328,7 @@ const CreateTimetable = () => {
         successCount++;
       } catch (err) {
         failCount++;
-        toast.error(`${className}: ${err?.response?.data?.message || 'Save failed'}`);
+        toast.error(`${className}: ${err?.response?.data?.message || t('failedToSave')}`);
       }
     }
 
@@ -335,10 +337,10 @@ const CreateTimetable = () => {
       setEditingIds((prev) => { const next = new Set(prev); next.delete(periodId); return next; });
       setPeriodErrors((prev) => { const next = { ...prev }; delete next[periodId]; return next; });
       localStorage.removeItem(DRAFT_KEY(selectedYear, selectedGroup));
-      toast.success(`Period ${period.periodNo} saved`);
+      toast.success(`${t('period')} ${period.periodNo} ${t('savedSuccessfully')}`);
       triggerTimetableRefresh();
     }
-    if (failCount > 0) toast.error(`${failCount} class(es) failed to save.`);
+    if (failCount > 0) toast.error(t('failedToSave'));
     setSavingPeriodId(null);
   }, [periods, selectedYear, selectedGroup, groupClasses, classIdMap, periodStartTime, periodEndTime, getPeriodErrors, triggerTimetableRefresh]);
 
@@ -478,24 +480,24 @@ const CreateTimetable = () => {
   const renderPeriodHeader = (period, err, isEditable) => (
     <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700">
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Period {period.periodNo}</span>
+        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{t('period')} {period.periodNo}</span>
 
         {isEditable ? (
           <>
             <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-              <button onClick={() => updatePeriod(period.id, 'type', 'teaching')} className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all cursor-pointer ${period.type === 'teaching' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>Teaching</button>
-              <button onClick={() => updatePeriod(period.id, 'type', 'break')} className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all cursor-pointer ${period.type === 'break' ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>Break</button>
+              <button onClick={() => updatePeriod(period.id, 'type', 'teaching')} className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all cursor-pointer ${period.type === 'teaching' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>{t('type')}</button>
+              <button onClick={() => updatePeriod(period.id, 'type', 'break')} className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all cursor-pointer ${period.type === 'break' ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>{t('other')}</button>
             </div>
 
             <div className="flex items-center gap-2">
               <div>
-                <label className={labelCls}>Start</label>
+                <label className={labelCls}>{t('startTime')}</label>
                 <input type="time" value={period.startTime} onChange={(e) => updatePeriod(period.id, 'startTime', e.target.value)} className={`${err?.startTime ? inputCls.replace('border-gray-300 dark:border-gray-600', 'border-red-400 dark:border-red-500') : inputCls} w-28`} />
                 {err?.startTime && <p className="text-[9px] text-red-500 dark:text-red-400 mt-0.5">{err.startTime}</p>}
               </div>
               <span className="text-gray-400 mt-4">&ndash;</span>
               <div>
-                <label className={labelCls}>End</label>
+                <label className={labelCls}>{t('endTime')}</label>
                 <input type="time" value={period.endTime} onChange={(e) => updatePeriod(period.id, 'endTime', e.target.value)} className={`${err?.endTime ? inputCls.replace('border-gray-300 dark:border-gray-600', 'border-red-400 dark:border-red-500') : inputCls} w-28`} />
                 {err?.endTime && !err?.timeOverlap && <p className="text-[9px] text-red-500 dark:text-red-400 mt-0.5">{err.endTime}</p>}
               </div>
@@ -504,7 +506,7 @@ const CreateTimetable = () => {
         ) : (
           <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
             <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${period.type === 'break' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}`}>
-              {period.type === 'break' ? 'Break' : 'Teaching'}
+              {period.type === 'break' ? t('other') : t('type')}
             </span>
             <span>{period.startTime} &ndash; {period.endTime}</span>
           </div>
@@ -522,14 +524,14 @@ const CreateTimetable = () => {
                 : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800'
             }`}
           >
-            {isSavingThis(period.id) ? 'Saving...' : 'Save Changes'}
+            {isSavingThis(period.id) ? t('saving') : t('save')}
           </button>
         ) : (
           <button
             onClick={() => toggleEdit(period.id)}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer"
           >
-            Edit
+            {t('edit')}
           </button>
         )}
         <button
@@ -537,7 +539,7 @@ const CreateTimetable = () => {
           disabled={periods.length <= 1 || isSavingThis(period.id)}
           className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Delete
+          {t('delete')}
         </button>
       </div>
     </div>
@@ -547,9 +549,9 @@ const CreateTimetable = () => {
     <table className="w-full text-xs">
       <thead>
         <tr className="bg-gray-50 dark:bg-gray-700/20 border-b border-gray-100 dark:border-gray-700">
-          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-28">Class</th>
-          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Teacher</th>
-          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Subject</th>
+          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-28">{t('classLabel')}</th>
+          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('teacher')}</th>
+          <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('subject')}</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -567,7 +569,7 @@ const CreateTimetable = () => {
                 <td className="px-3 py-2 align-middle"><span className="text-[11px] font-medium text-gray-700 dark:text-gray-200">{name}</span></td>
                 <td className="px-3 py-2 align-middle">
                   <select value={cell.teacher} onChange={(e) => updateCell(period.id, name, 'teacher', e.target.value)} className={`${selectCls} max-w-[200px]`}>
-                    <option value="" disabled>Select teacher</option>
+                    <option value="" disabled>{t('select')}</option>
                     {teachers.map((t) => (
                       <option key={t._id} value={t._id}>{t.fullName}</option>
                     ))}
@@ -577,7 +579,7 @@ const CreateTimetable = () => {
                 <td className="px-3 py-2 align-middle">
                   <select value={cell.subject} onChange={(e) => updateCell(period.id, name, 'subject', e.target.value)} disabled={!cell.teacher || availSubjects.length === 0} className={`${selectCls} max-w-[200px]`}>
                     <option value="" disabled>
-                      {!cell.teacher ? 'Select teacher first' : availSubjects.length === 0 ? 'No matching subject is assigned to both this Teacher and this Class.' : 'Select subject'}
+                      {!cell.teacher ? t('select') : availSubjects.length === 0 ? t('noData') : t('select')}
                     </option>
                     {availSubjects.map((s) => (
                       <option key={s._id} value={s._id}>{s.subjectName || s.name || s._id}</option>
@@ -605,7 +607,7 @@ const CreateTimetable = () => {
   const renderBreakBody = () => (
     <div className="px-4 py-6 flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400">
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-      <span className="text-sm font-medium">Break Period</span>
+              <span className="text-sm font-medium">{t('other')}</span>
     </div>
   );
 
@@ -614,11 +616,11 @@ const CreateTimetable = () => {
       {showDraftDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Unsaved timetable draft found</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">You have an unsaved draft from a previous session.</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('warning')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('confirmAction')}</p>
             <div className="flex items-center gap-3 justify-end">
-              <button onClick={handleDiscardDraft} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">Discard Draft</button>
-              <button onClick={handleContinueDraft} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer">Continue Editing</button>
+              <button onClick={handleDiscardDraft} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">{t('reset')}</button>
+              <button onClick={handleContinueDraft} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer">{t('edit')}</button>
             </div>
           </div>
         </div>
@@ -628,26 +630,26 @@ const CreateTimetable = () => {
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Period</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">This period will be removed from ALL classes in this group. This action cannot be undone.</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('delete')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('confirmDelete')}</p>
             <div className="flex items-center gap-3 justify-end">
-              <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">Cancel</button>
-              <button onClick={() => removePeriod(confirmDeleteId)} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm transition-all cursor-pointer">Delete</button>
+              <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">{t('cancel')}</button>
+              <button onClick={() => removePeriod(confirmDeleteId)} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm transition-all cursor-pointer">{t('delete')}</button>
             </div>
           </div>
         </div>
       )}
 
-      <CardSection title="Timetable Settings">
+      <CardSection title={t('timetable')}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="w-full sm:w-48">
             <SelectInput
-              label="Academic Year"
+              label={t('academicYearLabel')}
               name="academicYear"
               value={selectedYear}
               onChange={(e) => handleYearChange(e.target.value)}
               options={ACADEMIC_YEARS}
-              placeholder="Select year"
+              placeholder={t('selectYear')}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -663,11 +665,11 @@ const CreateTimetable = () => {
           </div>
           <div className="flex items-center gap-3">
             <div>
-              <label className={labelCls}>Period Start Time</label>
+              <label className={labelCls}>{t('startTime')}</label>
               <input type="time" value={periodStartTime} onChange={(e) => setPeriodStartTime(e.target.value)} className={`${inputCls} w-28`} />
             </div>
             <div>
-              <label className={labelCls}>Period End Time</label>
+              <label className={labelCls}>{t('endTime')}</label>
               <input type="time" value={periodEndTime} onChange={(e) => setPeriodEndTime(e.target.value)} className={`${inputCls} w-28`} />
             </div>
           </div>
@@ -678,18 +680,18 @@ const CreateTimetable = () => {
               className="px-5 py-2 rounded-lg text-[13px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-              Add Period
+              {t('add')}
             </button>
           </div>
         </div>
         {loading && (
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3">Loading existing timetables...</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3">{t('loading')}</p>
         )}
         {!loading && selectedGroup && selectedYear && periods.length > 0 && (
           <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-3">{GROUPS[selectedGroup]?.name} &middot; {periods.length} period(s)</p>
         )}
         {!loading && selectedGroup && selectedYear && periods.length === 0 && (
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3">No periods yet. Click &ldquo;Add Period&rdquo; to start building.</p>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3">{t('noData')}</p>
         )}
       </CardSection>
 
@@ -715,14 +717,14 @@ const CreateTimetable = () => {
       )}
 
       {periods.length === 0 && !loading && (
-        <CardSection title="Timetable Builder">
+        <CardSection title={t('timetable')}>
           <div className="py-12 flex flex-col items-center justify-center text-center">
             <svg className="h-14 w-14 text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No periods yet</h3>
+            <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">{t('noData')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
               {!selectedYear || !selectedGroup
-                ? 'Select Academic Year and Group to begin.'
-                : 'Click "Add Period" to start building the group timetable.'}
+                ? t('selectAcademicYear')
+                : t('selectAcademicYear')}
             </p>
           </div>
         </CardSection>

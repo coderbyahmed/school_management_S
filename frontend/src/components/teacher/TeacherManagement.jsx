@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import AllTeachers from './tabs/AllTeachers';
 import AddTeacher from './tabs/AddTeacher';
-
-const tabs = ['All Teachers', 'Add Teacher'];
-
-const tabComponents = {
-  'All Teachers': AllTeachers,
-  'Add Teacher': AddTeacher,
-};
+import { useTranslation } from '../../hooks/useLocalization';
 
 const TeacherManagement = () => {
-  const [activeTab, setActiveTab] = useState('All Teachers');
+  const { t } = useTranslation();
+  const tabs = [t('allTeachers'), t('addTeacher')];
+  const tabComponents = { [tabs[0]]: AllTeachers, [tabs[1]]: AddTeacher };
+  const [activeTab, setActiveTab] = useState(t('allTeachers'));
 
   const ActiveComponent = tabComponents[activeTab];
 
@@ -34,7 +31,7 @@ const TeacherManagement = () => {
         </nav>
       </div>
 
-      <ActiveComponent onSuccess={() => setActiveTab('All Teachers')} />
+      <ActiveComponent onSuccess={() => setActiveTab(t('allTeachers'))} />
     </div>
   );
 };

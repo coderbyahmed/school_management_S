@@ -13,11 +13,10 @@ import TeacherViewModal from '../../common/TeacherViewModal';
 import EditTeacherModal from '../../common/EditTeacherModal';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import { getImageUrl } from '../../../utils/imageUrl';
+import { useTranslation } from '../../../hooks/useLocalization';
 import teacherService from '../../../services/teacher.service';
 
 const ITEMS_PER_PAGE = 10;
-
-const statusOptions = ['All', 'Active', 'Inactive'];
 
 const formatDate = (d) => {
   if (!d) return '-';
@@ -34,10 +33,12 @@ const isCurrentMonth = (d) => {
   return dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth();
 };
 
-const AllTeachers = () => {
+const AllTeachers = ({ onSuccess }) => {
+  const { t } = useTranslation();
+  const statusOptions = [t('all'), t('active'), t('inactive')];
   const [view, setView] = useState('table');
   const [teacherIdSearch, setTeacherIdSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState(t('all'));
   const [nameSearch, setNameSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -52,7 +53,7 @@ const AllTeachers = () => {
       const result = await teacherService.getAllTeachers({ page: currentPage, limit: ITEMS_PER_PAGE, status: statusFilter !== 'All' ? statusFilter : undefined, search: nameSearch || undefined });
       setTeachers(result.data?.teachers || []);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to load teachers';
+      const msg = err.response?.data?.message || t('failedToLoad');
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -75,7 +76,7 @@ const AllTeachers = () => {
   );
 
   const handleReset = () => {
-    setStatusFilter('All');
+    setStatusFilter(t('all'));
     setNameSearch('');
     setCurrentPage(1);
   };
@@ -87,7 +88,7 @@ const AllTeachers = () => {
 
   const handleEditSave = async (teacherId, formData) => {
     const result = await teacherService.updateTeacher(teacherId, formData);
-    toast.success('Teacher updated successfully');
+    toast.success(t('updatedSuccessfully'));
     await fetchTeachers();
     return result;
   };
@@ -95,26 +96,26 @@ const AllTeachers = () => {
   const handleDelete = async () => {
     try {
       await teacherService.deleteTeacher(deletingTeacher.teacherId);
-      toast.success('Teacher deleted successfully');
+      toast.success(t('deletedSuccessfully'));
       setDeletingTeacher(null);
       await fetchTeachers();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to delete teacher';
+      const msg = err.response?.data?.message || t('failedToDelete');
       toast.error(msg);
     }
   };
 
   const tableColumns = [
-    { key: 'teacher', label: 'Teacher' },
-    { key: 'teacherId', label: 'Teacher ID' },
-    { key: 'phone', label: 'Phone Number' },
-    { key: 'joiningDate', label: 'Joining Date' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions', className: 'text-right' },
+    { key: 'teacher', label: t('teacher') },
+    { key: 'teacherId', label: t('teacherIdLabel') },
+    { key: 'phone', label: t('phoneNumber') },
+    { key: 'joiningDate', label: t('joiningDate') },
+    { key: 'status', label: t('status') },
+    { key: 'actions', label: t('actions'), className: 'text-right' },
   ];
 
   const renderTableRow = (teacher) => {
-    const initials = teacher.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TC';
+    const initials = teacher.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || t('noDataDash');
     const imgSrc = getImageUrl(teacher.teacherImage);
 
     return (
@@ -130,7 +131,7 @@ const AllTeachers = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{teacher.fullName}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Son of {teacher.fatherName}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('sonOf')}{teacher.fatherName}</p>
             </div>
           </div>
         </td>
@@ -162,7 +163,7 @@ const AllTeachers = () => {
     return (
       <div className="flex items-center justify-between pt-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {Math.min(filteredTeachers.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filteredTeachers.length)} of {filteredTeachers.length}
+          {t('page')} {Math.min(filteredTeachers.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filteredTeachers.length)} {t('of')} {filteredTeachers.length}
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -170,7 +171,7 @@ const AllTeachers = () => {
             disabled={currentPage === 1}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page) => (
             <button
@@ -190,7 +191,7 @@ const AllTeachers = () => {
             disabled={currentPage === totalPages}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -200,10 +201,10 @@ const AllTeachers = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Teachers</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('manageTeachers')}</h1>
         <div className="w-full sm:w-64">
           <SearchInput
-            placeholder="Enter Teacher ID"
+            placeholder={t('enterTeacherId')}
             value={teacherIdSearch}
             onChange={(v) => { setTeacherIdSearch(v); setCurrentPage(1); }}
           />
@@ -211,16 +212,16 @@ const AllTeachers = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={UsersIcon} label="Total Teachers" value={totalTeachers} color="blue" />
-        <StatCard icon={UserGroupIcon} label="Active Teachers" value={activeTeachers} color="green" />
-        <StatCard icon={UserMinusIcon} label="Inactive Teachers" value={inactiveTeachers} color="red" />
-        <StatCard icon={UserPlusIcon} label="New Teachers" value={newTeachers} color="yellow" />
+        <StatCard icon={UsersIcon} label={t('totalTeachers')} value={totalTeachers} color="blue" />
+        <StatCard icon={UserGroupIcon} label={t('activeTeachers')} value={activeTeachers} color="green" />
+        <StatCard icon={UserMinusIcon} label={t('inactiveTeachers')} value={inactiveTeachers} color="red" />
+        <StatCard icon={UserPlusIcon} label={t('newTeachers')} value={newTeachers} color="yellow" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
         <div className="w-full sm:w-36">
           <FilterDropdown
-            label="Status"
+            label={t('status')}
             options={statusOptions}
             value={statusFilter}
             onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
@@ -228,10 +229,10 @@ const AllTeachers = () => {
         </div>
         <div className="w-full sm:w-56">
           <label className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">
-            Search By Name
+            {t('searchByName')}
           </label>
           <SearchInput
-            placeholder="Search Teacher Name"
+            placeholder={t('searchTeacherName')}
             value={nameSearch}
             onChange={(v) => { setNameSearch(v); setCurrentPage(1); }}
           />
@@ -241,7 +242,7 @@ const AllTeachers = () => {
           className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer sm:self-end"
         >
           <ArrowPathIcon className="h-4 w-4" />
-          Reset
+          {t('reset')}
         </button>
         <div className="sm:ml-auto">
           <ViewToggle view={view} onChange={setView} />
@@ -250,7 +251,7 @@ const AllTeachers = () => {
 
       {loading ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <p className="text-sm">Loading teachers...</p>
+          <p className="text-sm">{t('loadingTeachers')}</p>
         </div>
       ) : (
         <>
@@ -271,7 +272,7 @@ const AllTeachers = () => {
             <>
               {paginatedTeachers.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <p className="text-sm">No teachers found</p>
+                  <p className="text-sm">{t('noTeachersFound')}</p>
                 </div>
               ) : (
                 <>
@@ -311,10 +312,10 @@ const AllTeachers = () => {
       <ConfirmationModal
         isOpen={!!deletingTeacher}
         onClose={() => setDeletingTeacher(null)}
-        title="Delete Teacher"
-        message="Are you sure you want to delete this teacher?"
-        confirmLabel="Confirm Delete"
-        cancelLabel="Cancel"
+        title={t('deleteTeacher')}
+        message={t('deleteTeacherConfirm')}
+        confirmLabel={t('confirmDeleteLabel')}
+        cancelLabel={t('cancel')}
         variant="danger"
         onConfirm={handleDelete}
       />

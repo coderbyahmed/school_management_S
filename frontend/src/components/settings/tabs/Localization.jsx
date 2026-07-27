@@ -9,8 +9,6 @@ const CURRENCIES = [
 ];
 const CURRENCY_SYMBOLS = ['Rs.', '$', '€', '£', '₹', '﷼', 'د.إ', '৳'];
 const LANGUAGES = ['English', 'Urdu', 'Arabic', 'French'];
-const TIMEZONES = ['Asia/Karachi', 'Asia/Lahore', 'Asia/Islamabad', 'UTC', 'GMT'];
-const DATE_FORMATS = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD', 'DD-MM-YYYY'];
 const TIME_FORMATS = ['12', '24'];
 
 const Localization = ({ data, onSave, saving }) => {
@@ -76,24 +74,6 @@ const Localization = ({ data, onSave, saving }) => {
             onChange={handleChange('defaultLanguage')}
             options={LANGUAGES}
             placeholder="Select language"
-            disabled={!editing}
-          />
-          <SelectInput
-            label="Time Zone"
-            name="timeZone"
-            value={form.timeZone}
-            onChange={handleChange('timeZone')}
-            options={TIMEZONES}
-            placeholder="Select timezone"
-            disabled={!editing}
-          />
-          <SelectInput
-            label="Date Format"
-            name="dateFormat"
-            value={form.dateFormat}
-            onChange={handleChange('dateFormat')}
-            options={DATE_FORMATS}
-            placeholder="Select format"
             disabled={!editing}
           />
           <SelectInput

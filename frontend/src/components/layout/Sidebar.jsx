@@ -3,9 +3,11 @@ import { NavLink } from 'react-router-dom';
 import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, CurrencyDollarIcon, Cog6ToothIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import useSchoolBranding from '../../hooks/useSchoolBranding';
 import { getImageUrl } from '../../utils/imageUrl';
+import { useTranslation } from '../../hooks/useLocalization';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [feeOpen, setFeeOpen] = useState(false);
+  const { t } = useTranslation();
   const { schoolBranding } = useSchoolBranding();
   const logoUrl = schoolBranding?.adminPanelLogo ? getImageUrl(schoolBranding.adminPanelLogo) : null;
   const principalName = schoolBranding?.principalName || 'Admin Panel';
@@ -66,7 +68,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <button
                 onClick={toggleSidebar}
                 className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                aria-label="Open sidebar"
+          aria-label="Open sidebar"
               >
                 {logoUrl ? (
                   <img src={logoUrl} alt={principalName} className="w-full h-full object-cover" />
@@ -99,7 +101,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
                 {isOpen && (
-                  <span className="text-sm font-medium">Dashboard</span>
+                  <span className="text-sm font-medium">{t('dashboard')}</span>
                 )}
               </NavLink>
             </li>
@@ -119,7 +121,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <UserGroupIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">Student Management</span>
+                  <span className="text-sm font-medium">{t('studentManagement')}</span>
                 )}
               </NavLink>
             </li>
@@ -139,7 +141,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <AcademicCapIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">Teacher Management</span>
+                  <span className="text-sm font-medium">{t('teacherManagement')}</span>
                 )}
               </NavLink>
             </li>
@@ -159,7 +161,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <BookOpenIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">Class Management</span>
+                  <span className="text-sm font-medium">{t('classManagement')}</span>
                 )}
               </NavLink>
             </li>
@@ -179,7 +181,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <ClipboardDocumentListIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">Subject Management</span>
+                  <span className="text-sm font-medium">{t('subjectManagement')}</span>
                 )}
               </NavLink>
             </li>
@@ -199,7 +201,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <CalendarDaysIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">Timetable Management</span>
+                  <span className="text-sm font-medium">{t('timetable')}</span>
                 )}
               </NavLink>
             </li>
@@ -219,7 +221,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <CheckCircleIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">Attendance Management</span>
+                  <span className="text-sm font-medium">{t('attendanceManagement')}</span>
                 )}
               </NavLink>
             </li>
@@ -239,7 +241,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <SparklesIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">Events & Holidays</span>
+                  <span className="text-sm font-medium">{t('eventsAndHolidays')}</span>
                 )}
               </NavLink>
             </li>
@@ -252,17 +254,17 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   >
                     <div className="flex items-center gap-3">
                       <CurrencyDollarIcon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">Fee Management</span>
+                      <span className="text-sm font-medium">{t('feeManagement')}</span>
                     </div>
                     <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${feeOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {feeOpen && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
                       {[
-                        { to: '/admin/fees/dashboard', label: 'Fee Dashboard' },
-                        { to: '/admin/fees/structure', label: 'Fee Structure' },
-                        { to: '/admin/fees/students', label: 'Student Fees' },
-                        { to: '/admin/fees/reports', label: 'Reports & Settings' },
+                        { to: '/admin/fees/dashboard', label: t('feeDashboard') },
+                        { to: '/admin/fees/structure', label: t('feeStructure') },
+                        { to: '/admin/fees/students', label: t('studentFees') },
+                        { to: '/admin/fees/reports', label: t('reportsAndSettings') },
                       ].map((item) => (
                         <NavLink
                           key={item.to}
@@ -318,7 +320,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <Cog6ToothIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">School Settings</span>
+                  <span className="text-sm font-medium">{t('schoolSettings')}</span>
                 )}
               </NavLink>
             </li>

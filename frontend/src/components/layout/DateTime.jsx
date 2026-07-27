@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useFormatTime } from '../../hooks/useLocalization';
 
 const DateTime = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const formatTime = useFormatTime();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -11,8 +13,8 @@ const DateTime = () => {
   }, []);
 
   const formatDate = (date) => {
-    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-    return date.toLocaleDateString(undefined, options);
+    const datePart = date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    return `${datePart} ${formatTime(date)}`;
   };
 
   return (

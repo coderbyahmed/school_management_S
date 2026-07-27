@@ -3,6 +3,7 @@ import { ChevronDownIcon, UserCircleIcon, Cog6ToothIcon, ArrowLeftOnRectangleIco
 import { useAuth } from '../../contexts/AuthContext';
 import authService from '../../services/auth.service';
 import { getImageUrl } from '../../utils/imageUrl';
+import { useTranslation } from '../../hooks/useLocalization';
 import ProfileModal from './ProfileModal';
 import AccountSettingsModal from './AccountSettingsModal';
 
@@ -11,6 +12,7 @@ const AdminDropdown = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const [profile, setProfile] = useState(null);
+  const { t } = useTranslation();
   const dropdownRef = useRef(null);
   const { logout } = useAuth();
 
@@ -81,20 +83,20 @@ const AdminDropdown = () => {
             className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             onClick={() => { setProfileOpen(true); setIsOpen(false); }}
           >
-            <UserCircleIcon className="mr-2.5 h-4 w-4" /> My Profile
+            <UserCircleIcon className="mr-2.5 h-4 w-4" /> {t('profile')}
           </button>
           <button
             className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             onClick={() => { setAccountSettingsOpen(true); setIsOpen(false); }}
           >
-            <Cog6ToothIcon className="mr-2.5 h-4 w-4" /> Account Settings
+            <Cog6ToothIcon className="mr-2.5 h-4 w-4" /> {t('accountSettings')}
           </button>
           <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
           <button
             className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             onClick={handleLogout}
           >
-            <ArrowLeftOnRectangleIcon className="mr-2.5 h-4 w-4" /> Logout
+            <ArrowLeftOnRectangleIcon className="mr-2.5 h-4 w-4" /> {t('logout')}
           </button>
         </div>
       )}

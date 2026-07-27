@@ -29,6 +29,17 @@ export const createUploader = (
   return multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: maxSize } });
 };
 
+export const deleteUploadFile = (url) => {
+  if (!url) return;
+  const parts = url.split('/uploads/event-gallery/');
+  if (parts.length < 2) return;
+  const filename = parts[1];
+  const filePath = path.join(BASE_UPLOAD_DIR, 'event-gallery', filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
+
 export const writeUploadFile = (buffer, subDir, originalname, allowedExtensions = ALLOWED_EXTENSIONS) => {
   const ext = path.extname(originalname).toLowerCase();
   if (!allowedExtensions.includes(ext)) {

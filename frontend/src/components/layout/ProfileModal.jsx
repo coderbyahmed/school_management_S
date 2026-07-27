@@ -7,15 +7,17 @@ import Alert from '../common/Alert';
 import { toast } from 'react-hot-toast';
 import { getImageUrl } from '../../utils/imageUrl';
 import Spinner from '../common/Spinner';
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return 'N/A';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
-    ' | ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-};
+import { useFormatTime } from '../../hooks/useLocalization';
 
 const ProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
+  const formatTime = useFormatTime();
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
+      ' | ' + formatTime(d);
+  };
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);

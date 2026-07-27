@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from '../../../hooks/useLocalization';
 import {
   MagnifyingGlassIcon, ChevronDownIcon, EyeIcon, PencilSquareIcon,
   TrashIcon, XMarkIcon, CalendarDaysIcon, ClockIcon, MapPinIcon,
@@ -7,6 +8,7 @@ import {
 import SearchInput from '../../common/SearchInput';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import eventsService from '../../../services/events.service';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -21,38 +23,58 @@ const getStatusStyle = (status) => {
 };
 
 const AllEvents = ({ onDataChange, onEditEvent }) => {
+  const { t } = useTranslation();
+  const { academic } = useSchoolConfig();
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState('');
-  const [academicYear, setAcademicYear] = useState('');
+  const [academicYear, setAcademicYear] = useState(academic.currentYear);
   const [category, setCategory] = useState('');
   const [month, setMonth] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewEvent, setViewEvent] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { page: currentPage, limit: ITEMS_PER_PAGE };
+      if (search) params.search = search;
+      if (academicYear) params.academicYear = academicYear;
+      if (category) params.category = category;
+      if (month) params.month = month;
+      const result = await eventsService.getEvents(params);
+      const mapped = (result.events || []).map((e) => ({ ...e, id: e._id, banner: e.bannerImage }));
+      setEvents(mapped);
+      setTotalPages(result.pagination?.totalPages || 1);
+      setTotalItems(result.pagination?.totalItems || 0);
+    } catch {
+      setEvents([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, academicYear, category, month, currentPage]);
 
   useEffect(() => {
-    const data = eventsService.getEvents();
-    setEvents(data);
-  }, []);
+    fetchEvents();
+  }, [fetchEvents]);
 
-  const filtered = useMemo(() => {
-    let list = events;
-    if (search) { const q = search.toLowerCase(); list = list.filter((e) => e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q)); }
-    if (academicYear) list = list.filter((e) => e.academicYear === academicYear);
-    if (category) list = list.filter((e) => e.category === category);
-    if (month) list = list.filter((e) => new Date(e.date).getMonth() === eventsService.MONTHS.indexOf(month));
-    return list;
-  }, [events, search, academicYear, category, month]);
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  const handleDelete = () => {
-    eventsService.deleteEvent(deleteTarget.id);
-    setEvents(eventsService.getEvents());
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await eventsService.deleteEvent(deleteTarget._id);
+      toast.success(t('eventDeleted'));
+    } catch {
+      toast.error(t('failedToDelete'));
+    }
     setDeleteTarget(null);
+    setDeleting(false);
     onDataChange();
-    toast.success('Event deleted');
   };
 
   const renderPagination = () => {
@@ -66,7 +88,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
     return (
       <div className="flex items-center justify-between pt-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {Math.min(filtered.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+          {t('page')} {Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} {t('of')} {totalItems}
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -74,7 +96,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
             disabled={currentPage === 1}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page) => (
             <button
@@ -94,7 +116,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
             disabled={currentPage === totalPages}
             className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -106,33 +128,33 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Academic Year</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('academicYearLabel')}</label>
             <div className="relative mt-1">
               <select value={academicYear} onChange={(e) => { setAcademicYear(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Years</option>
+                <option value="">{t('allYears')}</option>
                 {eventsService.ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('category')}</label>
             <div className="relative mt-1">
               <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Categories</option>
+                <option value="">{t('allCategories')}</option>
                 {eventsService.EVENT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Month</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('month')}</label>
             <div className="relative mt-1">
               <select value={month} onChange={(e) => { setMonth(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Months</option>
+                <option value="">{t('allMonths')}</option>
                 {eventsService.MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -140,7 +162,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">&nbsp;</label>
-            <SearchInput placeholder="Search events..." value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} />
+            <SearchInput placeholder={t('searchEvents')} value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} />
           </div>
         </div>
       </div>
@@ -149,25 +171,25 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800">
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Banner</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Event Name</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Category</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Date</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Time</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Venue</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Audience</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Status</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Actions</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('banner')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('eventName')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('category')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('eventDate')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('eventTimeLabel')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('venue')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('audience')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('status')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {paginated.length === 0 ? (
+            {events.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">No events found</td>
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">{t('noEventsFound')}</td>
               </tr>
             ) : (
-              paginated.map((event) => (
-                <tr key={event.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              events.map((event) => (
+                <tr key={event._id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-3 py-3">
                     {event.banner ? (
                       <img src={event.banner} alt={event.name} className="w-10 h-10 rounded-lg object-cover" />
@@ -194,13 +216,13 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setViewEvent(event)} className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title="View">
+                      <button onClick={() => setViewEvent(event)} className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title={t('view')}>
                         <EyeIcon className="h-4 w-4" />
                       </button>
-                      <button onClick={() => onEditEvent(event)} className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title="Edit">
+                      <button onClick={() => onEditEvent(event)} className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer" title={t('edit')}>
                         <PencilSquareIcon className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setDeleteTarget(event)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title="Delete">
+                      <button onClick={() => setDeleteTarget(event)} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title={t('delete')}>
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -210,9 +232,9 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
             )}
           </tbody>
         </table>
-        {filtered.length > 0 && (
+        {totalItems > 0 && (
           <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500">
-            {filtered.length} event{filtered.length !== 1 ? 's' : ''}
+            {totalItems} {totalItems !== 1 ? `${t('event')}s` : t('event')}
           </div>
         )}
       </div>
@@ -225,7 +247,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">Event Details</h2>
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t('eventDetails')}</h2>
               <button onClick={() => setViewEvent(null)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -249,21 +271,21 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
-                  <div><p className="text-xs text-gray-500">Date</p><p className="text-xs font-medium text-gray-800 dark:text-gray-200">{viewEvent.dateDisplay}</p></div>
+                  <div><p className="text-xs text-gray-500">{t('eventDate')}</p><p className="text-xs font-medium text-gray-800 dark:text-gray-200">{viewEvent.dateDisplay}</p></div>
                 </div>
                 <div className="flex items-center gap-3 py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <ClockIcon className="h-4 w-4 text-gray-400" />
-                  <div><p className="text-xs text-gray-500">Time</p><p className="text-xs font-medium text-gray-800 dark:text-gray-200">{viewEvent.startTime} - {viewEvent.endTime}</p></div>
+                  <div><p className="text-xs text-gray-500">{t('eventTimeLabel')}</p><p className="text-xs font-medium text-gray-800 dark:text-gray-200">{viewEvent.startTime} - {viewEvent.endTime}</p></div>
                 </div>
                 <div className="flex items-center gap-3 py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <MapPinIcon className="h-4 w-4 text-gray-400" />
-                  <div><p className="text-xs text-gray-500">Venue</p><p className="text-xs font-medium text-gray-800 dark:text-gray-200">{viewEvent.venue}</p></div>
+                  <div><p className="text-xs text-gray-500">{t('venue')}</p><p className="text-xs font-medium text-gray-800 dark:text-gray-200">{viewEvent.venue}</p></div>
                 </div>
                 {[
-                  ['Category', viewEvent.category],
-                  ['Audience', viewEvent.audience],
-                  ['Organizer', viewEvent.organizer],
-                  ['Academic Year', viewEvent.academicYear],
+                  [t('category'), viewEvent.category],
+                  [t('audience'), viewEvent.audience],
+                  [t('organizer'), viewEvent.organizer],
+                  [t('academicYearLabel'), viewEvent.academicYear],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <span className="text-xs text-gray-500">{label}</span>
@@ -273,7 +295,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
               </div>
               {viewEvent.description && (
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Description</p>
+                  <p className="text-xs text-gray-500 mb-1">{t('description')}</p>
                   <p className="text-xs text-gray-700 dark:text-gray-300">{viewEvent.description}</p>
                 </div>
               )}
@@ -285,13 +307,14 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title="Delete Event"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        onClose={() => { if (!deleting) setDeleteTarget(null); }}
+        title={t('deleteEvent')}
+        message={t('deleteEventConfirm', { name: deleteTarget?.name })}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
         variant="danger"
         onConfirm={handleDelete}
+        loading={deleting}
       />
     </div>
   );

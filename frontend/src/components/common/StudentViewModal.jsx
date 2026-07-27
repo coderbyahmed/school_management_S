@@ -1,6 +1,7 @@
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
 import { getImageUrl } from '../../utils/imageUrl';
+import { useTranslation } from '../../hooks/useLocalization';
 
 const InfoRow = ({ label, value }) => (
   <div className="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0">
@@ -10,13 +11,14 @@ const InfoRow = ({ label, value }) => (
 );
 
 const StudentViewModal = ({ student, isOpen, onClose }) => {
+  const { t } = useTranslation();
   if (!student) return null;
 
   const imgSrc = getImageUrl(student.studentImage);
-  const initials = student.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'ST';
+  const initials = student.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || t('noDataDash');
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Student Details" maxWidth="max-w-lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('student') + ' ' + t('details')} maxWidth="max-w-lg">
       <div className="flex flex-col items-center pb-5 border-b border-gray-200 dark:border-gray-700">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xl ring-2 ring-yellow-400/50 mb-3 overflow-hidden">
           {imgSrc ? (

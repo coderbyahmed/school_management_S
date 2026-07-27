@@ -80,7 +80,11 @@ const ACADEMIC_ALLOWED = [
   'currentAcademicYear', 'schoolShift',
   'schoolStartTime', 'schoolEndTime',
   'attendanceStartTime', 'attendanceClosingTime',
-  'defaultLanguage', 'timezone', 'dateFormat', 'timeFormat',
+  'defaultLanguage', 'timeFormat',
+  'weekendEnabled', 'weekendDays',
+  'allowEditAfterSubmit', 'editTimeLimit', 'autoMarkAbsent',
+  'lateAllowed', 'lateGracePeriod',
+  'allowLeaveMarking', 'allowHalfDayLeave',
 ];
 
 const updateAcademicConfiguration = async (data) => {

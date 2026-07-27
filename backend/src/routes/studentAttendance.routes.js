@@ -9,6 +9,7 @@ import {
   getAttendanceReports,
   deleteAttendance,
   deleteBulkAttendance,
+  resetCheckIn,
 } from '../controllers/studentAttendance.controller.js';
 import { validateSaveAttendance, validateGetAttendance } from '../validations/studentAttendance.validation.js';
 import { protect } from '../middlewares/auth.middleware.js';
@@ -58,6 +59,13 @@ router.get(
   protect,
   authorize('admin'),
   getAttendanceByStudent,
+);
+
+router.patch(
+  '/check-in',
+  protect,
+  authorize('admin'),
+  resetCheckIn,
 );
 
 router.post(

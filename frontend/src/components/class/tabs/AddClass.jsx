@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from '../../../hooks/useLocalization';
 import CardSection from '../../common/CardSection';
 import SelectInput from '../../common/SelectInput';
 import Alert from '../../common/Alert';
 import classService from '../../../services/class.service';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
-
-const statusOptions = ['Active', 'Inactive'];
 
 const getInitialForm = (editData, configYear) => editData ? {
   className: editData.className || '',
@@ -20,6 +19,8 @@ const getInitialForm = (editData, configYear) => editData ? {
 };
 
 const AddClass = ({ editData, onSuccess }) => {
+  const { t } = useTranslation();
+  const statusOptions = [t('active'), t('inactive')];
   const { academic } = useSchoolConfig();
   const [form, setForm] = useState(() => getInitialForm(editData, academic?.currentYear));
   const [loading, setLoading] = useState(false);
@@ -41,15 +42,15 @@ const AddClass = ({ editData, onSuccess }) => {
     try {
       if (editData) {
         await classService.updateClass(editData._id, form);
-        toast.success('Class updated successfully');
+        toast.success(t('updatedSuccessfully'));
       } else {
         await classService.createClass(form);
-        toast.success('Class created successfully');
+        toast.success(t('savedSuccessfully'));
         resetForm();
       }
       if (onSuccess) onSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to save class';
+      const msg = err.response?.data?.message || t('failedToSave');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -71,25 +72,25 @@ const AddClass = ({ editData, onSuccess }) => {
       {error && <Alert message={error} type="error" />}
 
       <div className="max-w-2xl">
-        <CardSection title={editData ? 'Edit Class' : 'Class Information'}>
+        <CardSection title={editData ? t('addClass') : t('className')}>
           <SelectInput
-            label="Class Name"
+            label={t('className')}
             name="className"
             value={form.className}
             onChange={handleChange('className')}
             options={CLASS_NAMES}
-            placeholder="Select class"
+            placeholder={t('selectClass')}
           />
           <SelectInput
-            label="Academic Year"
+            label={t('academicYearLabel')}
             name="academicYear"
             value={form.academicYear}
             onChange={handleChange('academicYear')}
             options={ACADEMIC_YEARS}
-            placeholder="Select academic year"
+            placeholder={t('selectYear')}
           />
           <SelectInput
-            label="Status"
+            label={t('status')}
             name="status"
             value={form.status}
             onChange={handleChange('status')}
@@ -104,14 +105,14 @@ const AddClass = ({ editData, onSuccess }) => {
           disabled={loading}
           className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Cancel
+          {t('cancel')}
         </button>
         <button
           onClick={handleSave}
           disabled={loading}
           className="px-6 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving...' : editData ? 'Update Class' : 'Save Class'}
+          {loading ? t('saving') : editData ? t('update') : t('save')}
         </button>
       </div>
     </div>

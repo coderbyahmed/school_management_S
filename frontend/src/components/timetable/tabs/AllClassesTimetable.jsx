@@ -4,6 +4,7 @@ import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import timetableService from '../../../services/timetable.service';
 import { useTimetableYear } from '../../../contexts/TimetableContext';
+import { useTranslation } from '../../../hooks/useLocalization';
 
 const CLASS_GROUPS = [
   { page: 1, classes: CLASS_NAMES.slice(0, 4) },
@@ -19,6 +20,7 @@ const resolveTeacherName = (t) => {
 };
 
 const AllClassesTimetable = () => {
+  const { t } = useTranslation();
   const { selectedYear, setSelectedYear, refreshKey } = useTimetableYear();
   const [currentPage, setCurrentPage] = useState(0);
   const [allTimetables, setAllTimetables] = useState([]);
@@ -38,7 +40,7 @@ const AllClassesTimetable = () => {
         const timetables = res?.data?.timetables || [];
         setAllTimetables(timetables);
       })
-      .catch(() => toast.error('Failed to load timetables'))
+      .catch(() => toast.error(t('failedToLoad')))
       .finally(() => setLoading(false));
   }, [selectedYear, refreshKey]);
 
@@ -112,7 +114,7 @@ const AllClassesTimetable = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
           <CalendarDaysIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">Loading Timetables...</h3>
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">{t('loading')}</h3>
         </div>
       );
     }
@@ -121,9 +123,9 @@ const AllClassesTimetable = () => {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
           <CalendarDaysIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Timetable Available</h3>
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">{t('noData')}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-            No timetable available for Academic Year {selectedYear}. Create one first.
+            {t('selectAcademicYear')}
           </p>
         </div>
       );
@@ -135,7 +137,7 @@ const AllClassesTimetable = () => {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Academic Year: <span className="font-semibold text-gray-700 dark:text-gray-200">{selectedYear}</span>
+            {t('academicYearLabel')}: <span className="font-semibold text-gray-700 dark:text-gray-200">{selectedYear}</span>
           </p>
           <div className="flex items-center gap-2">
             {CLASS_GROUPS.map((group, idx) => (
@@ -162,7 +164,7 @@ const AllClassesTimetable = () => {
                   className="sticky top-0 z-30 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold px-4 py-3.5 text-left whitespace-nowrap min-w-[140px]"
                   style={{ left: 0 }}
                 >
-                  Time
+                  {t('startTime')}
                 </th>
                 {classes.map((cls) => (
                   <th
@@ -194,7 +196,7 @@ const AllClassesTimetable = () => {
                         colSpan={classes.length}
                         className="px-4 py-3.5 text-center text-sm font-semibold text-amber-700 dark:text-amber-300"
                       >
-                        BREAK — Recess Time
+                        {t('other')}
                       </td>
                     </tr>
                   );
@@ -235,7 +237,7 @@ const AllClassesTimetable = () => {
         </div>
 
         <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-          Daily Timetable — Page {currentPage + 1} of {totalPages}
+          {t('period')} — {currentPage + 1} / {totalPages}
         </p>
       </div>
     );
@@ -245,14 +247,14 @@ const AllClassesTimetable = () => {
     <div className="space-y-6">
       <div className="w-full sm:w-48">
         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-          Academic Year
+          {t('academicYearLabel')}
         </label>
         <select
           value={selectedYear}
           onChange={(e) => setSelectedYear(e.target.value)}
           className="appearance-none w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
         >
-          <option value="">Select year</option>
+          <option value="">{t('selectYear')}</option>
           {ACADEMIC_YEARS.map((year) => (
             <option key={year} value={year}>{year}</option>
           ))}
@@ -262,9 +264,9 @@ const AllClassesTimetable = () => {
       {selectedYear ? renderTimetableGrid() : (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
           <CalendarDaysIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Academic Year Selected</h3>
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">{t('selectAcademicYear')}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-            Please select an academic year to view timetables.
+            {t('selectAcademicYear')}
           </p>
         </div>
       )}

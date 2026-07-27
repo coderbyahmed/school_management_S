@@ -115,7 +115,11 @@ const validateAcademicConfiguration = (req, res, next) => {
   const {
     currentAcademicYear, schoolShift, schoolStartTime, schoolEndTime,
     attendanceStartTime, attendanceClosingTime,
-    defaultLanguage, timezone, dateFormat, timeFormat,
+    defaultLanguage, timeFormat,
+    weekendEnabled, weekendDays,
+    allowEditAfterSubmit, editTimeLimit, autoMarkAbsent,
+    lateAllowed, lateGracePeriod,
+    allowLeaveMarking, allowHalfDayLeave,
   } = req.body;
 
   if (currentAcademicYear !== undefined) {
@@ -163,21 +167,72 @@ const validateAcademicConfiguration = (req, res, next) => {
     }
   }
 
-  if (timezone !== undefined) {
-    if (typeof timezone !== 'string' || !timezone.trim()) {
-      throw new ApiError(400, 'Timezone is required');
-    }
-  }
-
-  if (dateFormat !== undefined) {
-    if (typeof dateFormat !== 'string') {
-      throw new ApiError(400, 'Date format must be a string');
-    }
-  }
-
   if (timeFormat !== undefined) {
     if (typeof timeFormat !== 'string') {
       throw new ApiError(400, 'Time format must be a string');
+    }
+  }
+
+  // ─── Weekend Settings ───────────────────────────
+  if (weekendEnabled !== undefined) {
+    if (typeof weekendEnabled !== 'boolean') {
+      throw new ApiError(400, 'Weekend enabled must be a boolean');
+    }
+  }
+
+  if (weekendDays !== undefined) {
+    if (!Array.isArray(weekendDays)) {
+      throw new ApiError(400, 'Weekend days must be an array');
+    }
+    const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    for (const day of weekendDays) {
+      if (!validDays.includes(day)) {
+        throw new ApiError(400, `Invalid weekend day: ${day}. Must be one of: ${validDays.join(', ')}`);
+      }
+    }
+  }
+
+  if (allowEditAfterSubmit !== undefined) {
+    if (typeof allowEditAfterSubmit !== 'boolean') {
+      throw new ApiError(400, 'Allow edit after submit must be a boolean');
+    }
+  }
+
+  if (editTimeLimit !== undefined) {
+    if (typeof editTimeLimit !== 'number' || editTimeLimit < 0) {
+      throw new ApiError(400, 'Edit time limit must be a non-negative number');
+    }
+  }
+
+  if (autoMarkAbsent !== undefined) {
+    if (typeof autoMarkAbsent !== 'boolean') {
+      throw new ApiError(400, 'Auto mark absent must be a boolean');
+    }
+  }
+
+  // ─── Late Attendance Rules ──────────────────────
+  if (lateAllowed !== undefined) {
+    if (typeof lateAllowed !== 'boolean') {
+      throw new ApiError(400, 'Late allowed must be a boolean');
+    }
+  }
+
+  if (lateGracePeriod !== undefined) {
+    if (typeof lateGracePeriod !== 'number' || lateGracePeriod < 0) {
+      throw new ApiError(400, 'Late grace period must be a non-negative number');
+    }
+  }
+
+  // ─── Leave Rules ────────────────────────────────
+  if (allowLeaveMarking !== undefined) {
+    if (typeof allowLeaveMarking !== 'boolean') {
+      throw new ApiError(400, 'Allow leave marking must be a boolean');
+    }
+  }
+
+  if (allowHalfDayLeave !== undefined) {
+    if (typeof allowHalfDayLeave !== 'boolean') {
+      throw new ApiError(400, 'Allow half day leave must be a boolean');
     }
   }
 

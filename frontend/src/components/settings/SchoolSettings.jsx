@@ -12,7 +12,7 @@ import Spinner from '../common/Spinner';
 
 const TABS = [
   { id: 'general', label: 'General Information' },
-  { id: 'academic', label: 'Academic Configuration' },
+  { id: 'academic', label: 'Attendance Settings' },
   { id: 'branding', label: 'Branding & Documents' },
   { id: 'localization', label: 'Localization' },
   { id: 'preferences', label: 'System Preferences' },
@@ -43,6 +43,15 @@ const DEFAULT_ACADEMIC = {
   schoolEndTime: '',
   attendanceStartTime: '',
   attendanceClosingTime: '',
+  weekendEnabled: true,
+  weekendDays: ['Saturday', 'Sunday'],
+  allowEditAfterSubmit: false,
+  editTimeLimit: 1,
+  autoMarkAbsent: false,
+  lateAllowed: false,
+  lateGracePeriod: 5,
+  allowLeaveMarking: true,
+  allowHalfDayLeave: false,
 };
 
 const DEFAULT_BRANDING = {
@@ -66,8 +75,6 @@ const DEFAULT_LOCALIZATION = {
   currency: '',
   currencySymbol: '',
   defaultLanguage: '',
-  timeZone: '',
-  dateFormat: '',
   timeFormat: '',
 };
 
@@ -118,6 +125,15 @@ const mapApiToAcademic = (api) => ({
   schoolEndTime: api.schoolEndTime || '',
   attendanceStartTime: api.attendanceStartTime || '',
   attendanceClosingTime: api.attendanceClosingTime || '',
+  weekendEnabled: api.weekendEnabled ?? true,
+  weekendDays: api.weekendDays || ['Saturday', 'Sunday'],
+  allowEditAfterSubmit: api.allowEditAfterSubmit ?? false,
+  editTimeLimit: api.editTimeLimit ?? 1,
+  autoMarkAbsent: api.autoMarkAbsent ?? false,
+  lateAllowed: api.lateAllowed ?? false,
+  lateGracePeriod: api.lateGracePeriod ?? 5,
+  allowLeaveMarking: api.allowLeaveMarking ?? true,
+  allowHalfDayLeave: api.allowHalfDayLeave ?? false,
 });
 
 const mapApiToBranding = (api) => ({
@@ -141,8 +157,6 @@ const mapApiToLocalization = (api) => ({
   currency: api.currency || '',
   currencySymbol: api.currencySymbol || '',
   defaultLanguage: api.defaultLanguage || '',
-  timeZone: api.timezone || '',
-  dateFormat: api.dateFormat || '',
   timeFormat: api.timeFormat || '',
 });
 
@@ -235,11 +249,19 @@ const SchoolSettings = () => {
       const payload = {
         currentAcademicYear: formData.currentAcademicYear,
         schoolShift: formData.schoolShift,
-        weekendDays: formData.weeklyHolidays,
         schoolStartTime: formData.schoolStartTime,
         schoolEndTime: formData.schoolEndTime,
         attendanceStartTime: formData.attendanceStartTime,
         attendanceClosingTime: formData.attendanceClosingTime,
+        weekendEnabled: formData.weekendEnabled,
+        weekendDays: formData.weekendDays,
+        allowEditAfterSubmit: formData.allowEditAfterSubmit,
+        editTimeLimit: formData.editTimeLimit,
+        autoMarkAbsent: formData.autoMarkAbsent,
+        lateAllowed: formData.lateAllowed,
+        lateGracePeriod: formData.lateGracePeriod,
+        allowLeaveMarking: formData.allowLeaveMarking,
+        allowHalfDayLeave: formData.allowHalfDayLeave,
       };
       const res = await schoolSettingsService.updateAcademicSettings(payload);
       setApiSettings(res.data.settings);
@@ -296,8 +318,6 @@ const SchoolSettings = () => {
     try {
       const academicPayload = {
         defaultLanguage: formData.defaultLanguage,
-        timezone: formData.timeZone,
-        dateFormat: formData.dateFormat,
         timeFormat: formData.timeFormat,
       };
       const preferencesPayload = {

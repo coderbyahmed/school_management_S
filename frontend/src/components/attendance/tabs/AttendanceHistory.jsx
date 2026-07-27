@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import {
   CheckCircleIcon, XCircleIcon, ClockIcon, CalendarDaysIcon,
   UserGroupIcon, ArrowPathIcon,
@@ -35,6 +36,7 @@ function formatTimeDisplay(timeStr) {
 }
 
 const AttendanceHistory = () => {
+  const { t } = useTranslation();
   const [allRecords, setAllRecords] = useState([]);
   const [type, setType] = useState('All');
   const [academicYear, setAcademicYear] = useState('');
@@ -192,7 +194,7 @@ const AttendanceHistory = () => {
     return (
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {filteredRecords.length} record{filteredRecords.length !== 1 ? 's' : ''} — Page {currentPage} of {totalPages}
+          {filteredRecords.length} record{filteredRecords.length !== 1 ? 's' : ''} &mdash; {t('page')} {currentPage} {t('of')} {totalPages}
         </span>
         <div className="flex items-center gap-1">
           <button
@@ -200,7 +202,7 @@ const AttendanceHistory = () => {
             onClick={() => setCurrentPage(p => p - 1)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page, idx) =>
             page === '...' ? (
@@ -224,7 +226,7 @@ const AttendanceHistory = () => {
             onClick={() => setCurrentPage(p => p + 1)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -234,37 +236,37 @@ const AttendanceHistory = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Attendance History</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">View and manage complete attendance records</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('attendanceHistoryTitle')}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('attendanceHistorySubtitle')}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon={UserGroupIcon} label="Total Records" value={dashboardStats.totalRecords} color="blue" />
-        <StatCard icon={CalendarDaysIcon} label="Today's Records" value={dashboardStats.todayRecords} color="green" />
-        <StatCard icon={UserGroupIcon} label="Student Records" value={dashboardStats.studentRecords} color="yellow" />
-        <StatCard icon={UserGroupIcon} label="Teacher Records" value={dashboardStats.teacherRecords} color="purple" />
+        <StatCard icon={UserGroupIcon} label={t('totalRecords')} value={dashboardStats.totalRecords} color="blue" />
+        <StatCard icon={CalendarDaysIcon} label={t('todaysRecords')} value={dashboardStats.todayRecords} color="green" />
+        <StatCard icon={UserGroupIcon} label={t('studentRecords')} value={dashboardStats.studentRecords} color="yellow" />
+        <StatCard icon={UserGroupIcon} label={t('teacherRecords')} value={dashboardStats.teacherRecords} color="purple" />
       </div>
 
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Attendance Type</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('attendanceType')}</label>
             <div className="relative">
               <select value={type} onChange={(e) => { setType(e.target.value); setClassName(''); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                {TYPE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                {TYPE_OPTIONS.map((o) => <option key={o} value={o}>{o === 'All' ? t('all') : o === 'Students' ? t('students') : t('teachers')}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Academic Year</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('academicYearLabel')}</label>
             <div className="relative">
               <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Years</option>
+                <option value="">{t('allYears')}</option>
                 {ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -272,33 +274,33 @@ const AttendanceHistory = () => {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {type === 'Teachers' ? 'Department' : 'Class'}
+              {type === 'Teachers' ? t('classDept') : t('classLabel')}
             </label>
             <div className="relative">
               <select value={className} onChange={(e) => setClassName(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">{type === 'Teachers' ? 'All Departments' : 'All Classes'}</option>
+                <option value="">{type === 'Teachers' ? t('allDepartments') : t('allClasses')}</option>
                 {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">From Date</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('fromDate')}</label>
             <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">To Date</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('toDate')}</label>
             <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Status</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('statusLabel')}</label>
             <div className="relative">
               <select value={status} onChange={(e) => setStatus(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s === 'All' ? t('all') : t(s.toLowerCase())}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
@@ -309,15 +311,15 @@ const AttendanceHistory = () => {
           <button onClick={handleSearch}
             className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
             <MagnifyingGlassIcon className="h-4 w-4" />
-            Search
+            {t('searchButton')}
           </button>
           <button onClick={handleReset}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
             <ArrowPathIcon className="h-4 w-4" />
-            Reset
+            {t('reset')}
           </button>
           <div className="ml-auto">
-            <SearchInput placeholder="Search by name or ID..." value={search} onChange={setSearch} />
+            <SearchInput placeholder={t('searchNameOrId')} value={search} onChange={setSearch} />
           </div>
         </div>
       </div>
@@ -327,16 +329,16 @@ const AttendanceHistory = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800">
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Photo</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Name</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">ID</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Type</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Class / Dept</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Date</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Check In</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Status</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Mode</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider no-print">Actions</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('photo')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('nameColumn')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('idColumn')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('type')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('classDept')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('dateLabel')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('checkIn')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('status')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('mode')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider no-print">{t('actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -345,8 +347,8 @@ const AttendanceHistory = () => {
                 <td colSpan={10} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                   <div className="flex flex-col items-center gap-2">
                     <UserGroupIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
-                    <p className="text-sm">No attendance records found</p>
-                    <p className="text-xs">Try adjusting filters or date range</p>
+                    <p className="text-sm">{t('noRecordsFound')}</p>
+                    <p className="text-xs">{t('adjustFilters')}</p>
                   </div>
                 </td>
               </tr>
@@ -373,14 +375,14 @@ const AttendanceHistory = () => {
                   <td className="px-3 py-3 no-print">
                     <div className="flex items-center gap-2">
                       <button onClick={() => setSelectedRecord(record)}
-                        className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title="View Details">
+                        className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title={t('viewDetails')}>
                         <EyeIcon className="h-4 w-4" />
                       </button>
                       <button onClick={() => {
                         const pw = window.open('', '_blank');
                         if (!pw) return;
                         const html = `
-                          <html><head><title>Attendance Record</title>
+                          <html><head><title>${t('attendanceRecord')}</title>
                           <style>
                             @page { margin: 15mm; }
                             body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; }
@@ -393,24 +395,24 @@ const AttendanceHistory = () => {
                           </style></head>
                           <body>
                             <div class="card">
-                              <h2>Attendance Record</h2>
-                              <div class="row"><span class="label">Name</span><span class="value">${record.name}</span></div>
-                              <div class="row"><span class="label">ID</span><span class="value">${record.personId}</span></div>
-                              <div class="row"><span class="label">Type</span><span class="value">${record.type}</span></div>
-                              <div class="row"><span class="label">Class/Department</span><span class="value">${record.classOrDept}</span></div>
-                              <div class="row"><span class="label">Date</span><span class="value">${formatDateDisplay(record.date)}</span></div>
-                              <div class="row"><span class="label">Check In</span><span class="value">${formatTimeDisplay(record.checkIn)}</span></div>
-                              <div class="row"><span class="label">Status</span><span class="value">${record.status}</span></div>
-                              <div class="row"><span class="label">Mode</span><span class="value">${record.mode}</span></div>
+                              <h2>${t('attendanceRecord')}</h2>
+                              <div class="row"><span class="label">${t('nameColumn')}</span><span class="value">${record.name}</span></div>
+                              <div class="row"><span class="label">${t('idColumn')}</span><span class="value">${record.personId}</span></div>
+                              <div class="row"><span class="label">${t('type')}</span><span class="value">${record.type}</span></div>
+                              <div class="row"><span class="label">${t('classDept')}</span><span class="value">${record.classOrDept}</span></div>
+                              <div class="row"><span class="label">${t('dateLabel')}</span><span class="value">${formatDateDisplay(record.date)}</span></div>
+                              <div class="row"><span class="label">${t('checkIn')}</span><span class="value">${formatTimeDisplay(record.checkIn)}</span></div>
+                              <div class="row"><span class="label">${t('status')}</span><span class="value">${record.status}</span></div>
+                              <div class="row"><span class="label">${t('mode')}</span><span class="value">${record.mode}</span></div>
                             </div>
-                            <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:16px;">Generated on ${new Date().toLocaleDateString()}</p>
+                            <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:16px;">${t('generatedOn')}${new Date().toLocaleDateString()}</p>
                           </body></html>
                         `;
                         pw.document.write(html);
                         pw.document.close();
                         pw.focus();
                         setTimeout(() => pw.print(), 300);
-                      }} className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer" title="Print Record">
+                      }} className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer" title={t('printRecord')}>
                         <PrinterIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -429,7 +431,7 @@ const AttendanceHistory = () => {
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">Attendance Record Details</h2>
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t('attendanceRecordDetails')}</h2>
               <button onClick={() => setSelectedRecord(null)}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer">
                 <XMarkIcon className="h-5 w-5" />
@@ -454,12 +456,12 @@ const AttendanceHistory = () => {
               </div>
               <div className="space-y-3">
                 {[
-                  ['Type', selectedRecord.type],
-                  ['Class / Department', selectedRecord.classOrDept],
-                  ['Academic Year', selectedRecord.academicYear],
-                  ['Date', formatDateDisplay(selectedRecord.date)],
-                  ['Check In Time', formatTimeDisplay(selectedRecord.checkIn)],
-                  ['Attendance Mode', selectedRecord.mode],
+                  [t('type'), selectedRecord.type],
+                  [t('classDept'), selectedRecord.classOrDept],
+                  [t('academicYearLabel'), selectedRecord.academicYear],
+                  [t('dateLabel'), formatDateDisplay(selectedRecord.date)],
+                  [t('checkInTime'), formatTimeDisplay(selectedRecord.checkIn)],
+                  [t('attendanceMode'), selectedRecord.mode],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between items-center py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
@@ -471,14 +473,14 @@ const AttendanceHistory = () => {
                 <button
                   onClick={() => setSelectedRecord(null)}
                   className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">
-                  Close
+                  {t('close')}
                 </button>
                 <button
                   onClick={() => {
                     const pw = window.open('', '_blank');
                     if (!pw) return;
                     const html = `
-                      <html><head><title>Attendance Record</title>
+                      <html><head><title>${t('attendanceRecord')}</title>
                       <style>
                         @page { margin: 15mm; }
                         body { font-family: 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; }
@@ -490,18 +492,18 @@ const AttendanceHistory = () => {
                       </style></head>
                       <body>
                         <div class="card">
-                          <h2>Attendance Record</h2>
-                          <div class="row"><span class="label">Name</span><span class="value">${selectedRecord.name}</span></div>
-                          <div class="row"><span class="label">ID</span><span class="value">${selectedRecord.personId}</span></div>
-                          <div class="row"><span class="label">Type</span><span class="value">${selectedRecord.type}</span></div>
-                          <div class="row"><span class="label">Class/Department</span><span class="value">${selectedRecord.classOrDept}</span></div>
-                          <div class="row"><span class="label">Academic Year</span><span class="value">${selectedRecord.academicYear}</span></div>
-                          <div class="row"><span class="label">Date</span><span class="value">${formatDateDisplay(selectedRecord.date)}</span></div>
-                          <div class="row"><span class="label">Check In</span><span class="value">${formatTimeDisplay(selectedRecord.checkIn)}</span></div>
-                          <div class="row"><span class="label">Status</span><span class="value">${selectedRecord.status}</span></div>
-                          <div class="row"><span class="label">Mode</span><span class="value">${selectedRecord.mode}</span></div>
+                          <h2>${t('attendanceRecord')}</h2>
+                          <div class="row"><span class="label">${t('nameColumn')}</span><span class="value">${selectedRecord.name}</span></div>
+                          <div class="row"><span class="label">${t('idColumn')}</span><span class="value">${selectedRecord.personId}</span></div>
+                          <div class="row"><span class="label">${t('type')}</span><span class="value">${selectedRecord.type}</span></div>
+                          <div class="row"><span class="label">${t('classDept')}</span><span class="value">${selectedRecord.classOrDept}</span></div>
+                          <div class="row"><span class="label">${t('academicYearLabel')}</span><span class="value">${selectedRecord.academicYear}</span></div>
+                          <div class="row"><span class="label">${t('dateLabel')}</span><span class="value">${formatDateDisplay(selectedRecord.date)}</span></div>
+                          <div class="row"><span class="label">${t('checkIn')}</span><span class="value">${formatTimeDisplay(selectedRecord.checkIn)}</span></div>
+                          <div class="row"><span class="label">${t('status')}</span><span class="value">${selectedRecord.status}</span></div>
+                          <div class="row"><span class="label">${t('mode')}</span><span class="value">${selectedRecord.mode}</span></div>
                         </div>
-                        <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:16px;">Generated on ${new Date().toLocaleDateString()}</p>
+                        <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:16px;">${t('generatedOn')}${new Date().toLocaleDateString()}</p>
                       </body></html>
                     `;
                     pw.document.write(html);
@@ -510,7 +512,7 @@ const AttendanceHistory = () => {
                     setTimeout(() => pw.print(), 300);
                   }}
                   className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                  <PrinterIcon className="h-3.5 w-3.5" /> Print Record
+                  <PrinterIcon className="h-3.5 w-3.5" /> {t('printRecord')}
                 </button>
               </div>
             </div>

@@ -1,21 +1,22 @@
 import { useState } from 'react';
+import { useTranslation } from '../../hooks/useLocalization';
 import AllSubjects from './tabs/AllSubjects';
 import AddSubject from './tabs/AddSubject';
 import ClassSubjectAssignment from './tabs/ClassSubjectAssignment';
 import TeacherSubjectAssignment from './tabs/TeacherSubjectAssignment';
 
-const tabs = ['All Subjects', 'Add Subject', 'Class Subject Assignment', 'Teacher Subject Assignment'];
-
 const SubjectManagement = () => {
-  const [activeTab, setActiveTab] = useState('All Subjects');
+  const { t } = useTranslation();
+  const tabs = [t('allSubjects'), t('addSubject'), t('classSubjectAssignment'), t('teacherSubjectAssignment')];
+  const [activeTab, setActiveTab] = useState(tabs[0]);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [editingSubject, setEditingSubject] = useState(null);
 
   const tabComponents = {
-    'All Subjects': AllSubjects,
-    'Add Subject': AddSubject,
-    'Class Subject Assignment': ClassSubjectAssignment,
-    'Teacher Subject Assignment': TeacherSubjectAssignment,
+    [tabs[0]]: AllSubjects,
+    [tabs[1]]: AddSubject,
+    [tabs[2]]: ClassSubjectAssignment,
+    [tabs[3]]: TeacherSubjectAssignment,
   };
 
   const ActiveComponent = tabComponents[activeTab];
@@ -26,22 +27,22 @@ const SubjectManagement = () => {
 
   const handleEditSubject = (subject) => {
     setEditingSubject(subject);
-    setActiveTab('Add Subject');
+    setActiveTab(tabs[1]);
   };
 
   const handleAddSuccess = () => {
     setEditingSubject(null);
-    setActiveTab('All Subjects');
+    setActiveTab(tabs[0]);
   };
 
   const componentProps = {};
-  if (activeTab === 'All Subjects') {
+  if (activeTab === tabs[0]) {
     componentProps.onViewDetails = handleViewDetails;
     componentProps.onEditSubject = handleEditSubject;
     componentProps.selectedSubject = selectedSubject;
     componentProps.onCloseView = () => setSelectedSubject(null);
   }
-  if (activeTab === 'Add Subject') {
+  if (activeTab === tabs[1]) {
     componentProps.editData = editingSubject;
     componentProps.onSuccess = handleAddSuccess;
   }
@@ -53,7 +54,7 @@ const SubjectManagement = () => {
           {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => { setActiveTab(tab); if (tab !== 'Add Subject') setEditingSubject(null); if (tab !== 'All Subjects') setSelectedSubject(null); }}
+              onClick={() => { setActiveTab(tab); if (tab !== tabs[1]) setEditingSubject(null); if (tab !== tabs[0]) setSelectedSubject(null); }}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === tab
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
@@ -66,7 +67,7 @@ const SubjectManagement = () => {
         </nav>
       </div>
 
-      <ActiveComponent key={activeTab === 'Add Subject' ? editingSubject?._id || 'add-subject' : undefined} {...componentProps} />
+      <ActiveComponent key={activeTab === tabs[1] ? editingSubject?._id || 'add-subject' : undefined} {...componentProps} />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import toast from 'react-hot-toast';
 import {
   CheckCircleIcon, XCircleIcon, UserGroupIcon,
@@ -24,6 +25,7 @@ const PaintSvg = () => <svg className="w-4 h-4" fill="none" stroke="currentColor
 
 
 const IDCardManagement = () => {
+  const { t } = useTranslation();
   const { schoolInfo } = useSchoolConfig();
   const SCHOOL_INFO = {
     name: schoolInfo.name,
@@ -140,7 +142,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
 
   const handleLoadStudents = () => {
     if (!academicYear || !className) {
-      toast.error('Please select Academic Year and Class');
+      toast.error(t('selectAcademicYearAndClass'));
       return;
     }
     setLoading(true);
@@ -149,7 +151,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     setTimeout(() => {
       setAllStudents([]);
       setLoading(false);
-      toast.success('Students loaded successfully');
+      toast.success(`${t('studentsLoadedSuccessfully')}`);
     }, 400);
   };
 
@@ -260,12 +262,12 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
   const renderStatusBadge = (status, type) => {
     if (type === 'qr') {
       return status === 'Generated'
-        ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"><CheckCircleIcon className="h-3 w-3" /> Generated</span>
-        : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">Not Generated</span>;
+        ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"><CheckCircleIcon className="h-3 w-3" /> {t('generated')}</span>
+        : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">{t('notGenerated')}</span>;
     }
-    if (status === 'Printed') return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"><CheckCircleIcon className="h-3 w-3" /> Printed</span>;
-    if (status === 'Generated') return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">Generated</span>;
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"><XCircleIcon className="h-3 w-3" /> Pending</span>;
+    if (status === 'Printed') return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"><CheckCircleIcon className="h-3 w-3" /> {t('printed')}</span>;
+    if (status === 'Generated') return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">{t('generated')}</span>;
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"><XCircleIcon className="h-3 w-3" /> {t('pending')}</span>;
   };
 
   const renderPagination = () => {
@@ -287,7 +289,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     return (
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {filtered.length} student{filtered.length !== 1 ? 's' : ''} — Page {currentPage} of {totalPages}
+          {filtered.length} {t('students')} — {t('page')} {currentPage} {t('of')} {totalPages}
         </span>
         <div className="flex items-center gap-1">
           <button
@@ -295,7 +297,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             onClick={() => setCurrentPage((p) => p - 1)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page, idx) =>
             page === '...' ? (
@@ -319,7 +321,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             onClick={() => setCurrentPage((p) => p + 1)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -330,68 +332,68 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ID Card Management</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Generate, manage, and print student ID cards with QR codes</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('idCardManagement')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('idCardManagement')}</p>
         </div>
         <div className="flex-shrink-0 pt-1 flex items-center gap-3">
-          <SearchInput placeholder="Search by name or ID..." value={search} onChange={setSearch} />
+          <SearchInput placeholder={t('searchNameOrId')} value={search} onChange={setSearch} />
           <button
             data-designer-toggle
             onClick={() => setDesignerOpen((p) => !p)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer shadow-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md"
           >
             <PaintSvg />
-            ID Card Designer
+            {t('idCardDesigner')}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon={UserGroupIcon} label="Total Students" value={stats.total} color="blue" />
-        <StatCard icon={CheckCircleIcon} label="ID Cards Generated" value={stats.generated} color="green" />
-        <StatCard icon={PrinterIcon} label="Printed Cards" value={stats.printed} color="yellow" />
-        <StatCard icon={XCircleIcon} label="Pending Cards" value={stats.pending} color="red" />
+        <StatCard icon={UserGroupIcon} label={t('totalStudents')} value={stats.total} color="blue" />
+        <StatCard icon={CheckCircleIcon} label={t('cardsGenerated')} value={stats.generated} color="green" />
+        <StatCard icon={PrinterIcon} label={t('printedCards')} value={stats.printed} color="yellow" />
+        <StatCard icon={XCircleIcon} label={t('pendingCards')} value={stats.pending} color="red" />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Academic Year</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('academicYearLabel')}</label>
             <div className="relative">
               <select
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
               >
-                <option value="">Select year</option>
+                <option value="">{t('selectYear')}</option>
                 {ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Class</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('classLabel')}</label>
             <div className="relative">
               <select
                 value={className}
                 onChange={(e) => { setClassName(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
               >
-                <option value="All Classes">All Classes</option>
+                <option value="All Classes">{t('allClasses')}</option>
                 {CLASS_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Card Status</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('cardStatus')}</label>
             <div className="relative">
               <select
                 value={cardFilter}
                 onChange={(e) => setCardFilter(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
               >
-                {CARD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {CARD_STATUSES.map((s) => <option key={s} value={s}>{s === 'All' ? t('all') : s === 'Pending' ? t('pending') : s === 'Generated' ? t('generated') : t('printed')}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
@@ -406,7 +408,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <UserGroupIcon className="h-4 w-4" />
-            Load Students
+            {t('loadStudents')}
           </button>
           <button
             onClick={handleGenerateMissingCards}
@@ -414,7 +416,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <CheckCircleIcon className="h-4 w-4" />
-            Generate Missing Cards
+            {t('generateMissingCards')}
           </button>
           <button
             onClick={() => handlePrintCards(selectedIds.size ? filtered.filter((s) => selectedIds.has(s.id)) : [])}
@@ -422,7 +424,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <PrinterIcon className="h-4 w-4" />
-            Print Selected
+            {t('printSelected')}
           </button>
           <button
             onClick={handlePrintAll}
@@ -430,7 +432,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <PrinterIcon className="h-4 w-4" />
-            Print All
+            {t('printAll')}
           </button>
           <button
             onClick={handleMarkAsPrinted}
@@ -438,7 +440,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             <DocumentCheckIcon className="h-4 w-4" />
-            Mark as Printed
+            {t('markAsPrinted')}
           </button>
 
         </div>
@@ -447,14 +449,14 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
       {loading ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
           <Spinner size="md" className="text-blue-600 mb-4" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Loading students...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('loadingStudents')}</p>
         </div>
       ) : allStudents.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
           <UserGroupIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Students Loaded</h3>
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">{t('noStudentsLoaded')}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-            Select Academic Year and Class, then click Load Students.
+            {t('loadStudentsHint')}
           </p>
         </div>
       ) : (
@@ -470,14 +472,14 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                 </th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Photo</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Student Name</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Student ID</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Class</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Academic Year</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Card Status</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Preview</th>
-                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Actions</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('photo')}</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('studentName')}</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('studentIdLabel')}</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('classLabel')}</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('academicYearLabel')}</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('cardStatus')}</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('preview')}</th>
+                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -486,8 +488,8 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                     <td colSpan={9} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                     <div className="flex flex-col items-center gap-2">
                       <UserGroupIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
-                      <p className="text-sm">No students found</p>
-                      <p className="text-xs">Try changing your search or filter criteria</p>
+                      <p className="text-sm">{t('noStudentsFound')}</p>
+                      <p className="text-xs">{t('adjustFilters')}</p>
                     </div>
                   </td>
                 </tr>
@@ -517,7 +519,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                           <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-[6px] ring-1 ring-yellow-400/50 mb-0.5">
                             {getInitials(student.fullName)}
                           </div>
-                          <span className="text-[5px] text-gray-400 dark:text-gray-500 leading-none">ID CARD</span>
+                          <span className="text-[5px] text-gray-400 dark:text-gray-500 leading-none">{t('idCard')}</span>
                         </div>
                       </div>
                     </td>
@@ -526,7 +528,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                         <button
                           onClick={() => handleRegenerateCard(student.id)}
                           className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors cursor-pointer"
-                          title="Reissue Card"
+                          title={t('reissueCard')}
                         >
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -537,14 +539,14 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                         <button
                           onClick={() => handleSinglePrint(student)}
                           className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer"
-                          title="Print Card"
+                          title={t('printCard')}
                         >
                           <PrinterIcon className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleSinglePdf(student)}
                           className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
-                          title="Download PDF"
+                          title={t('downloadPdf')}
                         >
                           <DocumentArrowDownIcon className="h-4 w-4" />
                         </button>
@@ -560,19 +562,19 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
       )}
 
       {previewStudent && (
-        <Modal isOpen={!!previewStudent} onClose={() => setPreviewStudent(null)} title="ID Card Preview" maxWidth={activeTemplate === 'horizontal' ? 'max-w-[680px]' : 'max-w-[520px]'}>
+        <Modal isOpen={!!previewStudent} onClose={() => setPreviewStudent(null)} title={t('idCardPreview')} maxWidth={activeTemplate === 'horizontal' ? 'max-w-[680px]' : 'max-w-[520px]'}>
           <div className="flex items-center justify-center gap-2 mb-5">
             <button
               onClick={() => setPreviewSide('front')}
               className={`px-3 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer ${previewSide === 'front' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              Front
+              {t('frontSide')}
             </button>
             <button
               onClick={() => setPreviewSide('back')}
               className={`px-3 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer ${previewSide === 'back' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
-              Back
+              {t('backSide')}
             </button>
           </div>
           {activeTemplate === 'horizontal' ? (
@@ -597,13 +599,13 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                       designerPreviewSide === 'front'
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}>Front</button>
+                    }`}>{t('frontSide')}</button>
                   <button onClick={() => setDesignerPreviewSide('back')}
                     className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                       designerPreviewSide === 'back'
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}>Back</button>
+                    }`}>{t('backSide')}</button>
                 </div>
                 <div className="overflow-y-auto flex-shrink-0">
                   <div className="scale-[0.85] origin-center">
@@ -622,17 +624,17 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
 
       <div ref={panelRef} className={`fixed top-0 right-0 h-full z-50 bg-white dark:bg-gray-800 shadow-2xl border-l border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out ${designerOpen ? 'translate-x-0' : 'translate-x-full'} w-full sm:w-[380px] md:w-[400px] lg:w-[420px]`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-2"><PaintSvg /> ID Card Designer</h3>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-2"><PaintSvg /> {t('idCardDesignerTitle')}</h3>
           <button onClick={() => setDesignerOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"><CloseSvg /></button>
         </div>
 
         <div className="overflow-y-auto h-[calc(100%-52px)] p-4 space-y-5">
           <div>
-            <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Select Template</p>
+            <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{t('selectTemplate')}</p>
             <div className="grid grid-cols-1 gap-3">
               {[
-                { id: 'vertical', name: 'Vertical ID Card', desc: 'Portrait-style card layout' },
-                { id: 'horizontal', name: 'Horizontal ID Card', desc: 'Landscape-style card layout' },
+                { id: 'vertical', name: t('verticalCard'), desc: t('verticalCardDesc') },
+                { id: 'horizontal', name: t('horizontalCard'), desc: t('horizontalCardDesc') },
               ].map((tpl) => (
                 <button
                   key={tpl.id}
@@ -668,24 +670,24 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                 className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                Save Design
+                {t('saveDesign')}
               </button>
               {savedTemplate && (
                 <p className="text-[11px] text-green-600 dark:text-green-400 text-center mt-2">
-                  Current: {savedTemplate === 'vertical' ? 'Vertical ID Card' : 'Horizontal ID Card'}
+                  {savedTemplate === 'vertical' ? t('verticalCard') : t('horizontalCard')}
                 </p>
               )}
             </div>
           )}
 
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Layout Controls</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('layoutControls')}</p>
             <div className="space-y-4">
               {[
-                { key: 'cardWidth', label: 'Card Width', min: 200, max: 600, suffix: 'px' },
-                { key: 'cardHeight', label: 'Card Height', min: 0, max: 600, suffix: 'px' },
-                { key: 'cardPadding', label: 'Card Padding', min: 0, max: 40, suffix: 'px' },
-                { key: 'borderRadius', label: 'Border Radius', min: 0, max: 30, suffix: 'px' },
+                { key: 'cardWidth', label: t('cardWidth'), min: 200, max: 600, suffix: 'px' },
+                { key: 'cardHeight', label: t('cardHeight'), min: 0, max: 600, suffix: 'px' },
+                { key: 'cardPadding', label: t('cardPadding'), min: 0, max: 40, suffix: 'px' },
+                { key: 'borderRadius', label: t('borderRadius'), min: 0, max: 30, suffix: 'px' },
               ].map(({ key, label, min, max, suffix }) => (
                 <div key={key}>
                   <div className="flex items-center justify-between mb-1.5">
@@ -706,11 +708,11 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
           </div>
 
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Photo Controls</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('photoControls')}</p>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">Photo Size</label>
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{t('photoSize')}</label>
                   <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.photoSize}px</span>
                 </div>
                 <input
@@ -723,12 +725,12 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                 />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-2">Photo Shape</label>
+                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-2">{t('photoShape')}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: 'circle', label: 'Circle', icon: 'M12 2a10 10 0 100 20 10 10 0 000-20z' },
-                    { value: 'rounded', label: 'Rounded', icon: 'M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5z' },
-                    { value: 'square', label: 'Square', icon: 'M4 4h16v16H4z' },
+                    { value: 'circle', label: t('circle'), icon: 'M12 2a10 10 0 100 20 10 10 0 000-20z' },
+                    { value: 'rounded', label: t('rounded'), icon: 'M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5z' },
+                    { value: 'square', label: t('square'), icon: 'M4 4h16v16H4z' },
                   ].map(({ value, label, icon }) => (
                     <button
                       key={value}
@@ -751,11 +753,11 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
           </div>
 
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">QR Code Controls</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('qrCodeControls')}</p>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">QR Code Size</label>
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{t('qrCodeSize')}</label>
                   <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.qrSize}px</span>
                 </div>
                 <input type="range" min={80} max={240} value={activeConfig.qrSize}
@@ -763,12 +765,12 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                   className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600" />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-2">QR Code Position</label>
+                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-2">{t('qrCodePosition')}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: 'left', label: 'Left' },
-                    { value: 'center', label: 'Center' },
-                    { value: 'right', label: 'Right' },
+                    { value: 'left', label: t('left') },
+                    { value: 'center', label: t('center') },
+                    { value: 'right', label: t('right') },
                   ].map(({ value, label }) => (
                     <button key={value}
                       onClick={() => setConfigProp('qrPosition', value)}
@@ -784,11 +786,11 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
           </div>
 
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Typography</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('typography')}</p>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">Student Name Font Size</label>
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{t('nameFontSize')}</label>
                   <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.nameFontSize}px</span>
                 </div>
                 <input type="range" min={10} max={32} value={activeConfig.nameFontSize}
@@ -797,7 +799,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">Details Font Size</label>
+                  <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{t('detailsFontSize')}</label>
                   <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{activeConfig.detailsFontSize}px</span>
                 </div>
                 <input type="range" min={8} max={24} value={activeConfig.detailsFontSize}
@@ -805,7 +807,7 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                   className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600" />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1.5">Font Weight</label>
+                <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1.5">{t('fontWeight')}</label>
                 <select value={activeConfig.fontWeight}
                   onChange={(e) => setConfigProp('fontWeight', Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
@@ -820,13 +822,13 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
           </div>
 
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Color Controls</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('colorControls')}</p>
             <div className="space-y-3">
               {[
-                { key: 'primaryColor', label: 'Primary Color' },
-                { key: 'secondaryColor', label: 'Secondary Color' },
-                { key: 'textColor', label: 'Text Color' },
-                { key: 'cardBgColor', label: 'Card Background Color' },
+                { key: 'primaryColor', label: t('primaryColor') },
+                { key: 'secondaryColor', label: t('secondaryColor') },
+                { key: 'textColor', label: t('textColor') },
+                { key: 'cardBgColor', label: t('cardBgColor') },
               ].map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between">
                   <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400">{label}</label>
@@ -842,14 +844,14 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
           </div>
 
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Visibility Controls</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('visibilityControls')}</p>
             <div className="space-y-4">
               <div>
-                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Header Section</p>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">{t('headerSection')}</p>
                 <div className="space-y-2">
                   {[
-                    { key: 'schoolLogo', label: 'Show School Logo' },
-                    { key: 'schoolName', label: 'Show School Name' },
+                    { key: 'schoolLogo', label: t('showSchoolLogo') },
+                    { key: 'schoolName', label: t('showSchoolName') },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
                       <input type="checkbox" checked={!!activeConfig.visibility[key]}
@@ -861,11 +863,11 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Student Section</p>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">{t('studentSection')}</p>
                 <div className="space-y-2">
                   {[
-                    { key: 'studentPhoto', label: 'Show Student Photo' },
-                    { key: 'studentName', label: 'Show Student Name' },
+                    { key: 'studentPhoto', label: t('showStudentPhoto') },
+                    { key: 'studentName', label: t('showStudentName') },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
                       <input type="checkbox" checked={!!activeConfig.visibility[key]}
@@ -877,13 +879,13 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Student Information</p>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">{t('studentInfoSection')}</p>
                 <div className="space-y-2">
                   {[
-                    { key: 'fatherName', label: 'Show Father Name' },
-                    { key: 'studentId', label: 'Show Student ID' },
-                    { key: 'class', label: 'Show Class' },
-                    { key: 'academicYear', label: 'Show Academic Year' },
+                    { key: 'fatherName', label: t('showFatherName') },
+                    { key: 'studentId', label: t('showStudentId') },
+                    { key: 'class', label: t('showClass') },
+                    { key: 'academicYear', label: t('showAcademicYear') },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
                       <input type="checkbox" checked={!!activeConfig.visibility[key]}
@@ -895,13 +897,13 @@ const DEFAULT_CONFIG = { cardWidth: 320, cardHeight: 0, cardPadding: 16, borderR
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">Back Side</p>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2">{t('backSideSection')}</p>
                 <div className="space-y-2">
                   {[
-                    { key: 'qrCode', label: 'Show QR Code' },
-                    { key: 'fatherPhone', label: 'Show Father Phone' },
-                    { key: 'schoolAddress', label: 'Show School Address' },
-                    { key: 'note', label: 'Show Note' },
+                    { key: 'qrCode', label: t('showQrCode') },
+                    { key: 'fatherPhone', label: t('showFatherPhone') },
+                    { key: 'schoolAddress', label: t('showSchoolAddress') },
+                    { key: 'note', label: t('showNote') },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
                       <input type="checkbox" checked={!!activeConfig.visibility[key]}

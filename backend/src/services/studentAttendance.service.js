@@ -1,6 +1,8 @@
 import StudentAttendance from '../models/studentAttendance.model.js';
 import Student from '../models/student.model.js';
+import SchoolSettings from '../models/schoolSettings.model.js';
 import { ApiError } from '../utils/apiError.js';
+import attendanceRules from './attendanceRules.service.js';
 
 const VALID_CLASS_NAMES = [
   'Montessori', 'Nursery', 'KG 1', 'KG 2',
@@ -8,8 +10,17 @@ const VALID_CLASS_NAMES = [
   'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
 ];
 
+const formatTimeStr = (date) => {
+  if (!date) return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+};
+
 const saveAttendance = async (data, userId) => {
   const { academicYear, class: className, date, records } = data;
+
+  // ── Step 1: Validate Student exists ──────────────────────────────
 
   const studentFilter = {
     academicYear,
@@ -38,21 +49,124 @@ const saveAttendance = async (data, userId) => {
     throw new ApiError(400, 'Some student IDs do not belong to the selected class and academic year');
   }
 
-  const bulkOps = records.map((record) => ({
+  // ── Step 2: Validate Attendance Date ─────────────────────────────
+
+  const attendanceDate = new Date(date);
+  if (isNaN(attendanceDate.getTime())) {
+    throw new ApiError(400, 'Invalid attendance date');
+  }
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  if (attendanceDate.getTime() > today.getTime()) {
+    throw new ApiError(400, 'Cannot mark attendance for a future date');
+  }
+
+  // ── Step 3: Weekend Rule ─────────────────────────────────────────
+
+  const weekendResult = await attendanceRules.checkWeekendPolicy(date);
+  if (weekendResult.isWeekend) {
+    throw new ApiError(400, `Attendance cannot be marked because today is ${weekendResult.weekendDay} (configured as a weekend day).`);
+  }
+
+  // ── Step 4: Holiday Rule ─────────────────────────────────────────
+
+  const holidayResult = await attendanceRules.checkHolidayPolicy(date, { appliesTo: 'Students' });
+  if (holidayResult.isHoliday) {
+    const holidayNames = holidayResult.holidays.map((h) => h.name).join(', ');
+    throw new ApiError(400, `Attendance cannot be marked because today is an official holiday (${holidayNames}).`);
+  }
+
+  // ── Step 5: Event Rule + Audience Validation ─────────────────────
+
+  const eventResult = await attendanceRules.checkEventPolicy(date);
+  if (eventResult.hasEvent) {
+    for (const event of eventResult.events) {
+      if (event.attendanceRequired === 'No') {
+        throw new ApiError(400,
+          `Attendance is disabled because of the event: ${event.name}.`
+        );
+      }
+      if (event.audience && !['All', 'Students'].includes(event.audience)) {
+        throw new ApiError(400,
+          `Attendance cannot be marked because the event "${event.name}" is restricted to ${event.audience} only. Student attendance is not allowed for this event.`
+        );
+      }
+    }
+  }
+
+  // ── Step 5.5: Leave Rule ─────────────────────────────────────────
+
+  const leaveRecords = records.filter((r) => r.status === 'Leave');
+  if (leaveRecords.length > 0) {
+    const settings = await SchoolSettings.getSettings();
+    if (!settings.allowLeaveMarking) {
+      throw new ApiError(400,
+        'Leave marking is currently disabled in School Settings. Enable "Allow Leave Marking" to use this option.'
+      );
+    }
+  }
+
+  // ── Step 6: Attendance Time Rule ─────────────────────────────────
+
+  const timeResult = await attendanceRules.checkAttendanceTimeRules();
+  if (!timeResult.isTimeAllowed) {
+    throw new ApiError(400, timeResult.message);
+  }
+
+  // ── Step 7: Late Rule (per-record) ───────────────────────────────
+
+  const processedRecords = await Promise.all(
+    records.map(async (record) => {
+      let recordStatus = record.status;
+
+      if (recordStatus === 'Present') {
+        const checkInDate = new Date();
+        const checkInTimeStr = formatTimeStr(checkInDate);
+
+        if (checkInTimeStr) {
+          const lateResult = await attendanceRules.checkLateRule({ checkInTime: checkInTimeStr });
+          if (lateResult.isLate) {
+            recordStatus = 'Late';
+          }
+        }
+      }
+
+      return { ...record, status: recordStatus };
+    }),
+  );
+
+  // ── Step 8 & 9: Duplicate protection + Edit rule check ──────────
+
+  const existingRecords = await StudentAttendance.find({
+    student: { $in: students.map((s) => s._id) },
+    date: attendanceDate,
+  }).lean();
+
+  if (existingRecords.length > 0) {
+    const editResult = await attendanceRules.checkEditRules(existingRecords[0]);
+    if (!editResult.canEdit) {
+      throw new ApiError(400, editResult.message);
+    }
+  }
+
+  // ── Step 10: Save Attendance ─────────────────────────────────────
+
+  const bulkOps = processedRecords.map((record) => ({
     updateOne: {
       filter: {
         student: record.student,
-        date: new Date(date),
+        date: attendanceDate,
       },
       update: {
         $set: {
           student: record.student,
           class: studentClassMap[record.student] || className,
           academicYear,
-          date: new Date(date),
+          date: attendanceDate,
           status: record.status,
           method: record.method || 'Manual',
-          checkIn: record.checkIn ? new Date(record.checkIn) : record.status !== 'Absent' ? new Date() : undefined,
+          checkIn: record.status !== 'Absent' ? new Date() : undefined,
           remarks: record.remarks || '',
           markedBy: userId,
         },
@@ -64,7 +178,7 @@ const saveAttendance = async (data, userId) => {
   await StudentAttendance.bulkWrite(bulkOps);
 
   const attendanceMap = {};
-  records.forEach((r) => {
+  processedRecords.forEach((r) => {
     attendanceMap[r.student] = {
       status: r.status,
       method: r.method || 'Manual',
@@ -76,7 +190,7 @@ const saveAttendance = async (data, userId) => {
     class: className,
     date,
     totalStudents: students.length,
-    markedCount: records.length,
+    markedCount: processedRecords.length,
     attendanceMap,
   };
 };
@@ -274,6 +388,29 @@ const deleteAttendance = async (id) => {
   return record;
 };
 
+const resetCheckIn = async (studentId, date, academicYear, checkIn) => {
+  const filter = { student: studentId, date: new Date(date) };
+  if (academicYear) filter.academicYear = academicYear;
+
+  const record = await StudentAttendance.findOne(filter);
+  if (!record) {
+    throw new ApiError(404, 'Attendance record not found');
+  }
+
+  if (checkIn) {
+    record.checkIn = new Date(checkIn);
+    await record.save();
+  } else {
+    await StudentAttendance.findByIdAndUpdate(
+      record._id,
+      { $unset: { checkIn: '' } },
+      { new: true },
+    );
+  }
+
+  return record;
+};
+
 const deleteBulkAttendance = async (className, academicYear, date) => {
   const filter = {};
 
@@ -304,4 +441,5 @@ export default {
   getAttendanceReports,
   deleteAttendance,
   deleteBulkAttendance,
+  resetCheckIn,
 };

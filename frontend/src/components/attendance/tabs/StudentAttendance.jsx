@@ -13,9 +13,12 @@ import ConfirmationModal from '../../common/ConfirmationModal';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import { getImageUrl } from '../../../utils/imageUrl';
 import Spinner from '../../common/Spinner';
+import Button from '../../common/Button';
+import { useFormatTime } from '../../../hooks/useLocalization';
+import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 import studentAttendanceService from '../../../services/studentAttendance.service';
 
-const STATUS_OPTIONS = ['Select Status', 'Present', 'Absent', 'Leave', 'Late'];
+const BASE_STATUS_OPTIONS = ['Select Status', 'Present', 'Absent', 'Late'];
 const ATTENDANCE_METHODS = ['Manual Attendance', 'QR Scanner'];
 
 const STATUS_STYLES = {
@@ -37,13 +40,13 @@ const STATUS_COLORS = {
 
 const PAGE_SIZE = 10;
 
-const formatTime = () => {
-  const now = new Date();
-  return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-};
-
 const StudentAttendance = () => {
-  const [academicYear, setAcademicYear] = useState('');
+  const formatTime = useFormatTime();
+  const { academic, attendanceRules, weekendSettings } = useSchoolConfig();
+  const STATUS_OPTIONS = attendanceRules?.allowLeaveMarking
+    ? [...BASE_STATUS_OPTIONS, 'Leave']
+    : BASE_STATUS_OPTIONS;
+  const [academicYear, setAcademicYear] = useState(academic?.currentYear || '');
   const [className, setClassName] = useState('All Classes');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceMethod, setAttendanceMethod] = useState('Manual Attendance');
@@ -51,9 +54,13 @@ const StudentAttendance = () => {
   const [attendanceMap, setAttendanceMap] = useState({});
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [viewStudent, setViewStudent] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
+  const [resetCheckInTime, setResetCheckInTime] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const isWeekend = weekendSettings?.enabled && weekendSettings?.days?.includes(new Date().toLocaleDateString('en-US', { weekday: 'long' }));
   const [currentPage, setCurrentPage] = useState(1);
 
   const isScannerMode = attendanceMethod === 'QR Scanner';
@@ -80,14 +87,16 @@ const StudentAttendance = () => {
     return () => document.removeEventListener('click', close);
   }, []);
 
-  const loadStudents = useCallback(async (silent = false) => {
+  const loadStudents = useCallback(async () => {
+    if (isWeekend) return;
     if (!academicYear || !className) {
-      if (!silent) toast.error('Please select Academic Year and Class');
+      toast.error('Please select Academic Year and Class');
       return;
     }
     setCurrentPage(1);
     setLoading(true);
     setLoaded(false);
+    setHasSearched(true);
     setStudents([]);
     setAttendanceMap({});
     try {
@@ -98,36 +107,36 @@ const StudentAttendance = () => {
       });
       const { students: fetchedStudents = [], attendanceMap: existing = {} } = response.data || {};
       setStudents(fetchedStudents);
+      if (fetchedStudents.length === 0) {
+        toast.error('No students found for the selected filters.');
+        setLoaded(false);
+        return;
+      }
       const isScanner = attendanceMethod === 'QR Scanner';
       const defaultStatus = isScanner ? 'Pending' : 'Select Status';
       const mergedMap = {};
       fetchedStudents.forEach((s) => {
         const existingRecord = existing[s._id];
         if (existingRecord) {
-          mergedMap[s._id] = {
-            status: existingRecord.status,
-            checkIn: existingRecord.checkIn
-              ? new Date(existingRecord.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-              : '',
-          };
+           mergedMap[s._id] = {
+             status: existingRecord.status,
+             checkIn: existingRecord.checkIn
+               ? formatTime(new Date(existingRecord.checkIn))
+               : '',
+           };
         } else {
           mergedMap[s._id] = { status: defaultStatus, checkIn: '' };
         }
       });
       setAttendanceMap(mergedMap);
       setLoaded(true);
+      toast.success('Students loaded successfully.');
     } catch {
-      if (!silent) toast.error('Failed to load students');
+      toast.error('Failed to load students');
     } finally {
       setLoading(false);
     }
   }, [academicYear, className, date, attendanceMethod]);
-
-  useEffect(() => {
-    if (!academicYear || !className) return;
-    const id = setTimeout(() => loadStudents(true), 0);
-    return () => clearTimeout(id);
-  }, [academicYear, className, loadStudents]);
 
   const saveSingleRecord = async (studentId, status) => {
     if (!academicYear || !className || !loaded) return;
@@ -142,18 +151,18 @@ const StudentAttendance = () => {
           method: isScannerMode ? 'QR' : 'Manual',
         }],
       });
-    } catch {
-      toast.error('Failed to save attendance');
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Failed to save attendance';
+      toast.error(msg);
     }
   };
 
   const handleMarkAllPresent = async () => {
     if (!loaded || students.length === 0) return;
-    const now = formatTime();
     setAttendanceMap((prev) => {
       const next = { ...prev };
       students.forEach((s) => {
-        next[s._id] = { status: 'Present', checkIn: now };
+        next[s._id] = { status: 'Present', checkIn: '' };
       });
       return next;
     });
@@ -170,8 +179,9 @@ const StudentAttendance = () => {
         records,
       });
       toast.success('All students marked present');
-    } catch {
-      toast.error('Failed to save attendance');
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Failed to save attendance';
+      toast.error(msg);
     }
   };
 
@@ -184,8 +194,7 @@ const StudentAttendance = () => {
     setAttendanceMap(prev => {
       const next = {};
       Object.keys(prev).forEach(id => {
-        next[id] = { ...prev[id], status: defaultStatus };
-        next[id].checkIn = defaultStatus !== 'Pending' && defaultStatus !== 'Select Status' ? (prev[id].checkIn || formatTime()) : '';
+        next[id] = { ...prev[id], status: defaultStatus, checkIn: '' };
       });
       return next;
     });
@@ -194,21 +203,19 @@ const StudentAttendance = () => {
   const handleAcademicYearChange = (e) => {
     const value = e.target.value;
     setAcademicYear(value);
-    if (!value || !className) {
-      setLoaded(false);
-      setStudents([]);
-      setAttendanceMap({});
-    }
+    setLoaded(false);
+    setHasSearched(false);
+    setStudents([]);
+    setAttendanceMap({});
   };
 
   const handleClassNameChange = (e) => {
     const value = e.target.value;
     setClassName(value);
-    if (!value || !academicYear) {
-      setLoaded(false);
-      setStudents([]);
-      setAttendanceMap({});
-    }
+    setLoaded(false);
+    setHasSearched(false);
+    setStudents([]);
+    setAttendanceMap({});
   };
 
   const updateAttendance = (studentId, field, value) => {
@@ -217,7 +224,6 @@ const StudentAttendance = () => {
       [studentId]: {
         ...prev[studentId],
         [field]: value,
-        ...(field === 'status' && value !== 'Select Status' ? { checkIn: formatTime() } : {}),
         ...(field === 'status' && value === 'Select Status' ? { checkIn: '' } : {}),
       },
     }));
@@ -226,15 +232,46 @@ const StudentAttendance = () => {
     }
   };
 
-  const handleResetConfirm = () => {
+  const handleResetConfirm = async () => {
     if (!resetTarget) return;
-    const defaultStatus = isScannerMode ? 'Pending' : 'Select Status';
-    setAttendanceMap(prev => ({
-      ...prev,
-      [resetTarget]: { ...prev[resetTarget], status: defaultStatus, checkIn: '' },
-    }));
-    setResetTarget(null);
-    toast.success('Attendance reset');
+    setResetting(true);
+    const studentId = resetTarget._id;
+    const prevRecord = attendanceMap[studentId] || {};
+    const hasExistingRecord = prevRecord.status && prevRecord.status !== 'Select Status' && prevRecord.status !== 'Pending';
+    try {
+      if (hasExistingRecord) {
+        const checkInDateTime = resetCheckInTime ? `${date}T${resetCheckInTime}` : undefined;
+        await studentAttendanceService.resetCheckIn({
+          studentId,
+          date,
+          academicYear,
+          checkIn: checkInDateTime,
+        });
+      }
+      setAttendanceMap(prev => ({
+        ...prev,
+        [studentId]: hasExistingRecord
+          ? { ...prev[studentId], checkIn: resetCheckInTime ? formatTime(new Date(`${date}T${resetCheckInTime}`)) : '' }
+          : prev[studentId],
+      }));
+      if (hasExistingRecord) {
+        toast.success(resetCheckInTime ? 'Attendance check-in time has been updated successfully.' : 'Attendance check-in time has been cleared successfully.');
+      } else {
+        toast.error('No attendance record found to reset.');
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Failed to reset attendance';
+      toast.error(msg);
+    } finally {
+      setResetting(false);
+      setResetCheckInTime('');
+      setResetTarget(null);
+    }
+  };
+
+  const handleResetClick = (student) => {
+    setResetTarget(student);
+    setResetCheckInTime('');
   };
 
   const renderStatusBadge = (status) => {
@@ -246,15 +283,38 @@ const StudentAttendance = () => {
     );
   };
 
-  const renderEmptyState = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
-      <UserGroupIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-      <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">No Students Loaded</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-        Select Academic Year and Class to load students.
-      </p>
-    </div>
-  );
+  const renderEmptyState = () => {
+    if (isWeekend) {
+      const weekday = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
+          <CalendarDaysIcon className="h-16 w-16 text-yellow-400 dark:text-yellow-500 mb-4" />
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">
+            Weekend Detected
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+            Today is <strong>{weekday}</strong>, which is configured as a Weekend in School Settings.
+          </p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+            Student attendance is unavailable today. Please continue on the next working day or update the Weekend configuration from School Settings if necessary.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
+        <UserGroupIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
+        <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">
+          {hasSearched ? 'No Students Found' : 'No Students Loaded'}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+          {hasSearched
+            ? 'No students match the selected filters. Try a different class or date.'
+            : 'Select Academic Year and Class to load students.'}
+        </p>
+      </div>
+    );
+  };
 
   const renderLoadingState = () => (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
@@ -393,8 +453,8 @@ const StudentAttendance = () => {
               <td colSpan={7} className="px-4 py-16 text-center">
                 <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
                   <UserGroupIcon className="h-12 w-12 mb-3" />
-                  <p className="text-sm font-medium">No Students Loaded</p>
-                  <p className="text-xs mt-1">Select Academic Year and Class to load students.</p>
+                  <p className="text-sm font-medium">{hasSearched ? 'No Students Found' : 'No Students Loaded'}</p>
+                  <p className="text-xs mt-1">{hasSearched ? 'Try different filters.' : 'Select Academic Year and Class to load students.'}</p>
                 </div>
               </td>
             </tr>
@@ -441,7 +501,7 @@ const StudentAttendance = () => {
                         <EyeIcon className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => setResetTarget(student._id)}
+                        onClick={() => handleResetClick(student)}
                         title="Reset Attendance"
                         className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                       >
@@ -525,28 +585,31 @@ const StudentAttendance = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <SelectInput
-            label="Academic Year"
-            name="academicYear"
-            value={academicYear}
-            onChange={handleAcademicYearChange}
-            options={ACADEMIC_YEARS}
-            placeholder="Select year"
-          />
-          <SelectInput
-            label="Class"
-            name="className"
-            value={className}
-            onChange={handleClassNameChange}
-            options={['All Classes', ...CLASS_NAMES]}
-            placeholder="Select class"
-          />
-          <DateInput
-            label="Date"
-            name="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+           <SelectInput
+             label="Academic Year"
+             name="academicYear"
+             value={academicYear}
+             onChange={handleAcademicYearChange}
+             options={ACADEMIC_YEARS}
+             placeholder="Select year"
+             disabled={isWeekend}
+           />
+           <SelectInput
+             label="Class"
+             name="className"
+             value={className}
+             onChange={handleClassNameChange}
+             options={['All Classes', ...CLASS_NAMES]}
+             placeholder="Select class"
+             disabled={isWeekend}
+           />
+           <DateInput
+             label="Date"
+             name="date"
+             value={date}
+             onChange={(e) => setDate(e.target.value)}
+             disabled={isWeekend}
+           />
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Attendance Method
@@ -569,15 +632,17 @@ const StudentAttendance = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-          <button
-            onClick={loadStudents}
-            disabled={!academicYear || !className || loading}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-          >
+           <Button
+             variant="primary"
+             onClick={loadStudents}
+             loading={loading}
+             disabled={isWeekend || !academicYear || !className}
+             className="!w-auto !inline-flex items-center gap-2"
+           >
             <UserGroupIcon className="h-4 w-4" />
             Load Students
-          </button>
-          {loaded && (
+          </Button>
+          {loaded && !isWeekend && (
             <button
               onClick={handleMarkAllPresent}
               disabled={loading}
@@ -600,14 +665,33 @@ const StudentAttendance = () => {
 
       <ConfirmationModal
         isOpen={!!resetTarget}
-        onClose={() => setResetTarget(null)}
+        onClose={() => { if (!resetting) { setResetTarget(null); setResetCheckInTime(''); } }}
         title="Reset Attendance"
-        message="Are you sure you want to reset this student's attendance record? The status and check-in time will be cleared."
         confirmLabel="Reset"
         cancelLabel="Cancel"
         variant="primary"
         onConfirm={handleResetConfirm}
-      />
+        loading={resetting}
+      >
+        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+          Are you sure you want to reset attendance for <strong>{resetTarget?.fullName || 'this student'}</strong>?
+        </p>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Check-in Time <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input
+            type="time"
+            value={resetCheckInTime}
+            onChange={(e) => setResetCheckInTime(e.target.value)}
+            disabled={resetting}
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          />
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+            Leave blank to clear the existing check-in time. Enter a time to update it.
+          </p>
+        </div>
+      </ConfirmationModal>
     </div>
   );
 };

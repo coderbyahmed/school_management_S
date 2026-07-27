@@ -4,6 +4,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import Modal from '../../../common/Modal';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import { TYPE_OPTIONS, validatePeriods, isTimetableFormValid, getFirstError, hasOverlapError } from '../../../../utils/timetableValidation';
+import { useTranslation } from '../../../../hooks/useLocalization';
 import teacherService from '../../../../services/teacher.service';
 import timetableService from '../../../../services/timetable.service';
 
@@ -40,6 +41,7 @@ const mapPeriodToPayload = (p) => ({
 });
 
 const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => {
+  const { t } = useTranslation();
   const timetableId = timetableData._id;
   const classId = timetableData.classId?._id || timetableData.classId;
 
@@ -67,7 +69,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
       .then((res) => {
         if (res?.data?.subjects) setSubjects(res.data.subjects);
       })
-      .catch(() => toast.error('Failed to load subjects'));
+      .catch(() => toast.error(t('failedToLoad')));
   }, [classId]);
 
   useEffect(() => {
@@ -76,7 +78,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
         const list = res?.data?.teachers || res?.data?.data?.teachers || [];
         setTeachers(Array.isArray(list) ? list : []);
       })
-      .catch(() => toast.error('Failed to load teachers'))
+      .catch(() => toast.error(t('failedToLoad')))
       .finally(() => setLoadingTeachers(false));
   }, []);
 
@@ -121,9 +123,9 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
       setPeriods(filtered);
       setDeleteConfirmTarget(null);
       if (onRefresh) onRefresh();
-      toast.success('Period deleted successfully');
+      toast.success(t('deletedSuccessfully'));
     } catch (err) {
-      const serverMsg = err?.response?.data?.message || 'Failed to delete period';
+      const serverMsg = err?.response?.data?.message || t('failedToDelete');
       toast.error(serverMsg);
     } finally {
       setSaving(false);
@@ -136,7 +138,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
 
   const handleSave = useCallback(async () => {
     if (periods.length === 0) {
-      toast.error('Timetable must have at least one period');
+      toast.error(t('noData'));
       return;
     }
     if (Object.keys(fieldErrors).length > 0) {
@@ -155,7 +157,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
   const displayName = timetableData.className || (timetableData.classId?.className) || '';
 
   return (
-    <Modal isOpen={true} onClose={onClose} title={`Edit Timetable — ${displayName}`} maxWidth="max-w-5xl">
+    <Modal isOpen={true} onClose={onClose} title={`${t('edit')} — ${displayName}`} maxWidth="max-w-5xl">
       <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
         {periods.map((period) => {
           const isBreak = period.type === 'Break';
@@ -176,25 +178,25 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
               <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 w-5 flex-shrink-0 pt-3.5">{period.periodNum}.</span>
 
               <div className="min-w-[70px] flex-1">
-                <label className={labelCls}>Period</label>
-                <input type="text" value={`Period ${period.periodNum}`} readOnly className={fieldReadonly} />
+                <label className={labelCls}>{t('period')}</label>
+                <input type="text" value={`${t('period')} ${period.periodNum}`} readOnly className={fieldReadonly} />
               </div>
 
               <div className="min-w-[70px] flex-1">
-                <label className={labelCls}>Type</label>
+                <label className={labelCls}>{t('type')}</label>
                 <select value={period.type} onChange={(e) => updatePeriod(period.id, 'type', e.target.value)} className={selectNormal}>
                   {TYPE_OPTIONS.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
                 </select>
               </div>
 
               <div className="min-w-[80px] flex-1">
-                <label className={labelCls}>Start</label>
+                <label className={labelCls}>{t('startTime')}</label>
                 <input type="time" value={period.startTime} onChange={(e) => updatePeriod(period.id, 'startTime', e.target.value)} className={`${getFieldCls(errs, 'startTime')} [color-scheme:light] dark:[color-scheme:dark]`} />
                 {errs?.startTime && <p className={errTextCls}>{errs.startTime}</p>}
               </div>
 
               <div className="min-w-[80px] flex-1">
-                <label className={labelCls}>End</label>
+                <label className={labelCls}>{t('endTime')}</label>
                 <input type="time" value={period.endTime} onChange={(e) => updatePeriod(period.id, 'endTime', e.target.value)} className={`${getFieldCls(errs, 'endTime')} [color-scheme:light] dark:[color-scheme:dark]`} />
                 {errs?.timeOverlap && <p className={errTextCls}>{errs.timeOverlap}</p>}
                 {errs?.endTime && !errs?.timeOverlap && <p className={errTextCls}>{errs.endTime}</p>}
@@ -202,13 +204,13 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
 
               {isBreak ? (
                 <div className="min-w-[100px] flex-1">
-                  <label className={labelCls}>Break Name</label>
+                  <label className={labelCls}>{t('category')}</label>
                   <input type="text" value={period.breakName || ''} onChange={(e) => updatePeriod(period.id, 'breakName', e.target.value)} placeholder="e.g. Lunch Break" className={fieldNormal} />
                 </div>
               ) : (
                 <>
                   <div className="min-w-[90px] flex-1">
-                    <label className={labelCls}>Teacher</label>
+                    <label className={labelCls}>{t('teacher')}</label>
                     <select
                       value={period.teacher}
                       onChange={(e) => updatePeriod(period.id, 'teacher', e.target.value)}
@@ -216,7 +218,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
                       className={getSelectCls(errs, 'teacher', isBreak)}
                     >
                       <option value="" disabled>
-                        {loadingTeachers ? 'Loading...' : 'Select teacher'}
+                        {loadingTeachers ? t('loading') : t('select')}
                       </option>
                       {teachers.map((t) => (
                         <option key={t._id} value={t._id}>{t.fullName}</option>
@@ -225,7 +227,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
                     {errs?.teacher && <p className={errTextCls}>{errs.teacher}</p>}
                   </div>
                   <div className="min-w-[90px] flex-1">
-                    <label className={labelCls}>Subject</label>
+                    <label className={labelCls}>{t('subject')}</label>
                     <select
                       value={period.subject}
                       onChange={(e) => updatePeriod(period.id, 'subject', e.target.value)}
@@ -233,14 +235,14 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
                       className={getSelectCls(errs, 'subject', subjectDisabled)}
                     >
                       <option value="" disabled>
-                        {!period.teacher ? 'Select teacher first' : availableSubjects.length === 0 ? 'No valid subjects' : 'Select subject'}
+                        {!period.teacher ? t('select') : availableSubjects.length === 0 ? t('noData') : t('select')}
                       </option>
                       {availableSubjects.map((s) => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
                     </select>
                     {period.teacher && availableSubjects.length === 0 && (
-                      <p className={errTextCls}>No valid subjects for this teacher</p>
+                      <p className={errTextCls}>{t('noData')}</p>
                     )}
                     {errs?.subject && <p className={errTextCls}>{errs.subject}</p>}
                   </div>
@@ -251,7 +253,7 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
                 onClick={() => handleDeleteClick(period.id, period.periodNum)}
                 disabled={saving}
                 className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors self-start mt-3.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
-                title="Delete period"
+                title={t('delete')}
               >
                 <TrashIcon className="h-3.5 w-3.5" />
               </button>
@@ -260,12 +262,12 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
         })}
 
         {periods.length === 0 && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No periods in this timetable.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">{t('noData')}</p>
         )}
 
         {overlap && (
           <div className="px-3 py-2 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800/50">
-            <p className="text-[11px] text-red-600 dark:text-red-400 font-medium">Time overlap detected — Fix overlapping periods to enable Save.</p>
+            <p className="text-[11px] text-red-600 dark:text-red-400 font-medium">{t('error')}</p>
           </div>
         )}
       </div>
@@ -276,24 +278,24 @@ const TimetableEditorModal = ({ timetableData, onSave, onClose, onRefresh }) => 
           onClick={onClose}
           className="px-4 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer"
         >
-          Cancel
+          {t('cancel')}
         </button>
         <button
           onClick={handleSave}
           disabled={!isFormValid || periods.length === 0 || saving}
           className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? t('saving') : t('save')}
         </button>
       </div>
 
       <ConfirmationModal
         isOpen={deleteConfirmTarget !== null}
         onClose={() => setDeleteConfirmTarget(null)}
-        title="Delete Period"
-        message={`Are you sure you want to delete Period ${deleteConfirmTarget?.periodNum}?`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t('delete')}
+        message={t('confirmDelete')}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
         variant="danger"
         onConfirm={confirmDelete}
       />

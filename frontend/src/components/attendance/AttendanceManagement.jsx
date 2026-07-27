@@ -1,22 +1,22 @@
 import { useState } from 'react';
+import { useTranslation } from '../../hooks/useLocalization';
 import StudentAttendance from './tabs/StudentAttendance';
 import TeacherAttendance from './tabs/TeacherAttendance';
 import IDCardManagement from './tabs/QRCodeManagement';
 import AttendanceHistory from './tabs/AttendanceHistory';
 import AttendanceReports from './tabs/AttendanceReports';
 
-const tabs = ['Student Attendance', 'Teacher Attendance', 'ID Card Management', 'Attendance History', 'Attendance Reports'];
-
-const tabComponents = {
-  'Student Attendance': StudentAttendance,
-  'Teacher Attendance': TeacherAttendance,
-  'ID Card Management': IDCardManagement,
-  'Attendance History': AttendanceHistory,
-  'Attendance Reports': AttendanceReports,
-};
-
 const AttendanceManagement = () => {
-  const [activeTab, setActiveTab] = useState('Student Attendance');
+  const { t } = useTranslation();
+  const tabs = [t('studentAttendance'), t('teacherAttendance'), t('idCardManagement'), t('attendanceHistory'), t('attendanceReports')];
+  const tabComponents = {
+    [t('studentAttendance')]: StudentAttendance,
+    [t('teacherAttendance')]: TeacherAttendance,
+    [t('idCardManagement')]: IDCardManagement,
+    [t('attendanceHistory')]: AttendanceHistory,
+    [t('attendanceReports')]: AttendanceReports,
+  };
+  const [activeTab, setActiveTab] = useState(t('studentAttendance'));
 
   const ActiveComponent = tabComponents[activeTab];
 

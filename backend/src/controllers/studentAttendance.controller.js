@@ -125,6 +125,22 @@ const deleteBulkAttendance = asyncHandler(async (req, res) => {
   });
 });
 
+const resetCheckIn = asyncHandler(async (req, res) => {
+  const { studentId, date, academicYear, checkIn } = req.body;
+
+  if (!studentId || !date) {
+    return res.status(400).json({ success: false, message: 'Student ID and date are required' });
+  }
+
+  const result = await studentAttendanceService.resetCheckIn(studentId, date, academicYear, checkIn);
+
+  return res.status(200).json({
+    success: true,
+    message: checkIn ? 'Check-in time updated successfully' : 'Check-in time cleared successfully',
+    data: result,
+  });
+});
+
 export {
   saveAttendance,
   getStudentsWithAttendance,
@@ -135,4 +151,5 @@ export {
   getAttendanceReports,
   deleteAttendance,
   deleteBulkAttendance,
+  resetCheckIn,
 };

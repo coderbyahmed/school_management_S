@@ -45,6 +45,11 @@ const studentAttendanceService = {
     const response = await api.delete('/student-attendance', { params });
     return response.data;
   },
+
+  resetCheckIn: async (data) => {
+    const response = await api.patch('/student-attendance/check-in', data);
+    return response.data;
+  },
 };
 
 export default studentAttendanceService;

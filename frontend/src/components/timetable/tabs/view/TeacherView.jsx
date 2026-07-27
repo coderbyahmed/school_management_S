@@ -8,8 +8,10 @@ import TimetableEmptyState from './TimetableEmptyState';
 import teacherService from '../../../../services/teacher.service';
 import timetableService from '../../../../services/timetable.service';
 import { useTimetableYear } from '../../../../contexts/TimetableContext';
+import { useTranslation } from '../../../../hooks/useLocalization';
 
 const TeacherView = () => {
+  const { t } = useTranslation();
   const { selectedYear, setSelectedYear } = useTimetableYear();
   const [selectedTeacher, setSelectedTeacher] = useState('');
   const [schedule, setSchedule] = useState([]);
@@ -63,7 +65,7 @@ const TeacherView = () => {
         filtered.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
         setSchedule(filtered);
       })
-      .catch(() => toast.error('Failed to load schedule'))
+      .catch(() => toast.error(t('failedToLoad')))
       .finally(() => setLoadingSchedule(false));
   }, [selectedYear, selectedTeacher, teacherMap]);
 
@@ -79,8 +81,8 @@ const TeacherView = () => {
     <div className="space-y-6">
       <TimetableFilters
         filters={[
-          { name: 'academicYear', label: 'Academic Year', value: selectedYear, options: ACADEMIC_YEARS, placeholder: 'Select year' },
-          { name: 'teacher', label: 'Teacher', value: selectedTeacher, options: teacherOptions, placeholder: loadingTeachers ? 'Loading...' : 'Select teacher' },
+          { name: 'academicYear', label: t('academicYearLabel'), value: selectedYear, options: ACADEMIC_YEARS, placeholder: t('selectYear') },
+          { name: 'teacher', label: t('teacher'), value: selectedTeacher, options: teacherOptions, placeholder: loadingTeachers ? t('loading') : t('select') },
         ]}
         onFilterChange={handleFilterChange}
       />
@@ -88,32 +90,32 @@ const TeacherView = () => {
       {loadingSchedule && (
         <TimetableEmptyState
           icon={UserIcon}
-          title="Loading..."
-          description="Fetching schedule data."
+          title={t('loading')}
+          description={t('noData')}
         />
       )}
 
       {!selectedYear && !loadingSchedule && (
         <TimetableEmptyState
           icon={UserIcon}
-          title="No Academic Year Selected"
-          description="Please select an academic year and teacher to view schedule."
+          title={t('selectAcademicYear')}
+          description={t('selectAcademicYear')}
         />
       )}
 
       {selectedYear && !selectedTeacher && !loadingSchedule && (
         <TimetableEmptyState
           icon={UserIcon}
-          title="Select a Teacher"
-          description="Choose a teacher to view their schedule."
+          title={t('select')}
+          description={t('select')}
         />
       )}
 
       {selectedYear && selectedTeacher && !loadingSchedule && !hasData && (
         <TimetableEmptyState
           icon={UserIcon}
-          title="No Schedule Found"
-          description={`No timetable entries found for ${selectedTeacher} (${selectedYear}).`}
+          title={t('noData')}
+          description={`${t('noData')} ${selectedTeacher} (${selectedYear}).`}
         />
       )}
 

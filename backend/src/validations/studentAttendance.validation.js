@@ -1,5 +1,10 @@
 import { ApiError } from '../utils/apiError.js';
 
+const VALID_CLASS_NAMES = [
+  'Montessori', 'Nursery', 'KG 1', 'KG 2',
+  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+];
 const VALID_STATUSES = ['Present', 'Absent', 'Leave', 'Late'];
 const VALID_METHODS = ['Manual', 'QR'];
 const ACADEMIC_YEAR_REGEX = /^(202[5-9]|203[0-5])$/;

@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import ClassView from './view/ClassView';
 import TeacherView from './view/TeacherView';
 
 const subTabs = ['Class View', 'Teacher View'];
 
 const ViewTimetable = () => {
+  const { t } = useTranslation();
+  const tabLabels = { 'Class View': t('classLabel'), 'Teacher View': t('teacherLabel') };
   const [activeSubTab, setActiveSubTab] = useState('Class View');
 
   return (
@@ -21,7 +24,7 @@ const ViewTimetable = () => {
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
-              {tab}
+              {tabLabels[tab]}
             </button>
           ))}
         </nav>

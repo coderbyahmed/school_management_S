@@ -10,8 +10,10 @@ import ConfirmationModal from '../../../common/ConfirmationModal';
 import classService from '../../../../services/class.service';
 import timetableService from '../../../../services/timetable.service';
 import { useTimetableYear } from '../../../../contexts/TimetableContext';
+import { useTranslation } from '../../../../hooks/useLocalization';
 
 const ClassView = () => {
+  const { t } = useTranslation();
   const { selectedYear, setSelectedYear, refreshKey, triggerTimetableRefresh } = useTimetableYear();
   const [className, setClassName] = useState('');
   const [timetableData, setTimetableData] = useState(null);
@@ -67,7 +69,7 @@ const ClassView = () => {
         }
       })
       .catch(() => {
-        toast.error('Failed to load timetable');
+        toast.error(t('failedToLoad'));
         setTimetableData(null);
       })
       .finally(() => setLoading(false));
@@ -104,11 +106,11 @@ const ClassView = () => {
       }
       setShowEditor(false);
       triggerTimetableRefresh();
-      toast.success('Timetable updated successfully');
+      toast.success(t('updatedSuccessfully'));
       if (serverWarnings.length > 0) {
         toast(
           <div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠️ Timetable Warnings</div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠️ {t('warning')}</div>
             {serverWarnings.map((w, i) => (
               <div key={i} style={{ marginLeft: 8 }}>• {w}</div>
             ))}
@@ -123,7 +125,7 @@ const ClassView = () => {
       } else if (serverMsg) {
         toast.error(serverMsg);
       } else {
-        toast.error('Failed to update timetable');
+        toast.error(t('failedToSave'));
       }
     }
   }, [timetableData, className, classMap, loadSubjectNames, triggerTimetableRefresh]);
@@ -136,9 +138,9 @@ const ClassView = () => {
       setTimetableData(null);
       setShowDelete(false);
       triggerTimetableRefresh();
-      toast.success('Timetable deleted successfully');
+      toast.success(t('deletedSuccessfully'));
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to delete timetable');
+      toast.error(err?.response?.data?.message || t('failedToDelete'));
     } finally {
       setDeleting(false);
     }
@@ -164,8 +166,8 @@ const ClassView = () => {
     <div className="space-y-6">
       <TimetableFilters
         filters={[
-          { name: 'academicYear', label: 'Academic Year', value: selectedYear, options: ACADEMIC_YEARS, placeholder: 'Select year' },
-          { name: 'className', label: 'Class', value: className, options: CLASS_NAMES, placeholder: 'Select class' },
+          { name: 'academicYear', label: t('academicYearLabel'), value: selectedYear, options: ACADEMIC_YEARS, placeholder: t('selectYear') },
+          { name: 'className', label: t('classLabel'), value: className, options: CLASS_NAMES, placeholder: t('selectClass') },
         ]}
         onFilterChange={handleFilterChange}
       />
@@ -173,32 +175,32 @@ const ClassView = () => {
       {loading && (
         <TimetableEmptyState
           icon={CalendarDaysIcon}
-          title="Loading..."
-          description="Fetching timetable data."
+          title={t('loading')}
+          description={t('noData')}
         />
       )}
 
       {!selectedYear && !loading && (
         <TimetableEmptyState
           icon={CalendarDaysIcon}
-          title="No Academic Year Selected"
-          description="Please select an academic year and class to view timetable."
+          title={t('selectAcademicYear')}
+          description={t('selectAcademicYearAndClass')}
         />
       )}
 
       {selectedYear && !className && !loading && (
         <TimetableEmptyState
           icon={CalendarDaysIcon}
-          title="Select a Class"
-          description="Choose a class to view its timetable."
+          title={t('selectClass')}
+          description={t('selectClass')}
         />
       )}
 
       {selectedYear && className && !loading && !hasTimetable && (
         <TimetableEmptyState
           icon={CalendarDaysIcon}
-          title="No Timetable Found"
-          description={`No timetable found for ${className} (${selectedYear}). Create one first.`}
+          title={t('noData')}
+          description={`${t('noData')} ${className} (${selectedYear}).`}
         />
       )}
 
@@ -218,13 +220,13 @@ const ClassView = () => {
                 onClick={() => setShowEditor(true)}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
               >
-                Edit Timetable
+                {t('edit')}
               </button>
               <button
                 onClick={() => setShowDelete(true)}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
               >
-                Delete Timetable
+                {t('delete')}
               </button>
             </div>
           </div>
@@ -245,10 +247,10 @@ const ClassView = () => {
       <ConfirmationModal
         isOpen={showDelete}
         onClose={() => setShowDelete(false)}
-        title="Delete Timetable"
-        message="Are you sure you want to delete this timetable?"
-        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
-        cancelLabel="Cancel"
+        title={t('delete')}
+        message={t('confirmDelete')}
+        confirmLabel={deleting ? t('saving') : t('delete')}
+        cancelLabel={t('cancel')}
         variant="danger"
         onConfirm={handleDelete}
         loading={deleting}

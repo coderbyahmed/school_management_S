@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from '../../hooks/useLocalization';
 
 const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
   const dropdownRef = useRef(null);
 
   const [notifications, setNotifications] = useState([
@@ -39,10 +41,10 @@ const NotificationBell = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
+    if (diffMins < 1) return t('justNow');
+    if (diffMins < 60) return `${diffMins} ${t('minutesAgo')}`;
+    if (diffHours < 24) return `${diffHours}${t('hoursAgo')}`;
+    return `${diffDays}${t('daysAgo')}`;
   };
 
   return (
@@ -62,14 +64,14 @@ const NotificationBell = () => {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Notifications</h3>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-white">{t('notifications')}</h3>
             <div className="flex items-center gap-2">
               {notifications.length > 0 && (
                 <button
                   onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}
                   className="text-xs text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium transition-colors cursor-pointer"
                 >
-                  Mark all read
+                  {t('markAllRead')}
                 </button>
               )}
               <button
@@ -85,8 +87,8 @@ const NotificationBell = () => {
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <BellIcon className="h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" />
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No notifications</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">You're all caught up!</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('noNotifications')}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('allCaughtUp')}</p>
               </div>
             ) : (
               notifications.map((notif) => (
@@ -132,7 +134,7 @@ const NotificationBell = () => {
                 onClick={clearAll}
                 className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
               >
-                Clear all notifications
+                {t('clearAllNotifications')}
               </button>
             </div>
           )}

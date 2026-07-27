@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import toast from 'react-hot-toast';
 import {
   CheckCircleIcon, XCircleIcon, ClockIcon, CalendarDaysIcon,
@@ -20,12 +21,13 @@ function getInitials(name) {
 }
 
 const DonutChart = ({ present, absent, leave, late, total }) => {
+  const { t } = useTranslation();
   if (!total) return null;
   const segments = [
-    { label: 'Present', value: present, color: '#22c55e' },
-    { label: 'Absent', value: absent, color: '#ef4444' },
-    { label: 'Leave', value: leave, color: '#eab308' },
-    { label: 'Late', value: late, color: '#f97316' },
+    { label: t('present'), value: present, color: '#22c55e' },
+    { label: t('absent'), value: absent, color: '#ef4444' },
+    { label: t('leave'), value: leave, color: '#eab308' },
+    { label: t('late'), value: late, color: '#f97316' },
   ];
   const radius = 60;
   const circumference = 2 * Math.PI * radius;
@@ -54,6 +56,7 @@ const DonutChart = ({ present, absent, leave, late, total }) => {
 };
 
 const MonthlyBarChart = ({ data }) => {
+  const { t } = useTranslation();
   if (!data.length) return null;
   const maxVal = Math.max(...data.map((d) => d.total), 1);
   return (
@@ -65,8 +68,8 @@ const MonthlyBarChart = ({ data }) => {
           <div key={d.month} className="flex-1 flex flex-col items-center gap-1">
             <div className="w-full flex flex-col items-center justify-end" style={{ height: '100px' }}>
               <div className="w-full relative" style={{ height: '100px' }}>
-                <div className="absolute bottom-0 w-full bg-red-400 dark:bg-red-500 rounded-t transition-all" style={{ height: `${absentH}%`, minHeight: d.absent > 0 ? '2px' : '0' }} title={`${d.month}: ${d.absent} absent`} />
-                <div className="absolute bottom-0 w-full bg-green-500 dark:bg-green-400 rounded-t transition-all" style={{ height: `${presentH}%`, minHeight: d.present > 0 ? '2px' : '0' }} title={`${d.month}: ${d.present} present`} />
+                <div className="absolute bottom-0 w-full bg-red-400 dark:bg-red-500 rounded-t transition-all" style={{ height: `${absentH}%`, minHeight: d.absent > 0 ? '2px' : '0' }} title={`${d.month}: ${d.absent} ${t('absent').toLowerCase()}`} />
+                <div className="absolute bottom-0 w-full bg-green-500 dark:bg-green-400 rounded-t transition-all" style={{ height: `${presentH}%`, minHeight: d.present > 0 ? '2px' : '0' }} title={`${d.month}: ${d.present} ${t('present').toLowerCase()}`} />
               </div>
             </div>
             <span className="text-[8px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{d.month.slice(5)}</span>
@@ -98,6 +101,7 @@ const ClassBarChart = ({ data }) => {
 };
 
 const AttendanceReports = () => {
+  const { t } = useTranslation();
   const { schoolInfo } = useSchoolConfig();
   const [allRecords, setAllRecords] = useState([]);
   const [type, setType] = useState('All');
@@ -194,20 +198,20 @@ const AttendanceReports = () => {
   };
 
   const buildReportHtml = () => {
-    const schoolName = schoolInfo?.name || 'School Name';
+    const schoolName = schoolInfo?.name || t('schoolName');
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const title = 'Attendance Report';
+    const title = t('fullReport');
     const isTeacher = type === 'Teachers';
 
     const filterInfo = [];
-    if (academicYear) filterInfo.push(`Academic Year: ${academicYear}`);
-    if (className) filterInfo.push(isTeacher ? `Department: ${className}` : `Class: ${className}`);
-    if (fromDate) filterInfo.push(`From: ${fromDate}`);
-    if (toDate) filterInfo.push(`To: ${toDate}`);
+    if (academicYear) filterInfo.push(`${t('academicYearLabel')}: ${academicYear}`);
+    if (className) filterInfo.push(isTeacher ? `${t('department')}: ${className}` : `${t('classLabel')}: ${className}`);
+    if (fromDate) filterInfo.push(`${t('fromDate')}: ${fromDate}`);
+    if (toDate) filterInfo.push(`${t('toDate')}: ${toDate}`);
 
     const cols = isTeacher
-      ? ['Name', 'ID', 'Present', 'Absent', 'Leave', 'Late', 'Attendance %']
-      : ['Name', 'ID', 'Class', 'Present', 'Absent', 'Leave', 'Late', 'Attendance %'];
+      ? [t('nameColumn'), t('idColumn'), t('present'), t('absent'), t('leave'), t('late'), t('attendancePercentage')]
+      : [t('nameColumn'), t('idColumn'), t('classLabel'), t('present'), t('absent'), t('leave'), t('late'), t('attendancePercentage')];
 
     const rowsHtml = paginatedSummaries.map((p) => {
       const cells = [
@@ -255,7 +259,7 @@ const AttendanceReports = () => {
           <p style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:3px;">${title}</p>
         </div>
         <div style="text-align:right;">
-          <p style="color:rgba(255,255,255,0.7);font-size:10px;margin:0;">Generated on</p>
+          <p style="color:rgba(255,255,255,0.7);font-size:10px;margin:0;">${t('generatedOn')}</p>
           <p style="color:white;font-size:11px;font-weight:600;margin:0;">${today}</p>
         </div>
       </div>
@@ -265,7 +269,7 @@ const AttendanceReports = () => {
       <table style="width:100%;border-collapse:collapse;font-size:10px;">
         <thead>${headerCells}</thead>
         <tbody>
-          ${rowsHtml || `<tr><td colspan="${cols.length}" style="padding:30px;text-align:center;color:#9ca3af;font-size:11px;">No records found</td></tr>`}
+          ${rowsHtml || `<tr><td colspan="${cols.length}" style="padding:30px;text-align:center;color:#9ca3af;font-size:11px;">${t('noRecordsFound')}</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -294,12 +298,12 @@ const AttendanceReports = () => {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
       }).from(el).save();
       document.body.removeChild(el);
-      toast.success('PDF exported successfully');
-    } catch { toast.error('Failed to export PDF'); }
+      toast.success(t('savedSuccessfully'));
+    } catch { toast.error(t('failedToSave')); }
   };
 
   const handlePrint = () => {
-    if (!paginatedSummaries.length) { toast.error('No records to print on the current page'); return; }
+    if (!paginatedSummaries.length) { toast.error(t('noRecordsFound')); return; }
     const printWindow = window.open('', '_blank');
     if (!printWindow) { window.print(); return; }
     const html = buildReportHtml();
@@ -353,7 +357,7 @@ const AttendanceReports = () => {
     return (
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {personSummaries.length} person{personSummaries.length !== 1 ? 's' : ''} — Page {currentPage} of {totalPages}
+          {personSummaries.length} person{personSummaries.length !== 1 ? 's' : ''} &mdash; {t('page')} {currentPage} {t('of')} {totalPages}
         </span>
         <div className="flex items-center gap-1">
           <button
@@ -361,7 +365,7 @@ const AttendanceReports = () => {
             onClick={() => setCurrentPage(p => p - 1)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            Previous
+            {t('previous')}
           </button>
           {pages.map((page, idx) =>
             page === '...' ? (
@@ -385,7 +389,7 @@ const AttendanceReports = () => {
             onClick={() => setCurrentPage(p => p + 1)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -395,21 +399,21 @@ const AttendanceReports = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Attendance Reports</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Comprehensive attendance analytics and reporting dashboard</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('attendanceReportsTitle')}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('attendanceReportsSubtitle')}</p>
       </div>
 
       {/* Summary Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard icon={UserGroupIcon} label="Total Attendance" value={stats.total} color="blue" />
-        <StatCard icon={CheckCircleIcon} label="Present" value={stats.present} color="green" />
-        <StatCard icon={XCircleIcon} label="Absent" value={stats.absent} color="red" />
-        <StatCard icon={ClockIcon} label="Leave" value={stats.leave} color="yellow" />
-        <StatCard icon={CalendarDaysIcon} label="Late" value={stats.late} color="orange" />
+        <StatCard icon={UserGroupIcon} label={t('totalAttendance')} value={stats.total} color="blue" />
+        <StatCard icon={CheckCircleIcon} label={t('present')} value={stats.present} color="green" />
+        <StatCard icon={XCircleIcon} label={t('absent')} value={stats.absent} color="red" />
+        <StatCard icon={ClockIcon} label={t('leave')} value={stats.leave} color="yellow" />
+        <StatCard icon={CalendarDaysIcon} label={t('late')} value={stats.late} color="orange" />
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Attendance %</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('attendancePercentage')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.percentage}%</p>
             </div>
             <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
@@ -426,21 +430,21 @@ const AttendanceReports = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <div className={`grid grid-cols-2 sm:grid-cols-3 ${isTeacherView ? 'lg:grid-cols-4' : 'lg:grid-cols-5'} gap-4`}>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Attendance Type</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('attendanceType')}</label>
             <div className="relative">
               <select value={type} onChange={(e) => { setType(e.target.value); setClassName(''); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                {TYPE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                {TYPE_OPTIONS.map((o) => <option key={o} value={o}>{o === 'All' ? t('all') : o === 'Students' ? t('students') : t('teachers')}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Academic Year</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('academicYearLabel')}</label>
             <div className="relative">
               <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Years</option>
+                <option value="">{t('allYears')}</option>
                 {ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -448,11 +452,11 @@ const AttendanceReports = () => {
           </div>
           {!isTeacherView && (
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Class</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('classLabel')}</label>
             <div className="relative">
               <select value={className} onChange={(e) => setClassName(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                <option value="">All Classes</option>
+                <option value="">{t('allClasses')}</option>
                 {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -460,12 +464,12 @@ const AttendanceReports = () => {
           </div>
           )}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">From Date</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('fromDate')}</label>
             <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">To Date</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('toDate')}</label>
             <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
           </div>
@@ -475,24 +479,24 @@ const AttendanceReports = () => {
           <button onClick={handleGenerateReport}
             className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
             <MagnifyingGlassIcon className="h-4 w-4" />
-            Generate Report
+            {t('generateReport')}
           </button>
           <button onClick={handleReset}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
             <ArrowPathIcon className="h-4 w-4" />
-            Reset
+            {t('reset')}
           </button>
           <button onClick={handlePrint}
             disabled={!filteredRecords.length}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer">
             <PrinterIcon className="h-4 w-4" />
-            Print Report
+            {t('printReport')}
           </button>
           <button onClick={handleExportPdf}
             disabled={!filteredRecords.length}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer">
             <DocumentArrowDownIcon className="h-4 w-4" />
-            Export PDF
+            {t('exportPdf')}
           </button>
         </div>
       </div>
@@ -501,27 +505,27 @@ const AttendanceReports = () => {
       {filteredRecords.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Monthly Attendance Trend</h3>
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">{t('monthlyTrend')}</h3>
             <MonthlyBarChart data={monthlyTrend} />
             <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Present</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400" /> Absent</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> {t('present')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400" /> {t('absent')}</span>
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Present vs Absent</h3>
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">{t('presentVsAbsent')}</h3>
             <DonutChart present={stats.present} absent={stats.absent} leave={stats.leave} late={stats.late} total={stats.total} />
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Class-wise Attendance</h3>
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">{t('classWiseAttendance')}</h3>
             <ClassBarChart data={classWiseStats} />
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Teacher Attendance Overview</h3>
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">{t('teacherOverview')}</h3>
             {teacherOverview.length > 0 ? <ClassBarChart data={teacherOverview} /> : (
               <div className="flex flex-col items-center justify-center h-32 text-gray-400 dark:text-gray-500">
                 <UserGroupIcon className="h-8 w-8 mb-2" />
-                <p className="text-xs">No teacher data available</p>
+                <p className="text-xs">{t('noTeacherData')}</p>
               </div>
             )}
           </div>
@@ -533,17 +537,17 @@ const AttendanceReports = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800">
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Photo</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Name</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">ID</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Type</th>
-              {!isTeacherView && <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Class</th>}
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Present Days</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Absent Days</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Leave Days</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Late Days</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Attendance %</th>
-              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider no-print">Action</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('photo')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('nameColumn')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('idColumn')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('type')}</th>
+              {!isTeacherView && <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('classLabel')}</th>}
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('presentDays')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('absentDays')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('leaveDays')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('lateDays')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">{t('attendancePercentage')}</th>
+              <th className="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider no-print">{t('action')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -552,8 +556,8 @@ const AttendanceReports = () => {
                 <td colSpan={isTeacherView ? 10 : 11} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                   <div className="flex flex-col items-center gap-2">
                     <UserGroupIcon className="h-12 w-12 text-gray-300 dark:text-gray-600" />
-                    <p className="text-sm">No attendance records found</p>
-                    <p className="text-xs">Use filters and click Generate Report</p>
+                    <p className="text-sm">{t('noRecordsFound')}</p>
+                    <p className="text-xs">{t('adjustFilters')}</p>
                   </div>
                 </td>
               </tr>
@@ -581,7 +585,7 @@ const AttendanceReports = () => {
                   <td className="px-3 py-3 no-print">
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleViewReport(person)}
-                        className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title="View Report">
+                        className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer" title={t('viewReport')}>
                         <EyeIcon className="h-4 w-4" />
                       </button>
                       <button onClick={async () => {
@@ -615,30 +619,30 @@ const AttendanceReports = () => {
                           </style></head>
                           <body>
                             <div class="card">
-                              <h2>Attendance Report</h2>
+                              <h2>${t('attendanceReport')}</h2>
                               <p class="subtitle">${summary.personId} &bull; ${summary.type} &bull; ${summary.classOrDept}</p>
                               <div class="stats-grid">
-                                <div class="stat-box"><div class="stat-value">${summary.total}</div><div class="stat-label">Total</div></div>
-                                <div class="stat-box"><div class="stat-value" style="color:#16a34a;">${summary.present}</div><div class="stat-label">Present</div></div>
-                                <div class="stat-box"><div class="stat-value" style="color:#dc2626;">${summary.absent}</div><div class="stat-label">Absent</div></div>
-                                <div class="stat-box"><div class="stat-value" style="color:#ca8a04;">${summary.leave}</div><div class="stat-label">Leave</div></div>
-                                <div class="stat-box"><div class="stat-value" style="color:#ea580c;">${summary.late}</div><div class="stat-label">Late</div></div>
+                                <div class="stat-box"><div class="stat-value">${summary.total}</div><div class="stat-label">${t('total')}</div></div>
+                                <div class="stat-box"><div class="stat-value" style="color:#16a34a;">${summary.present}</div><div class="stat-label">${t('present')}</div></div>
+                                <div class="stat-box"><div class="stat-value" style="color:#dc2626;">${summary.absent}</div><div class="stat-label">${t('absent')}</div></div>
+                                <div class="stat-box"><div class="stat-value" style="color:#ca8a04;">${summary.leave}</div><div class="stat-label">${t('leave')}</div></div>
+                                <div class="stat-box"><div class="stat-value" style="color:#ea580c;">${summary.late}</div><div class="stat-label">${t('late')}</div></div>
                               </div>
-                              <div style="text-align:center;margin:12px 0;"><span style="font-size:24px;font-weight:700;color:#4f46e5;">${summary.percentage}%</span><span style="font-size:12px;color:#6b7280;margin-left:4px;">Attendance</span></div>
-                              <div class="section-title">Details</div>
-                              <div class="row"><span class="label">Academic Year</span><span class="value">${summary.academicYear}</span></div>
-                              <div class="section-title">Monthly Summary</div>
+                              <div style="text-align:center;margin:12px 0;"><span style="font-size:24px;font-weight:700;color:#4f46e5;">${summary.percentage}%</span><span style="font-size:12px;color:#6b7280;margin-left:4px;">${t('attendance')}</span></div>
+                              <div class="section-title">${t('details')}</div>
+                              <div class="row"><span class="label">${t('academicYearLabel')}</span><span class="value">${summary.academicYear}</span></div>
+                              <div class="section-title">${t('monthlySummary')}</div>
                               ${monthlyRows}
-                              <div class="section-title">Attendance Mode</div>
+                              <div class="section-title">${t('attendanceModeDetail')}</div>
                               ${modeRows}
                             </div>
-                            <p class="footer">Generated on ${new Date().toLocaleDateString()}</p>
+                            <p class="footer">${t('generatedOn')}${new Date().toLocaleDateString()}</p>
                           </body></html>`;
                         pw.document.write(html);
                         pw.document.close();
                         pw.focus();
                         setTimeout(() => pw.print(), 300);
-                      }} className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer" title="Print Report">
+                      }} className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer" title={t('printReport')}>
                         <PrinterIcon className="h-4 w-4" />
                       </button>
                       <button onClick={async () => {
@@ -654,21 +658,21 @@ const AttendanceReports = () => {
                           ).join('');
                           const qrHtml = `
                             <div style="max-width:600px;margin:12mm auto;font-family:'Segoe UI',Arial,sans-serif;">
-                              <h2 style="text-align:center;color:#1f2937;font-size:16px;">Attendance Report</h2>
+                              <h2 style="text-align:center;color:#1f2937;font-size:16px;">${t('attendanceReport')}</h2>
                               <p style="text-align:center;color:#6b7280;font-size:11px;margin-bottom:16px;">${summary.personId} &bull; ${summary.type} &bull; ${summary.classOrDept}</p>
                               <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:12px 0;">
-                                ${[['Total', summary.total], ['Present', summary.present], ['Absent', summary.absent], ['Leave', summary.leave], ['Late', summary.late]].map(([l, v]) =>
+                                ${[[t('total'), summary.total], [t('present'), summary.present], [t('absent'), summary.absent], [t('leave'), summary.leave], [t('late'), summary.late]].map(([l, v]) =>
                                   `<div style="text-align:center;padding:6px;background:#f9fafb;border-radius:6px;"><div style="font-size:16px;font-weight:700;color:#1f2937;">${v}</div><div style="font-size:9px;color:#9ca3af;">${l}</div></div>`
                                 ).join('')}
                               </div>
-                              <p style="text-align:center;font-size:20px;font-weight:700;color:#4f46e5;margin:8px 0;">${summary.percentage}% Attendance</p>
-                              <h3 style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;margin:12px 0 6px;">Details</h3>
-                              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:11px;"><span style="color:#6b7280;">Academic Year</span><span style="font-weight:600;color:#1f2937;">${summary.academicYear}</span></div>
-                              <h3 style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;margin:12px 0 6px;">Monthly Summary</h3>
+                              <p style="text-align:center;font-size:20px;font-weight:700;color:#4f46e5;margin:8px 0;">${summary.percentage}% ${t('attendance')}</p>
+                              <h3 style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;margin:12px 0 6px;">${t('details')}</h3>
+                              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:11px;"><span style="color:#6b7280;">${t('academicYearLabel')}</span><span style="font-weight:600;color:#1f2937;">${summary.academicYear}</span></div>
+                              <h3 style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;margin:12px 0 6px;">${t('monthlySummary')}</h3>
                               ${monthlyRows}
-                              <h3 style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;margin:12px 0 6px;">Attendance Mode</h3>
+                              <h3 style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;margin:12px 0 6px;">${t('attendanceModeDetail')}</h3>
                               ${modeRows}
-                              <p style="text-align:center;font-size:9px;color:#9ca3af;margin-top:16px;">Generated on ${new Date().toLocaleDateString()}</p>
+                              <p style="text-align:center;font-size:9px;color:#9ca3af;margin-top:16px;">${t('generatedOn')}${new Date().toLocaleDateString()}</p>
                             </div>`;
                           const el = document.createElement('div');
                           el.innerHTML = qrHtml;
@@ -681,9 +685,9 @@ const AttendanceReports = () => {
                             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                           }).from(el).save();
                           document.body.removeChild(el);
-                          toast.success('PDF downloaded');
-                        } catch { toast.error('Failed to download PDF'); }
-                      }} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title="Download PDF">
+                          toast.success(t('savedSuccessfully'));
+                        } catch { toast.error(t('failedToSave')); }
+                      }} className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer" title={t('downloadPdf')}>
                         <DocumentArrowDownIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -702,7 +706,7 @@ const AttendanceReports = () => {
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">Report Details</h2>
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t('reportDetails')}</h2>
               <button onClick={() => { setSelectedPerson(null); setPersonSummary(null); }}
                 className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -729,17 +733,17 @@ const AttendanceReports = () => {
                     </div>
                     <div className="ml-auto text-center">
                       <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{personSummary.percentage}%</p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500">Attendance</p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('attendance')}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-5 gap-2 mb-5">
                     {[
-                      ['Total', personSummary.total, 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'],
-                      ['Present', personSummary.present, 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'],
-                      ['Absent', personSummary.absent, 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'],
-                      ['Leave', personSummary.leave, 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400'],
-                      ['Late', personSummary.late, 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'],
+                      [t('total'), personSummary.total, 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'],
+                      [t('present'), personSummary.present, 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'],
+                      [t('absent'), personSummary.absent, 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'],
+                      [t('leave'), personSummary.leave, 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400'],
+                      [t('late'), personSummary.late, 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'],
                     ].map(([label, value, color]) => (
                       <div key={label} className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                         <p className={`text-lg font-bold ${color.split(' ')[2]}`}>{value}</p>
@@ -750,9 +754,9 @@ const AttendanceReports = () => {
 
                   <div className="space-y-3 mb-5">
                     {[
-                      ['Type', personSummary.type],
-                      ['Class / Department', personSummary.classOrDept],
-                      ['Academic Year', personSummary.academicYear],
+                      [t('type'), personSummary.type],
+                      [t('classDept'), personSummary.classOrDept],
+                      [t('academicYearLabel'), personSummary.academicYear],
                     ].map(([label, value]) => (
                       <div key={label} className="flex justify-between items-center py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                         <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
@@ -763,7 +767,7 @@ const AttendanceReports = () => {
 
                   {personSummary.monthly.length > 0 && (
                     <div className="mb-5">
-                      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">Monthly Summary</h4>
+                      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">{t('monthlySummary')}</h4>
                       <div className="space-y-1.5">
                         {personSummary.monthly.map((m) => (
                           <div key={m.month} className="flex items-center gap-2 py-1.5 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -781,7 +785,7 @@ const AttendanceReports = () => {
 
                   {Object.keys(personSummary.modeStats || {}).length > 0 && (
                     <div className="mb-5">
-                      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">Attendance Mode</h4>
+                      <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">{t('attendanceModeDetail')}</h4>
                       <div className="grid grid-cols-3 gap-2">
                         {Object.entries(personSummary.modeStats).map(([mode, count]) => (
                           <div key={mode} className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
@@ -796,7 +800,7 @@ const AttendanceReports = () => {
                   <div className="flex gap-2">
                     <button onClick={() => { setSelectedPerson(null); setPersonSummary(null); }}
                       className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">
-                      Close
+                      {t('close')}
                     </button>
                     <button onClick={() => {
                       if (!personSummary) return;
@@ -828,31 +832,31 @@ const AttendanceReports = () => {
                         </style></head>
                         <body>
                           <div class="card">
-                            <h2>Attendance Report</h2>
+                            <h2>${t('attendanceReport')}</h2>
                             <p class="subtitle">${personSummary.personId} &bull; ${personSummary.type} &bull; ${personSummary.classOrDept}</p>
                             <div class="stats-grid">
-                              <div class="stat-box"><div class="stat-value">${personSummary.total}</div><div class="stat-label">Total</div></div>
-                              <div class="stat-box"><div class="stat-value" style="color:#16a34a;">${personSummary.present}</div><div class="stat-label">Present</div></div>
-                              <div class="stat-box"><div class="stat-value" style="color:#dc2626;">${personSummary.absent}</div><div class="stat-label">Absent</div></div>
-                              <div class="stat-box"><div class="stat-value" style="color:#ca8a04;">${personSummary.leave}</div><div class="stat-label">Leave</div></div>
-                              <div class="stat-box"><div class="stat-value" style="color:#ea580c;">${personSummary.late}</div><div class="stat-label">Late</div></div>
+                              <div class="stat-box"><div class="stat-value">${personSummary.total}</div><div class="stat-label">${t('total')}</div></div>
+                              <div class="stat-box"><div class="stat-value" style="color:#16a34a;">${personSummary.present}</div><div class="stat-label">${t('present')}</div></div>
+                              <div class="stat-box"><div class="stat-value" style="color:#dc2626;">${personSummary.absent}</div><div class="stat-label">${t('absent')}</div></div>
+                              <div class="stat-box"><div class="stat-value" style="color:#ca8a04;">${personSummary.leave}</div><div class="stat-label">${t('leave')}</div></div>
+                              <div class="stat-box"><div class="stat-value" style="color:#ea580c;">${personSummary.late}</div><div class="stat-label">${t('late')}</div></div>
                             </div>
-                            <div style="text-align:center;margin:12px 0;"><span style="font-size:24px;font-weight:700;color:#4f46e5;">${personSummary.percentage}%</span><span style="font-size:12px;color:#6b7280;margin-left:4px;">Attendance</span></div>
-                            <div class="section-title">Details</div>
-                            <div class="row"><span class="label">Academic Year</span><span class="value">${personSummary.academicYear}</span></div>
-                            <div class="section-title">Monthly Summary</div>
+                            <div style="text-align:center;margin:12px 0;"><span style="font-size:24px;font-weight:700;color:#4f46e5;">${personSummary.percentage}%</span><span style="font-size:12px;color:#6b7280;margin-left:4px;">${t('attendance')}</span></div>
+                            <div class="section-title">${t('details')}</div>
+                            <div class="row"><span class="label">${t('academicYearLabel')}</span><span class="value">${personSummary.academicYear}</span></div>
+                            <div class="section-title">${t('monthlySummary')}</div>
                             ${monthlyRows}
-                            <div class="section-title">Attendance Mode</div>
+                            <div class="section-title">${t('attendanceModeDetail')}</div>
                             ${modeRows}
                           </div>
-                          <p class="footer">Generated on ${new Date().toLocaleDateString()}</p>
+                          <p class="footer">${t('generatedOn')}${new Date().toLocaleDateString()}</p>
                         </body></html>`;
                       pw.document.write(html);
                       pw.document.close();
                       pw.focus();
                       setTimeout(() => pw.print(), 300);
                     }} className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                      <PrinterIcon className="h-3.5 w-3.5" /> Print Report
+                      <PrinterIcon className="h-3.5 w-3.5" /> {t('printReport')}
                     </button>
                     <button onClick={async () => {
                       if (!personSummary) return;
@@ -896,7 +900,7 @@ const AttendanceReports = () => {
                         toast.success('PDF downloaded');
                       } catch { toast.error('Failed to download PDF'); }
                     }} className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                      <DocumentArrowDownIcon className="h-3.5 w-3.5" /> Download PDF
+                      <DocumentArrowDownIcon className="h-3.5 w-3.5" /> {t('downloadPdf')}
                     </button>
                   </div>
                 </>

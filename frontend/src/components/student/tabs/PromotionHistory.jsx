@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import { ArrowTrendingUpIcon, AcademicCapIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import StatCard from '../../common/StatCard';
@@ -13,8 +14,9 @@ import { CLASS_NAMES } from '../../../utils/classNames';
 import Spinner from '../../common/Spinner';
 
 const PromotionHistory = () => {
-  const [yearFilter, setYearFilter] = useState('All');
-  const [classFilter, setClassFilter] = useState('All Classes');
+  const { t } = useTranslation();
+  const [yearFilter, setYearFilter] = useState(t('all'));
+  const [classFilter, setClassFilter] = useState(t('allClasses'));
   const [nameSearch, setNameSearch] = useState('');
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,11 +46,11 @@ const PromotionHistory = () => {
         }));
         setPromotions(mapped);
       } else {
-        setError(data.message || 'Failed to fetch promotion history.');
+        setError(data.message || t('failedToLoad'));
         setPromotions([]);
       }
     } catch (err) {
-      setError(err?.response?.data?.message || err.message || 'Failed to load promotion history.');
+      setError(err?.response?.data?.message || err.message || t('failedToLoad'));
       setPromotions([]);
     } finally {
       setLoading(false);
@@ -68,15 +70,15 @@ const PromotionHistory = () => {
     try {
       const res = await studentService.deleteStudentPromotion(deleteId);
       if (res.success) {
-        toast.success('Promotion history deleted successfully.');
+        toast.success(t('deletedSuccessfully'));
         setDeleteId(null);
         fetchHistory();
       } else {
-        toast.error(res.message || 'Failed to delete promotion history.');
+        toast.error(res.message || t('failedToDelete'));
         setDeleteId(null);
       }
     } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || 'Failed to delete promotion history.');
+      toast.error(err?.response?.data?.message || err.message || t('failedToDelete'));
       setDeleteId(null);
     } finally {
       setDeleting(false);
@@ -84,25 +86,25 @@ const PromotionHistory = () => {
   }, [deleteId, fetchHistory]);
 
   const resetFilters = useCallback(() => {
-    setYearFilter('All');
-    setClassFilter('All Classes');
+    setYearFilter(t('all'));
+    setClassFilter(t('allClasses'));
     setNameSearch('');
     fetchHistory();
   }, [fetchHistory]);
 
   const yearOptions = useMemo(() => {
     const years = new Set(promotions.map((p) => p.newYear).filter((y) => y && y !== '—'));
-    return ['All', ...Array.from(years).sort()];
+    return [t('all'), ...Array.from(years).sort()];
   }, [promotions]);
 
   const filteredPromotions = useMemo(() => {
     return promotions.filter((p) => {
-      if (yearFilter !== 'All' && p.newYear !== yearFilter) return false;
-      if (classFilter !== 'All Classes' && p.newClass !== classFilter) return false;
+      if (yearFilter !== t('all') && p.newYear !== yearFilter) return false;
+      if (classFilter !== t('allClasses') && p.newClass !== classFilter) return false;
       if (nameSearch && !p.studentName.toLowerCase().includes(nameSearch.toLowerCase())) return false;
       return true;
     });
-  }, [promotions, yearFilter, classFilter, nameSearch]);
+  }, [promotions, yearFilter, classFilter, nameSearch, t]);
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -120,19 +122,19 @@ const PromotionHistory = () => {
   }).length;
   const latestPromotion = promotions.length > 0
     ? new Date(promotions[0].promotedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : 'N/A';
+    : t('notAvailable');
 
   const columns = [
-    { key: 'student', label: 'Student' },
-    { key: 'studentId', label: 'Student ID' },
-    { key: 'fromYear', label: 'From Year' },
-    { key: 'toYear', label: 'To Year' },
-    { key: 'fromClass', label: 'From Class' },
-    { key: 'toClass', label: 'To Class' },
-    { key: 'date', label: 'Date' },
-    { key: 'promotedBy', label: 'Promoted By' },
-    { key: 'status', label: 'Status' },
-    { key: 'action', label: 'Action' },
+    { key: 'student', label: t('student') },
+    { key: 'studentId', label: t('studentIdLabel') },
+    { key: 'fromYear', label: t('fromYear') },
+    { key: 'toYear', label: t('toYear') },
+    { key: 'fromClass', label: t('fromClass') },
+    { key: 'toClass', label: t('toClass') },
+    { key: 'date', label: t('dateLabel') },
+    { key: 'promotedBy', label: t('promotedBy') },
+    { key: 'status', label: t('status') },
+    { key: 'action', label: t('actions') },
   ];
 
   const safeName = (fullName) => {
@@ -176,7 +178,7 @@ const PromotionHistory = () => {
           onClick={() => handleDeleteClick(promotion.id)}
           className="!w-auto !px-3 !py-1.5 text-xs"
         >
-          Delete
+          {t('delete')}
         </Button>
       </td>
     </>
@@ -184,19 +186,19 @@ const PromotionHistory = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Promotion History</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('promotionHistory')}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={ArrowTrendingUpIcon} label="Total Promotions" value={totalPromotions} color="blue" />
-        <StatCard icon={AcademicCapIcon} label="Promotions This Year" value={thisYearPromotions} color="green" />
-        <StatCard icon={ClockIcon} label="Promotions This Month" value={thisMonthPromotions} color="yellow" />
-        <StatCard icon={StarIcon} label="Latest Promotion" value={latestPromotion} color="blue" />
+        <StatCard icon={ArrowTrendingUpIcon} label={t('totalPromotions')} value={totalPromotions} color="blue" />
+        <StatCard icon={AcademicCapIcon} label={t('promotionsThisYear')} value={thisYearPromotions} color="green" />
+        <StatCard icon={ClockIcon} label={t('promotionsThisMonth')} value={thisMonthPromotions} color="yellow" />
+        <StatCard icon={StarIcon} label={t('latestPromotion')} value={latestPromotion} color="blue" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
         <div className="w-full sm:w-44">
           <SelectInput
-            label="Academic Year"
+            label={t('academicYear')}
             name="yearFilter"
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
@@ -205,19 +207,19 @@ const PromotionHistory = () => {
         </div>
         <div className="w-full sm:w-44">
           <SelectInput
-            label="Class"
+            label={t('class')}
             name="classFilter"
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
-            options={['All Classes', ...CLASS_NAMES]}
+            options={[t('allClasses'), ...CLASS_NAMES]}
           />
         </div>
         <div className="w-full sm:w-56">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            Search Student
+            {t('searchStudentName')}
           </label>
           <SearchInput
-            placeholder="Search student name"
+            placeholder={t('searchStudentName')}
             value={nameSearch}
             onChange={setNameSearch}
           />
@@ -228,7 +230,7 @@ const PromotionHistory = () => {
             onClick={resetFilters}
             className="w-auto px-5 py-2.5"
           >
-            Reset
+            {t('reset')}
           </Button>
         </div>
       </div>
@@ -242,23 +244,23 @@ const PromotionHistory = () => {
       {loading ? (
         <div className="text-center py-10 text-gray-400 dark:text-gray-500">
           <Spinner size="sm" className="text-blue-500 mx-auto mb-2" />
-          <p className="text-sm">Loading promotion history...</p>
+          <p className="text-sm">{t('loading')}</p>
         </div>
       ) : filteredPromotions.length > 0 ? (
         <Table columns={columns} data={filteredPromotions} renderRow={renderRow} />
       ) : (
         <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-          <p className="text-sm">No promotion history available.</p>
+          <p className="text-sm">{t('noPromotions')}</p>
         </div>
       )}
 
       <ConfirmationModal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        title="Delete Promotion History"
-        message="Are you sure you want to permanently delete this promotion history?"
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={`${t('delete')} ${t('promotionHistory')}`}
+        message={t('confirmDelete')}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
         variant="danger"
         loading={deleting}
         onConfirm={handleDeleteConfirm}

@@ -1,8 +1,10 @@
+import { useTranslation } from '../../../../hooks/useLocalization';
 import { ClockIcon } from '@heroicons/react/24/outline';
 
 const formatTime = (t) => t || '--:--';
 
 const TimetableGrid = ({ periods, mode = 'class' }) => {
+  const { t } = useTranslation();
   if (!periods || periods.length === 0) return null;
 
   const showTeacher = mode === 'class';
@@ -16,21 +18,21 @@ const TimetableGrid = ({ periods, mode = 'class' }) => {
               <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[140px]">
                 <div className="flex items-center gap-2">
                   <ClockIcon className="h-3.5 w-3.5 opacity-80" />
-                  <span>Time</span>
+                  <span>{t('startTime')}</span>
                 </div>
               </th>
               {showTeacher ? (
                 <>
-                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">Subject</th>
-                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">Teacher</th>
+                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">{t('subject')}</th>
+                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">{t('teacher')}</th>
                 </>
               ) : (
                 <>
-                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">Class</th>
-                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">Subject</th>
+                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">{t('classLabel')}</th>
+                  <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[120px]">{t('subject')}</th>
                 </>
               )}
-              <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[90px]">Type</th>
+              <th className="sticky top-0 z-10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider min-w-[90px]">{t('type')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -44,11 +46,11 @@ const TimetableGrid = ({ periods, mode = 'class' }) => {
                     <td className="px-4 py-3 text-xs font-medium text-amber-800 dark:text-amber-300 whitespace-nowrap">{timeStr}</td>
                     <td colSpan={showTeacher ? 2 : 2} className="px-4 py-3">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                        BREAK — {period.breakName || 'Recess'}
+                        {t('status')} — {period.breakName || 'Recess'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-[10px] uppercase tracking-wider font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded">Break</span>
+                      <span className="text-[10px] uppercase tracking-wider font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded">{t('other')}</span>
                     </td>
                   </tr>
                 );
@@ -79,7 +81,7 @@ const TimetableGrid = ({ periods, mode = 'class' }) => {
                     </>
                   )}
                   <td className="px-4 py-3">
-                    <span className="text-[10px] uppercase tracking-wider font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">Teaching</span>
+                    <span className="text-[10px] uppercase tracking-wider font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">{t('type')}</span>
                   </td>
                 </tr>
               );

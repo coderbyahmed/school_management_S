@@ -85,7 +85,7 @@ const schoolSettingsSchema = new mongoose.Schema(
     },
 
     // ──────────────────────────────────────────────
-    // Academic Configuration
+    // Academic / Attendance Settings
     // ──────────────────────────────────────────────
     currentAcademicYear: {
       type: String,
@@ -118,6 +118,52 @@ const schoolSettingsSchema = new mongoose.Schema(
       default: '',
     },
 
+    // ─── Weekend Settings ─────────────────────────
+    weekendEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    weekendDays: {
+      type: [String],
+      default: ['Saturday', 'Sunday'],
+    },
+
+    // ─── Attendance Rules ─────────────────────────
+    allowEditAfterSubmit: {
+      type: Boolean,
+      default: false,
+    },
+    editTimeLimit: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
+    autoMarkAbsent: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ─── Late Attendance Rules ────────────────────
+    lateAllowed: {
+      type: Boolean,
+      default: false,
+    },
+    lateGracePeriod: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
+
+    // ─── Leave Rules ──────────────────────────────
+    allowLeaveMarking: {
+      type: Boolean,
+      default: true,
+    },
+    allowHalfDayLeave: {
+      type: Boolean,
+      default: false,
+    },
+
     // ──────────────────────────────────────────────
     // Localization
     // ──────────────────────────────────────────────
@@ -126,22 +172,12 @@ const schoolSettingsSchema = new mongoose.Schema(
       trim: true,
       default: 'English',
     },
-    timezone: {
-      type: String,
-      trim: true,
-      default: 'Asia/Karachi',
-    },
     currency: {
       type: String,
       trim: true,
       default: '',
     },
     currencySymbol: {
-      type: String,
-      trim: true,
-      default: '',
-    },
-    dateFormat: {
       type: String,
       trim: true,
       default: '',
@@ -292,6 +328,15 @@ schoolSettingsSchema.statics.getSettings = async function () {
         country: '',
         currentAcademicYear: '',
         schoolShift: 'Morning',
+        weekendEnabled: true,
+        weekendDays: ['Saturday', 'Sunday'],
+        allowEditAfterSubmit: false,
+        editTimeLimit: 1,
+        autoMarkAbsent: false,
+        lateAllowed: false,
+        lateGracePeriod: 5,
+        allowLeaveMarking: true,
+        allowHalfDayLeave: false,
       },
     },
     { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },

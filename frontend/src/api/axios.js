@@ -9,12 +9,15 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor: Attach Token
+// Request Interceptor: Attach Token + Handle FormData
 api.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem('accessToken');
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    if (config.data instanceof FormData) {
+      config.headers.delete('Content-Type');
     }
     return config;
   },

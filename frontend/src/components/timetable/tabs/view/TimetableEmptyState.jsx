@@ -1,4 +1,7 @@
+import { useTranslation } from '../../../../hooks/useLocalization';
+
 const TimetableEmptyState = ({ icon: Icon, title, description }) => {
+  const { t } = useTranslation();
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 flex flex-col items-center justify-center text-center">
       {Icon && (

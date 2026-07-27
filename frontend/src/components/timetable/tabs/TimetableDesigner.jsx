@@ -5,6 +5,7 @@ import timetableDesignService from '../../../services/timetableDesign.service';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 import { useTimetableYear } from '../../../contexts/TimetableContext';
+import { useTranslation } from '../../../hooks/useLocalization';
 
 const GROUPS = {
   1: { name: 'Group 1', classes: ['Montessori', 'Nursery', 'KG 1', 'KG 2'] },
@@ -92,6 +93,7 @@ const SelectField = ({ label, value, onChange, options }) => (
 );
 
 const TimetableDesigner = () => {
+  const { t } = useTranslation();
   const { schoolInfo, branding, academic } = useSchoolConfig();
   const { selectedYear, setSelectedYear } = useTimetableYear();
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
@@ -331,7 +333,7 @@ const TimetableDesigner = () => {
   }), [logoShow, logoSize, logoWidth, logoHeight, logoPosition, logoVerticalPosition, schoolNameShow, schoolInfo?.name, schoolNameFontSize, schoolNameFontWeight, schoolNameColor, schoolNameAlign, schoolNameVerticalPos, schoolNameLetterSpacing, schoolNameLineHeight, academicYearShow, academic?.currentYear, selectedYear, academicYearFontSize, academicYearFontWeight, academicYearColor, academicYearAlign, academicYearVerticalPos, schoolInfo?.principalName, headerBgColor, borderRadius, headerPaddingTop, headerPaddingBottom, headerPaddingLeft, headerPaddingRight, logoTitleGap, nameTitleGap, fontFamily, headerTextColor, branding?.smallLogo]);
 
   const title = useMemo(() => ({
-    text: timetableTitle || 'Teachers Period Time Table',
+    text: timetableTitle || t('timetable'),
     fontSize: titleFontSize,
     fontWeight: titleFontWeight,
     color: titleColor,
@@ -406,7 +408,7 @@ const TimetableDesigner = () => {
     const groupClasses = GROUPS[selectedGroup]?.classes || [];
     if (!selectedYear || groupClasses.length === 0) {
       setGroupTimetables([]);
-      setGroupError(selectedYear ? '' : 'Select an academic year');
+      setGroupError(selectedYear ? '' : t('selectYear'));
       return;
     }
     setGroupsLoading(true);
@@ -427,10 +429,10 @@ const TimetableDesigner = () => {
       const ordered = groupClasses.map((name) => classMap[name]).filter(Boolean);
       setGroupTimetables(ordered);
       if (ordered.length === 0) {
-        setGroupError('No timetables found for this group');
+        setGroupError(t('noData'));
       }
     } catch {
-      setGroupError('Failed to load timetables');
+      setGroupError(t('failedToLoad'));
       setGroupTimetables([]);
     } finally {
       setGroupsLoading(false);
@@ -444,7 +446,7 @@ const TimetableDesigner = () => {
 
   const getGroupClassName = () => {
     const g = GROUPS[selectedGroup];
-    if (!g) return 'Timetable';
+    if (!g) return t('timetable');
     return g.name.replace(/\s+/g, '-');
   };
 
@@ -463,9 +465,9 @@ const TimetableDesigner = () => {
         page: { paperSize, orientation, marginTop, marginBottom, marginLeft, marginRight },
       };
       await timetableDesignService.saveDesign(payload);
-      toast.success('Design saved successfully');
+      toast.success(t('savedSuccessfully'));
     } catch {
-      toast.error('Failed to save design');
+      toast.error(t('failedToSave'));
     } finally {
       setSaveLoading(false);
     }
@@ -504,7 +506,7 @@ const TimetableDesigner = () => {
 
   const handleExportPdf = async () => {
     if (groupTimetables.length === 0) {
-      toast.error('No timetable data to export');
+      toast.error(t('noData'));
       return;
     }
     setPdfExporting(true);
@@ -513,7 +515,7 @@ const TimetableDesigner = () => {
     try {
       const original = document.getElementById('designer-preview');
       if (!original) {
-        toast.error('Preview element not found');
+        toast.error(t('noData'));
         return;
       }
 
@@ -654,7 +656,7 @@ const TimetableDesigner = () => {
       pdf.addImage(imgData, 'JPEG', mLeft + (availW - rW) / 2, mTop + (availH - rH) / 2, rW, rH);
       pdf.save(`${groupName}-${year}-Timetable.pdf`);
 
-      toast.success('PDF exported successfully');
+      toast.success(t('savedSuccessfully'));
     } catch (err) {
       console.error('PDF export error:', err);
       if (err instanceof Error) {
@@ -673,7 +675,7 @@ const TimetableDesigner = () => {
           }
         } catch { /* empty */ }
       }
-      toast.error(`PDF export failed: ${err?.message || 'Unknown error'}`);
+      toast.error(`${t('failedToSave')}: ${err?.message || t('unknown')}`);
     } finally {
       for (const { sheet, rule, index } of removedRules) {
         try { sheet.insertRule(rule.cssText, index); } catch { /* empty */ }
@@ -815,7 +817,7 @@ const TimetableDesigner = () => {
             </table>
           ) : (
             <div className="flex items-center justify-center h-48 text-gray-400 dark:text-gray-500 text-xs">
-              {groupsLoading ? 'Loading timetables...' : groupError || 'Select an academic year to load timetables'}
+              {groupsLoading ? t('loading') : groupError || t('selectYear')}
             </div>
           )}
         </div>
@@ -838,7 +840,7 @@ const TimetableDesigner = () => {
 }
       `}</style>
       <div className="flex items-center justify-between no-print">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Timetable Designer</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('timetableDesigner')}</h2>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
             {[1, 2, 3].map((g) => (
@@ -846,12 +848,12 @@ const TimetableDesigner = () => {
             ))}
           </div>
           <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-[10px] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
-            <option value="">Select Year</option>
+            <option value="">{t('selectYear')}</option>
             {ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <button data-designer-toggle onClick={() => setDesignPanelOpen((p) => !p)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer shadow-sm ${designPanelOpen ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500'}`}>
             <SettingsSvg />
-            <span>Design Controls</span>
+            <span>{t('timetableDesigner')}</span>
           </button>
         </div>
       </div>
@@ -860,12 +862,12 @@ const TimetableDesigner = () => {
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 no-print">
           <div className="flex items-center gap-2">
             <EyeSvg />
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Live Preview</span>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('preview')}</span>
           </div>
           {groupTimetables.length > 0 ? (
             <span className="text-[10px] text-gray-400">{GROUPS[selectedGroup]?.name} &middot; {groupTimetables.length} classes</span>
           ) : (
-            <span className="text-[10px] text-gray-400">{selectedYear ? 'No data' : 'Select year'}</span>
+            <span className="text-[10px] text-gray-400">{selectedYear ? t('noData') : t('selectYear')}</span>
           )}
         </div>
         <div className="p-4 md:p-6 overflow-x-auto">
@@ -879,20 +881,20 @@ const TimetableDesigner = () => {
 
       <div ref={panelRef} className={`fixed top-0 right-0 h-full z-50 bg-white dark:bg-gray-800 shadow-2xl border-l border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out ${designPanelOpen ? 'translate-x-0' : 'translate-x-full'} w-full sm:w-[380px] md:w-[400px] lg:w-[420px]`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-2"><SettingsSvg /> Design Controls</h3>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-2"><SettingsSvg /> {t('timetableDesigner')}</h3>
           <button onClick={() => setDesignPanelOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"><CloseSvg /></button>
         </div>
 
         <div className="overflow-y-auto h-[calc(100%-52px)]">
           {/* Section A — Header Settings */}
-          <AccordionSection title="Header Settings" icon={<TypeSvg />} isOpen={openSections.headerSettings} onToggle={() => toggleSection('headerSettings')}>
+          <AccordionSection title={t('schoolSettings')} icon={<TypeSvg />} isOpen={openSections.headerSettings} onToggle={() => toggleSection('headerSettings')}>
             <div className="space-y-3">
               {/* --- Logo --- */}
               <div>
-                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">School Logo</h4>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">{t('schoolLogo')}</h4>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Show</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{t('status')}</span>
                     <Toggle value={logoShow} onChange={setLogoShow} />
                   </div>
                   <div><FieldLabel>Size</FieldLabel><input type="range" min="16" max="120" value={logoSize} onChange={(e) => { const v = Number(e.target.value); setLogoSize(v); setLogoWidth(v); setLogoHeight(v); }} className="w-full" /></div>
@@ -909,7 +911,7 @@ const TimetableDesigner = () => {
 
               {/* --- School Name --- */}
               <div>
-                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">School Name</h4>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">{t('schoolName')}</h4>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-600 dark:text-gray-400">Show</span>
@@ -929,7 +931,7 @@ const TimetableDesigner = () => {
 
               {/* --- Academic Year --- */}
               <div>
-                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Academic Year</h4>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">{t('academicYear')}</h4>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-600 dark:text-gray-400">Show</span>
@@ -947,7 +949,7 @@ const TimetableDesigner = () => {
 
               {/* --- Timetable Title --- */}
               <div>
-                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Timetable Title</h4>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">{t('timetable')}</h4>
                 <div className="space-y-2">
                   <TextField label="Title Text" value={timetableTitle} onChange={(e) => setTimetableTitle(e.target.value)} />
                   <SelectField label="Font Size" value={titleFontSize} onChange={(e) => setTitleFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
@@ -963,7 +965,7 @@ const TimetableDesigner = () => {
 
               {/* --- Header Spacing --- */}
               <div>
-                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Header Spacing</h4>
+                <h4 className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">{t('schoolSettings')}</h4>
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-1.5">
                     <div><FieldLabel>Top Padding (px)</FieldLabel><input type="number" value={headerPaddingTop} onChange={(e) => setHeaderPaddingTop(Number(e.target.value))} className={INPUT_CLS} /></div>
@@ -979,7 +981,7 @@ const TimetableDesigner = () => {
           </AccordionSection>
 
           {/* Section B — Table Settings */}
-          <AccordionSection title="Table Settings" icon={<GridSvg />} isOpen={openSections.tableSettings} onToggle={() => toggleSection('tableSettings')}>
+          <AccordionSection title={t('schoolSettings')} icon={<GridSvg />} isOpen={openSections.tableSettings} onToggle={() => toggleSection('tableSettings')}>
             <div><FieldLabel>Border Width</FieldLabel><input type="text" value={borderWidth} onChange={(e) => setBorderWidth(e.target.value)} className={INPUT_CLS} placeholder="e.g. 1" /></div>
             <div><FieldLabel>Border Radius</FieldLabel><input type="text" value={borderRadius} onChange={(e) => setBorderRadius(e.target.value)} className={INPUT_CLS} placeholder="e.g. 0" /></div>
             <SelectField label="Cell Padding" value={cellPadding} onChange={(e) => setCellPadding(e.target.value)} options={PADDING_OPTIONS} />
@@ -994,7 +996,7 @@ const TimetableDesigner = () => {
           </AccordionSection>
 
           {/* Section C — Font Settings */}
-          <AccordionSection title="Font Settings" icon={<TypeSvg />} isOpen={openSections.fontSettings} onToggle={() => toggleSection('fontSettings')}>
+          <AccordionSection title={t('typography')} icon={<TypeSvg />} isOpen={openSections.fontSettings} onToggle={() => toggleSection('fontSettings')}>
             <SelectField label="Header Font Size" value={headerFontSize} onChange={(e) => setHeaderFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
             <SelectField label="Table Font Size" value={tableFontSize} onChange={(e) => setTableFontSize(e.target.value)} options={FONT_SIZE_OPTIONS} />
             <SelectField label="Font Weight" value={fontWeight} onChange={(e) => setFontWeight(e.target.value)} options={FONT_WEIGHT_OPTIONS} />
@@ -1002,7 +1004,7 @@ const TimetableDesigner = () => {
           </AccordionSection>
 
           {/* Section D — Color Settings */}
-          <AccordionSection title="Color Settings" icon={<PaintSvg />} isOpen={openSections.colorSettings} onToggle={() => toggleSection('colorSettings')}>
+          <AccordionSection title={t('colorControls')} icon={<PaintSvg />} isOpen={openSections.colorSettings} onToggle={() => toggleSection('colorSettings')}>
             <ColorPicker label="Header Background" value={headerBgColor} onChange={setHeaderBgColor} />
             <ColorPicker label="Header Text Color" value={headerTextColor} onChange={setHeaderTextColor} />
             <ColorPicker label="Table Header Background" value={tableHeaderBg} onChange={setTableHeaderBg} />
@@ -1012,7 +1014,7 @@ const TimetableDesigner = () => {
           </AccordionSection>
 
           {/* Section E — Page Settings */}
-          <AccordionSection title="Page Settings" icon={<PrintSvg />} isOpen={openSections.pageSettings} onToggle={() => toggleSection('pageSettings')}>
+          <AccordionSection title={t('schoolSettings')} icon={<PrintSvg />} isOpen={openSections.pageSettings} onToggle={() => toggleSection('pageSettings')}>
             <SelectField label="Paper Size" value={paperSize} onChange={(e) => setPaperSize(e.target.value)} options={PAPER_SIZE_OPTIONS} />
             <div><FieldLabel>Orientation</FieldLabel><div className="flex gap-1">{['portrait', 'landscape'].map((o) => <button key={o} onClick={() => setOrientation(o)} className={`flex-1 px-2 py-1.5 rounded-lg text-[9px] font-medium transition-all cursor-pointer capitalize ${orientation === o ? 'bg-blue-600 text-white shadow-sm' : 'border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{o}</button>)}</div></div>
             <div className="grid grid-cols-2 gap-1.5 mt-2">
@@ -1026,13 +1028,13 @@ const TimetableDesigner = () => {
           {/* Bottom Buttons */}
           <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700/50 space-y-2">
             <button onClick={handleSave} disabled={saveLoading} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-              {saveLoading ? 'Saving...' : 'Save Design'}
+              {saveLoading ? t('saving') : t('save')}
             </button>
             <button onClick={handlePrint} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-              <PrintSvg /> Print Timetable
+              <PrintSvg /> {t('print')}
             </button>
             <button onClick={handleExportPdf} disabled={pdfExporting || groupTimetables.length === 0} className="w-full px-3 py-2 rounded-lg text-[10px] font-medium text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-              <DownloadSvg /> {pdfExporting ? 'Exporting PDF...' : 'Download PDF'}
+              <DownloadSvg /> {pdfExporting ? t('saving') : t('download')}
             </button>
           </div>
         </div>

@@ -34,9 +34,7 @@ const schoolSettingsService = {
   uploadSchoolImage: async (field, file) => {
     const formData = new FormData();
     formData.append('image', file);
-    const response = await api.put(`/school-settings/image/${field}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await api.put(`/school-settings/image/${field}`, formData);
     return response.data;
   },
 };

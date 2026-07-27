@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../../../hooks/useLocalization';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import Modal from '../../common/Modal';
 import eventsService from '../../../services/events.service';
@@ -45,12 +46,34 @@ const dateCircleColors = {
 const COLOR_PRIORITY = ['red', 'orange', 'purple', 'green', 'blue'];
 
 const CalendarView = ({ onDataChange }) => {
+  const { t } = useTranslation();
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [selectedItem, setSelectedItem] = useState(null);
+  const [allItems, setAllItems] = useState([]);
 
-  const allItems = useMemo(() => eventsService.getCalendarData(), []);
+  const fetchCalendarData = useCallback(async () => {
+    try {
+      const fromDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const toDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      const [events, holidays] = await Promise.all([
+        eventsService.getCalendarEvents({ fromDate, toDate }),
+        eventsService.getCalendarHolidays({ fromDate, toDate }),
+      ]);
+      setAllItems([
+        ...(events || []).map((e) => ({ ...e, type: 'event', id: e._id })),
+        ...(holidays || []).map((h) => ({ ...h, type: 'holiday', id: h._id })),
+      ]);
+    } catch {
+      setAllItems([]);
+    }
+  }, [currentYear, currentMonth]);
+
+  useEffect(() => {
+    fetchCalendarData();
+  }, [fetchCalendarData]);
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
@@ -68,8 +91,13 @@ const CalendarView = ({ onDataChange }) => {
   const getItemsForDate = (day) => {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return allItems.filter((item) => {
-      if (item.type === 'event') return item.date === dateStr;
-      return item.startDate <= dateStr && item.endDate >= dateStr;
+      if (item.type === 'event') {
+        const d = item.date ? item.date.split('T')[0] : '';
+        return d === dateStr;
+      }
+      const s = item.startDate ? item.startDate.split('T')[0] : '';
+      const e = item.endDate ? item.endDate.split('T')[0] : '';
+      return s <= dateStr && e >= dateStr;
     });
   };
 
@@ -99,7 +127,7 @@ const CalendarView = ({ onDataChange }) => {
             </button>
             <button onClick={goToday}
               className="ml-1 sm:ml-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/60 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all cursor-pointer shadow-sm">
-              Today
+              {t('today')}
             </button>
           </div>
           <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-white">
@@ -168,9 +196,9 @@ const CalendarView = ({ onDataChange }) => {
                       </button>
                     );
                   })}
-                  {items.length > 3 && (
+                    {items.length > 3 && (
                     <span className="text-[9px] sm:text-[10px] text-gray-400 dark:text-gray-500 pl-1">
-                      +{items.length - 3} more
+                      {t('moreEvents', { count: items.length - 3 })}
                     </span>
                   )}
                 </div>
@@ -186,18 +214,18 @@ const CalendarView = ({ onDataChange }) => {
 
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-5 pt-4 border-t border-gray-200 dark:border-gray-700/60 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500" /> School Events</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-green-500" /> Sports</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-orange-500" /> Exams</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-purple-500" /> Meetings</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-500" /> Holidays</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500" /> {t('schoolEvents')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-green-500" /> {t('sports')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-orange-500" /> {t('exams')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-purple-500" /> {t('meetings')}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-500" /> {t('holidays')}</span>
         </div>
       </div>
 
       {/* Detail Modal */}
       {selectedItem && (
         <Modal isOpen={true} onClose={() => setSelectedItem(null)}
-          title={selectedItem.type === 'holiday' ? 'Holiday Details' : 'Event Details'}>
+          title={selectedItem.type === 'holiday' ? t('holidayDetails') : t('eventDetails')}>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
@@ -208,28 +236,28 @@ const CalendarView = ({ onDataChange }) => {
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{selectedItem.name}</h3>
                 <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                  {selectedItem.type === 'holiday' ? 'Holiday' : selectedItem.category}
+                  {selectedItem.type === 'holiday' ? t('holiday') : selectedItem.category}
                 </span>
               </div>
             </div>
             <div className="space-y-2.5">
               {selectedItem.type === 'holiday' ? (
                 <>
-                  <Row label="Start Date" value={selectedItem.startDateDisplay} />
-                  <Row label="End Date" value={selectedItem.endDateDisplay} />
-                  <Row label="Duration" value={`${selectedItem.totalDays} days`} />
-                  <Row label="Type" value={selectedItem.type} />
-                  <Row label="Applies To" value={selectedItem.appliesTo} />
+                  <Row label={t('startDate')} value={selectedItem.startDateDisplay} />
+                  <Row label={t('endDate')} value={selectedItem.endDateDisplay} />
+                  <Row label={t('duration')} value={`${selectedItem.totalDays} ${t('totalDays').toLowerCase().replace('total ', '')}`} />
+                  <Row label={t('type')} value={selectedItem.type} />
+                  <Row label={t('appliesTo')} value={selectedItem.appliesTo} />
                   {selectedItem.description && <Description text={selectedItem.description} />}
                 </>
               ) : (
                 <>
-                  <Row label="Date" value={selectedItem.dateDisplay} />
-                  <Row label="Category" value={selectedItem.category} />
-                  <Row label="Time" value={`${selectedItem.startTime} - ${selectedItem.endTime}`} />
-                  <Row label="Venue" value={selectedItem.venue} />
-                  <Row label="Audience" value={selectedItem.audience} />
-                  <Row label="Status" value={selectedItem.status} />
+                  <Row label={t('dateLabel')} value={selectedItem.dateDisplay} />
+                  <Row label={t('category')} value={selectedItem.category} />
+                  <Row label={t('eventTimeLabel')} value={`${selectedItem.startTime} - ${selectedItem.endTime}`} />
+                  <Row label={t('venue')} value={selectedItem.venue} />
+                  <Row label={t('audience')} value={selectedItem.audience} />
+                  <Row label={t('status')} value={selectedItem.status} />
                   {selectedItem.description && <Description text={selectedItem.description} />}
                 </>
               )}

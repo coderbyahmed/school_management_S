@@ -225,17 +225,32 @@ const eventsService = {
       events = events.filter((e) => e.name.toLowerCase().includes(q));
     }
 
-    return events.map((e) => ({
-      id: e.id,
-      name: e.name,
-      banner: e.banner,
-      date: e.dateDisplay,
-      category: e.category,
-      description: e.description || '',
-      academicYear: e.academicYear,
-      dateRaw: e.date,
-      numPhotos: randomInt(15, 80),
-    }));
+    return events.map((e) => {
+      const galleryImages = e.galleryImages || [];
+      const hasBanner = !!e.banner;
+      const totalPhotos = (hasBanner ? 1 : 0) + galleryImages.length;
+      return {
+        id: e.id,
+        name: e.name,
+        banner: e.banner,
+        galleryImages,
+        date: e.dateDisplay,
+        category: e.category,
+        description: e.description || '',
+        academicYear: e.academicYear,
+        dateRaw: e.date,
+        numPhotos: totalPhotos > 0 ? totalPhotos : 0,
+      };
+    });
+  },
+
+  updateEventGallery(id, galleryImages) {
+    const events = this.getEvents();
+    const idx = events.findIndex((e) => e.id === id);
+    if (idx !== -1) {
+      events[idx] = { ...events[idx], galleryImages };
+      localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+    }
   },
 
   ACADEMIC_YEARS,

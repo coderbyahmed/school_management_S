@@ -46,12 +46,15 @@ const statusStyles = {
   Overdue: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700',
 };
 
+const ITEMS_PER_PAGE = 10;
+
 const FeeDashboard = () => {
   const [data, setData] = useState(null);
   const [selectedYear, setSelectedYear] = useState('2025');
   const [selectedMonth, setSelectedMonth] = useState('All');
   const [viewItem, setViewItem] = useState(null);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     try {
@@ -73,8 +76,8 @@ const FeeDashboard = () => {
     }
   };
 
-  const handleYearChange = (e) => setSelectedYear(e.target.value);
-  const handleMonthChange = (e) => setSelectedMonth(e.target.value);
+  const handleYearChange = (e) => { setSelectedYear(e.target.value); setCurrentPage(1); };
+  const handleMonthChange = (e) => { setSelectedMonth(e.target.value); setCurrentPage(1); };
 
   if (error) {
     return (
@@ -121,6 +124,9 @@ const FeeDashboard = () => {
   const recentPayments = d.recentPayments || [];
   const upcomingDue = d.upcomingDueStudents || [];
   const recentActivities = d.recentActivities || [];
+
+  const totalPages = Math.ceil(recentPayments.length / ITEMS_PER_PAGE);
+  const paginatedPayments = recentPayments.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const getDueStatus = (dueDate) => {
     if (!dueDate) return 'normal';
@@ -256,7 +262,7 @@ const FeeDashboard = () => {
                   <td colSpan={8} className="px-1.5 py-6 text-center text-gray-400 dark:text-gray-500">No recent payments</td>
                 </tr>
               ) : (
-                recentPayments.slice(0, 8).map((item) => (
+                paginatedPayments.map((item) => (
                   <tr key={item.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <td className="px-1.5 py-2 text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap font-mono">{item.receipt}</td>
                     <td className="px-1.5 py-2">
@@ -287,9 +293,40 @@ const FeeDashboard = () => {
               )}
             </tbody>
           </table>
-          {recentPayments.length > 8 && (
-            <div className="px-1.5 py-1.5 text-center border-t border-gray-200 dark:border-gray-700">
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">Showing 8 of {recentPayments.length} payments</span>
+          {recentPayments.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Showing {Math.min(recentPayments.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, recentPayments.length)} of {recentPayments.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

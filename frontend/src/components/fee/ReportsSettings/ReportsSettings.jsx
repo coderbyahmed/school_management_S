@@ -56,6 +56,8 @@ const getAvatarColor = (name) => {
 
 const REMINDER_METHODS = ['SMS', 'Email', 'WhatsApp', 'Push Notification'];
 
+const ITEMS_PER_PAGE = 10;
+
 const ReportsSettings = () => {
   const [activeTab, setActiveTab] = useState('reports');
   const [reportData, setReportData] = useState([]);
@@ -63,6 +65,7 @@ const ReportsSettings = () => {
   const [filters, setFilters] = useState({ year: '2025', month: 'All', class: 'All', status: 'All', search: '' });
   const [viewItem, setViewItem] = useState(null);
   const [settings, setSettings] = useState(reportsSettingsService.getSettings());
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadData = useCallback(() => {
     const data = reportsSettingsService.getReportData(filters);
@@ -73,11 +76,15 @@ const ReportsSettings = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const handleFilterChange = (key) => (value) => setFilters((p) => ({ ...p, [key]: value }));
-  const handleSearch = (val) => setFilters((p) => ({ ...p, search: val }));
+  const totalPages = Math.ceil(reportData.length / ITEMS_PER_PAGE);
+  const paginatedReportData = reportData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const handleFilterChange = (key) => (value) => { setFilters((p) => ({ ...p, [key]: value })); setCurrentPage(1); };
+  const handleSearch = (val) => { setFilters((p) => ({ ...p, search: val })); setCurrentPage(1); };
 
   const handleReset = () => {
     setFilters({ year: '2025', month: 'All', class: 'All', status: 'All', search: '' });
+    setCurrentPage(1);
   };
 
   const handleGenerateReport = () => {
@@ -226,7 +233,7 @@ const ReportsSettings = () => {
                       <td colSpan={10} className="px-1.5 py-8 text-center text-gray-400 dark:text-gray-500 text-xs">No report data found</td>
                     </tr>
                   ) : (
-                    reportData.slice(0, 50).map((item) => (
+                    paginatedReportData.map((item) => (
                       <tr key={item.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <td className="px-1.5 py-2">
                           <div className="flex items-center gap-1.5">
@@ -263,9 +270,40 @@ const ReportsSettings = () => {
                   )}
                 </tbody>
               </table>
-              {reportData.length > 50 && (
-                <div className="px-1.5 py-1.5 text-center border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500">Showing 50 of {reportData.length} entries</span>
+              {reportData.length > 0 && totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Showing {Math.min(reportData.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, reportData.length)} of {reportData.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                          currentPage === page
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -277,18 +315,6 @@ const ReportsSettings = () => {
         <>
           <CardSection title="School Fee Settings">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SelectInput
-                label="Currency" name="currency" value={settings.schoolFee.currency}
-                onChange={(e) => handleSettingChange('schoolFee', 'currency', e.target.value)}
-                options={['PKR', 'INR', 'USD']}
-              />
-              <SelectInput
-                label="Academic Year" name="academicYear" value={settings.schoolFee.academicYear}
-                onChange={(e) => handleSettingChange('schoolFee', 'academicYear', e.target.value)}
-                options={SESSIONS}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               {[
                 { key: 'admissionFeeEnabled', label: 'Admission Fee' },
                 { key: 'examFeeEnabled', label: 'Exam Fee' },
@@ -359,11 +385,6 @@ const ReportsSettings = () => {
                 label="Late Fee Amount (per day)" name="lateFeeAmount" type="number"
                 value={settings.fine.lateFeeAmount}
                 onChange={(e) => handleSettingChange('fine', 'lateFeeAmount', Number(e.target.value))}
-              />
-              <Input
-                label="Grace Period (days)" name="lateFeeDays" type="number"
-                value={settings.fine.lateFeeDays}
-                onChange={(e) => handleSettingChange('fine', 'lateFeeDays', Number(e.target.value))}
               />
               <Input
                 label="Maximum Fine Amount" name="maxFine" type="number"

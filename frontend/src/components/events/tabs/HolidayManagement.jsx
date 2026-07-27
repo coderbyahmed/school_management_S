@@ -7,6 +7,8 @@ import {
 import ConfirmationModal from '../../common/ConfirmationModal';
 import eventsService from '../../../services/events.service';
 
+const ITEMS_PER_PAGE = 10;
+
 const initialForm = {
   name: '',
   startDate: '',
@@ -31,6 +33,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
   const [form, setForm] = useState({ ...initialForm });
   const [academicYear, setAcademicYear] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [viewHoliday, setViewHoliday] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -60,6 +63,9 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
     if (typeFilter) list = list.filter((h) => h.type === typeFilter);
     return list;
   }, [holidays, academicYear, typeFilter]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -108,6 +114,52 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
     setHolidays(eventsService.getHolidays());
     onDataChange();
     toast.success('Holiday deleted');
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between pt-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Showing {Math.min(filtered.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            Previous
+          </button>
+          {pages.map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                currentPage === page
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -184,7 +236,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Academic Year</label>
             <div className="relative mt-1">
-              <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
+              <select value={academicYear} onChange={(e) => { setAcademicYear(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">All Years</option>
                 {eventsService.ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
@@ -195,7 +247,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Holiday Type</label>
             <div className="relative mt-1">
-              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
+              <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">All Types</option>
                 {eventsService.HOLIDAY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -221,10 +273,10 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">No holidays found</td></tr>
             ) : (
-              filtered.map((h) => (
+              paginated.map((h) => (
                 <tr key={h.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{h.name}</td>
                   <td className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{h.startDateDisplay}</td>
@@ -265,6 +317,8 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
           </div>
         )}
       </div>
+
+      {renderPagination()}
 
       {/* View Modal */}
       {viewHoliday && (

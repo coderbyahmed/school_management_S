@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
   UsersIcon, CurrencyDollarIcon, BanknotesIcon, ExclamationTriangleIcon,
-  PlusIcon, FunnelIcon, PrinterIcon, ClockIcon,
+  PlusIcon, FunnelIcon, PrinterIcon, ClockIcon, MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import CardSection from '../../common/CardSection';
@@ -72,12 +72,15 @@ const collectFormEmpty = {
   remarks: '',
 };
 
+const ITEMS_PER_PAGE = 10;
+
 const StudentFees = () => {
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState('');
   const [yearFilter, setYearFilter] = useState('2025');
   const [classFilter, setClassFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [viewItem, setViewItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
@@ -93,6 +96,8 @@ const StudentFees = () => {
   const [collectErrors, setCollectErrors] = useState({});
   const [editErrors, setEditErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [collectSearchId, setCollectSearchId] = useState('');
+  const [collectSearchError, setCollectSearchError] = useState('');
 
   const loadData = () => {
     try {
@@ -117,6 +122,9 @@ const StudentFees = () => {
     });
   }, [students, search, yearFilter, classFilter, statusFilter]);
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedItems = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
   const stats = useMemo(() => {
     try {
       return studentFeesService.getStats();
@@ -130,6 +138,7 @@ const StudentFees = () => {
     setYearFilter('2025');
     setClassFilter('All');
     setStatusFilter('All');
+    setCurrentPage(1);
   };
 
   const handleView = (item) => setViewItem(item);
@@ -147,6 +156,8 @@ const StudentFees = () => {
       remarks: '',
     });
     setCollectErrors({});
+    setCollectSearchId(student ? student.admissionNo : '');
+    setCollectSearchError('');
     setCollectModal(student ? 'row' : 'header');
   };
 
@@ -154,6 +165,33 @@ const StudentFees = () => {
     const { name, value } = e.target;
     setCollectForm((prev) => ({ ...prev, [name]: value }));
     if (collectErrors[name]) setCollectErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const handleCollectIdSearch = (val) => {
+    setCollectSearchId(val);
+    setCollectSearchError('');
+    if (!val || val.trim() === '') {
+      setCollectForm((prev) => ({ ...prev, studentId: '', discount: '0', lateFine: '0' }));
+      return;
+    }
+    const found = students.find((s) => s.admissionNo && s.admissionNo.toLowerCase() === val.trim().toLowerCase());
+    if (found) {
+      const m = new Date().getMonth();
+      setCollectForm((prev) => ({
+        ...prev,
+        studentId: found.id,
+        month: MONTHS[m],
+        discount: String(found.discount || 0),
+        lateFine: String(found.lateFine || 0),
+        amount: '',
+        date: todayStr(),
+        paymentMethod: 'Cash',
+        remarks: '',
+      }));
+      setCollectErrors((prev) => ({ ...prev, studentId: '' }));
+    } else {
+      setCollectForm((prev) => ({ ...prev, studentId: '', discount: '0', lateFine: '0' }));
+    }
   };
 
   const selectedStudent = useMemo(() => {
@@ -202,6 +240,8 @@ const StudentFees = () => {
       if (result) {
         toast.success('Fee collected successfully');
         setCollectForm({ ...collectFormEmpty });
+        setCollectSearchId('');
+        setCollectSearchError('');
         setCollectModal(null);
         loadData();
         setReceiptData({ ...result.student, receiptNo: result.receiptNo, collectionDate: collectForm.date, collectedAmount: collectForm.amount, paymentMethod: collectForm.paymentMethod });
@@ -363,30 +403,25 @@ const StudentFees = () => {
 
   const renderCollectModal = () => {
     if (!collectModal) return null;
-    const title = collectModal === 'row' && selectedStudent ? `Collect Fee - ${selectedStudent.name}` : 'Collect Fee';
+    const title = selectedStudent ? `Collect Fee - ${selectedStudent.name}` : 'Collect Fee';
     return (
       <Modal isOpen title={title} onClose={() => setCollectModal(null)} maxWidth="max-w-md">
         <div className="max-h-[75vh] overflow-y-auto space-y-3">
-          {collectModal === 'header' && (
+          {collectModal === 'header' && !selectedStudent && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Student <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  name="studentId"
-                  value={collectForm.studentId}
-                  onChange={handleCollectFormChange}
-                  className="appearance-none w-full px-3 py-2 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
-                >
-                  <option value="" disabled>Select a student</option>
-                  {students.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.admissionNo})</option>
-                  ))}
-                </select>
-                <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </div>
-              {collectErrors.studentId && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{collectErrors.studentId}</p>}
+              <Input
+                label="Student ID"
+                name="collectSearchId"
+                type="text"
+                value={collectSearchId}
+                onChange={(e) => handleCollectIdSearch(e.target.value)}
+                placeholder="Search Student by ID"
+                icon={MagnifyingGlassIcon}
+                required
+              />
+              {collectSearchId && collectSearchId.trim().length >= 3 && !selectedStudent && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">No student found with this ID</p>
+              )}
             </div>
           )}
           {selectedStudent && (
@@ -676,16 +711,16 @@ const StudentFees = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-28">
-            <FilterDropdown label="Year" options={['All', ...SESSIONS]} value={yearFilter} onChange={setYearFilter} />
+            <FilterDropdown label="Year" options={['All', ...SESSIONS]} value={yearFilter} onChange={(v) => { setYearFilter(v); setCurrentPage(1); }} />
           </div>
           <div className="w-32">
-            <FilterDropdown label="Class" options={CLASSES} value={classFilter} onChange={setClassFilter} />
+            <FilterDropdown label="Class" options={CLASSES} value={classFilter} onChange={(v) => { setClassFilter(v); setCurrentPage(1); }} />
           </div>
           <div className="w-24">
-            <FilterDropdown label="Status" options={STATUS_FILTERS} value={statusFilter} onChange={setStatusFilter} />
+            <FilterDropdown label="Status" options={STATUS_FILTERS} value={statusFilter} onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }} />
           </div>
           <div className="w-full sm:w-56">
-            <SearchInput placeholder="Search name or admission no..." value={search} onChange={setSearch} />
+            <SearchInput placeholder="Search name or admission no..." value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} />
           </div>
           <button onClick={handleResetFilters}
             className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2 cursor-pointer">
@@ -717,7 +752,7 @@ const StudentFees = () => {
                   <td colSpan={10} className="px-2 py-8 text-center text-gray-400 dark:text-gray-500">No students found</td>
                 </tr>
               ) : (
-                filtered.map((item) => (
+                paginatedItems.map((item) => (
                   <tr key={item.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <td className="px-1.5 py-2">
                       <div className="flex items-center gap-2">
@@ -763,6 +798,42 @@ const StudentFees = () => {
             </tbody>
           </table>
         </div>
+        {filtered.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Showing {Math.min(filtered.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                    currentPage === page
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </CardSection>
 
       {renderViewModal()}

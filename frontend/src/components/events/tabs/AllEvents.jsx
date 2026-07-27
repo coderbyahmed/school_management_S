@@ -8,6 +8,8 @@ import SearchInput from '../../common/SearchInput';
 import ConfirmationModal from '../../common/ConfirmationModal';
 import eventsService from '../../../services/events.service';
 
+const ITEMS_PER_PAGE = 10;
+
 const getStatusStyle = (status) => {
   const styles = {
     Upcoming: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700',
@@ -24,6 +26,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
   const [academicYear, setAcademicYear] = useState('');
   const [category, setCategory] = useState('');
   const [month, setMonth] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [viewEvent, setViewEvent] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -41,12 +44,61 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
     return list;
   }, [events, search, academicYear, category, month]);
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
   const handleDelete = () => {
     eventsService.deleteEvent(deleteTarget.id);
     setEvents(eventsService.getEvents());
     setDeleteTarget(null);
     onDataChange();
     toast.success('Event deleted');
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between pt-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Showing {Math.min(filtered.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            Previous
+          </button>
+          {pages.map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                currentPage === page
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -56,7 +108,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Academic Year</label>
             <div className="relative mt-1">
-              <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
+              <select value={academicYear} onChange={(e) => { setAcademicYear(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">All Years</option>
                 {eventsService.ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
@@ -67,7 +119,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
             <div className="relative mt-1">
-              <select value={category} onChange={(e) => setCategory(e.target.value)}
+              <select value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">All Categories</option>
                 {eventsService.EVENT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -78,7 +130,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Month</label>
             <div className="relative mt-1">
-              <select value={month} onChange={(e) => setMonth(e.target.value)}
+              <select value={month} onChange={(e) => { setMonth(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">All Months</option>
                 {eventsService.MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -88,7 +140,7 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">&nbsp;</label>
-            <SearchInput placeholder="Search events..." value={search} onChange={setSearch} />
+            <SearchInput placeholder="Search events..." value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} />
           </div>
         </div>
       </div>
@@ -109,12 +161,12 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">No events found</td>
               </tr>
             ) : (
-              filtered.map((event) => (
+              paginated.map((event) => (
                 <tr key={event.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-3 py-3">
                     {event.banner ? (
@@ -164,6 +216,8 @@ const AllEvents = ({ onDataChange, onEditEvent }) => {
           </div>
         )}
       </div>
+
+      {renderPagination()}
 
       {/* View Modal */}
       {viewEvent && (

@@ -1,6 +1,7 @@
 const en = {
   // Navigation
   dashboard: 'Dashboard',
+  dashboards: 'Dashboards',
   studentManagement: 'Student Management',
   teacherManagement: 'Teacher Management',
   classManagement: 'Class Management',
@@ -605,6 +606,7 @@ const en = {
 
   // Fee Management sub-menu
   feeDashboard: 'Fee Dashboard',
+  userDashboard: 'User Dashboard',
   feeStructure: 'Fee Structure',
   studentFees: 'Student Fees',
   reportsAndSettings: 'Reports & Settings',

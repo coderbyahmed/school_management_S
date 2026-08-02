@@ -2,9 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
   DocumentChartBarIcon, CurrencyDollarIcon, ClockIcon, ArrowTrendingUpIcon,
-  FunnelIcon, ArrowPathIcon, DocumentArrowDownIcon, PrinterIcon,
-  CheckCircleIcon, XCircleIcon, Cog6ToothIcon, DocumentTextIcon,
-  BellIcon, BanknotesIcon,
+  ArrowPathIcon, DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard';
 import CardSection from '../../common/CardSection';
@@ -74,7 +72,9 @@ const ReportsSettings = () => {
     setStats(s);
   }, [filters]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+  }, [loadData]);
 
   const totalPages = Math.ceil(reportData.length / ITEMS_PER_PAGE);
   const paginatedReportData = reportData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);

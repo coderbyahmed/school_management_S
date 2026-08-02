@@ -23,7 +23,8 @@ import TimetableManagement from './pages/admin/TimetableManagement';
 import AttendanceManagement from './pages/admin/AttendanceManagement';
 import EventsHolidays from './pages/admin/EventsHolidays';
 import FeeManagement from './pages/admin/FeeManagement';
-import FeeDashboard from './pages/admin/fee/Dashboard';
+import FeeDashboard from './pages/admin/dashboards/FeeDashboard';
+import UserDashboard from './pages/admin/dashboards/UserDashboard';
 import FeeStructure from './pages/admin/fee/Structure';
 import StudentFees from './pages/admin/fee/Students';
 import FeeReports from './pages/admin/fee/Reports';
@@ -88,6 +89,7 @@ function AppContent() {
               <Route path="students" element={<StudentFees />} />
               <Route path="reports" element={<FeeReports />} />
             </Route>
+            <Route path="users/dashboard" element={<UserDashboard />} />
             <Route path="settings" element={<SchoolSettings />} />
           </Route>
         </Route>

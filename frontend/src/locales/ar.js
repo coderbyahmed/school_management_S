@@ -1,5 +1,6 @@
 const ar = {
   dashboard: 'لوحة القيادة',
+  dashboards: 'لوحات المعلومات',
   studentManagement: 'إدارة الطلاب',
   teacherManagement: 'إدارة المعلمين',
   classManagement: 'إدارة الفصول',
@@ -568,6 +569,7 @@ const ar = {
   daysAgo: 'أيام مضت',
 
   feeDashboard: 'لوحة الرسوم',
+  userDashboard: 'لوحة المستخدمين',
   feeStructure: 'هيكل الرسوم',
   studentFees: 'رسوم الطلاب',
   reportsAndSettings: 'التقارير والإعدادات',

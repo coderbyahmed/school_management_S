@@ -97,7 +97,6 @@ const StudentFees = () => {
   const [editErrors, setEditErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [collectSearchId, setCollectSearchId] = useState('');
-  const [collectSearchError, setCollectSearchError] = useState('');
 
   const loadData = () => {
     try {
@@ -109,6 +108,7 @@ const StudentFees = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
 
@@ -131,6 +131,7 @@ const StudentFees = () => {
     } catch {
       return { totalStudents: 0, collectedToday: 0, outstandingAmount: 0, pendingStudents: 0 };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [students]);
 
   const handleResetFilters = () => {
@@ -157,7 +158,6 @@ const StudentFees = () => {
     });
     setCollectErrors({});
     setCollectSearchId(student ? student.admissionNo : '');
-    setCollectSearchError('');
     setCollectModal(student ? 'row' : 'header');
   };
 
@@ -169,7 +169,6 @@ const StudentFees = () => {
 
   const handleCollectIdSearch = (val) => {
     setCollectSearchId(val);
-    setCollectSearchError('');
     if (!val || val.trim() === '') {
       setCollectForm((prev) => ({ ...prev, studentId: '', discount: '0', lateFine: '0' }));
       return;
@@ -210,6 +209,7 @@ const StudentFees = () => {
 
   useEffect(() => {
     if (collectForm.studentId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCollectForm((prev) => ({ ...prev, amount: String(totalPayable) }));
     }
   }, [totalPayable, collectForm.studentId]);
@@ -241,7 +241,6 @@ const StudentFees = () => {
         toast.success('Fee collected successfully');
         setCollectForm({ ...collectFormEmpty });
         setCollectSearchId('');
-        setCollectSearchError('');
         setCollectModal(null);
         loadData();
         setReceiptData({ ...result.student, receiptNo: result.receiptNo, collectionDate: collectForm.date, collectedAmount: collectForm.amount, paymentMethod: collectForm.paymentMethod });

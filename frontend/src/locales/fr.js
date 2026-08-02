@@ -1,5 +1,6 @@
 const fr = {
   dashboard: 'Tableau de bord',
+  dashboards: 'Tableaux de bord',
   studentManagement: 'Gestion des étudiants',
   teacherManagement: 'Gestion des enseignants',
   classManagement: 'Gestion des classes',
@@ -568,6 +569,7 @@ const fr = {
   daysAgo: 'j',
 
   feeDashboard: 'Tableau des frais',
+  userDashboard: 'Tableau de bord utilisateur',
   feeStructure: 'Structure des frais',
   studentFees: 'Frais des étudiants',
   reportsAndSettings: 'Rapports et paramètres',

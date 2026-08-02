@@ -1,5 +1,6 @@
 const ur = {
   dashboard: 'ڈیش بورڈ',
+  dashboards: 'ڈیش بورڈز',
   studentManagement: 'طلبہ کا انتظام',
   teacherManagement: 'اساتذہ کا انتظام',
   classManagement: 'کلاس کا انتظام',
@@ -568,6 +569,7 @@ const ur = {
   daysAgo: 'دن پہلے',
 
   feeDashboard: 'فیس ڈیش بورڈ',
+  userDashboard: 'یوزر ڈیش بورڈ',
   feeStructure: 'فیس کا ڈھانچہ',
   studentFees: 'طالب علم کی فیس',
   reportsAndSettings: 'رپورٹس اور سیٹنگز',

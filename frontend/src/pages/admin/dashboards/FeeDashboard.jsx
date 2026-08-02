@@ -1,4 +1,4 @@
-import FeeDashboard from '../../../components/fee/FeeDashboard/FeeDashboard';
+import FeeDashboard from '../../../components/dashboards/fee-dashboard/FeeDashboard';
 
 const DashboardPage = () => {
   return <FeeDashboard />;

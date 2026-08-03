@@ -607,6 +607,9 @@ const en = {
   // Fee Management sub-menu
   feeDashboard: 'Fee Dashboard',
   userDashboard: 'User Dashboard',
+  userAccounts: 'User Accounts',
+  portalControl: 'Portal Control',
+  activityMaintenance: 'Activity & Maintenance',
   feeStructure: 'Fee Structure',
   studentFees: 'Student Fees',
   reportsAndSettings: 'Reports & Settings',

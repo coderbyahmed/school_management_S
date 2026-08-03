@@ -570,6 +570,9 @@ const ar = {
 
   feeDashboard: 'لوحة الرسوم',
   userDashboard: 'لوحة المستخدمين',
+  userAccounts: 'حسابات المستخدمين',
+  portalControl: 'التحكم في البوابة',
+  activityMaintenance: 'النشاط والصيانة',
   feeStructure: 'هيكل الرسوم',
   studentFees: 'رسوم الطلاب',
   reportsAndSettings: 'التقارير والإعدادات',

@@ -570,6 +570,9 @@ const ur = {
 
   feeDashboard: 'فیس ڈیش بورڈ',
   userDashboard: 'یوزر ڈیش بورڈ',
+  userAccounts: 'یوزر اکاؤنٹس',
+  portalControl: 'پورٹل کنٹرول',
+  activityMaintenance: 'سرگرمی اور دیکھ بھال',
   feeStructure: 'فیس کا ڈھانچہ',
   studentFees: 'طالب علم کی فیس',
   reportsAndSettings: 'رپورٹس اور سیٹنگز',

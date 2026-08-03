@@ -25,6 +25,9 @@ import EventsHolidays from './pages/admin/EventsHolidays';
 import FeeManagement from './pages/admin/FeeManagement';
 import FeeDashboard from './pages/admin/dashboards/FeeDashboard';
 import UserDashboard from './pages/admin/dashboards/UserDashboard';
+import UserAccounts from './pages/admin/UserAccounts';
+import PortalControl from './pages/admin/PortalControl';
+import ActivityMaintenance from './pages/admin/ActivityMaintenance';
 import FeeStructure from './pages/admin/fee/Structure';
 import StudentFees from './pages/admin/fee/Students';
 import FeeReports from './pages/admin/fee/Reports';
@@ -90,6 +93,9 @@ function AppContent() {
               <Route path="reports" element={<FeeReports />} />
             </Route>
             <Route path="users/dashboard" element={<UserDashboard />} />
+            <Route path="user-accounts" element={<UserAccounts />} />
+            <Route path="portal-control" element={<PortalControl />} />
+            <Route path="activity-maintenance" element={<ActivityMaintenance />} />
             <Route path="settings" element={<SchoolSettings />} />
           </Route>
         </Route>

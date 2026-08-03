@@ -570,6 +570,9 @@ const fr = {
 
   feeDashboard: 'Tableau des frais',
   userDashboard: 'Tableau de bord utilisateur',
+  userAccounts: 'Comptes utilisateur',
+  portalControl: 'Contrôle du portail',
+  activityMaintenance: 'Activité et maintenance',
   feeStructure: 'Structure des frais',
   studentFees: 'Frais des étudiants',
   reportsAndSettings: 'Rapports et paramètres',

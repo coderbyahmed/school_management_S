@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from '../../hooks/useLocalization';
 import { SparklesIcon } from '@heroicons/react/24/outline';
-import StatCard from '../common/StatCard';
-import eventsService from '../../services/events.service';
+import StatCard from '../common/StatCard/StatCard';
+import eventsService from '../../services/events/events.service';
 import AllEvents from './tabs/AllEvents';
 import AddEvent from './tabs/AddEvent';
 import HolidayManagement from './tabs/HolidayManagement';

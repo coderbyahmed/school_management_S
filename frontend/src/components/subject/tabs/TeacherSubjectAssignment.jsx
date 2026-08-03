@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '../../../hooks/useLocalization';
-import subjectService from '../../../services/subject.service';
-import teacherService from '../../../services/teacher.service';
+import subjectService from '../../../services/subject/subject.service';
+import teacherService from '../../../services/teacher/teacher.service';
 
 const TeacherSubjectAssignment = () => {
   const { t } = useTranslation();

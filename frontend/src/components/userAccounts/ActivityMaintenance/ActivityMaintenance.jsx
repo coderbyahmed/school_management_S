@@ -3,13 +3,13 @@ import toast from 'react-hot-toast';
 import {
   UserGroupIcon, AcademicCapIcon, WrenchScrewdriverIcon, Cog8ToothIcon, ArrowPathIcon,
 } from '@heroicons/react/24/outline';
-import Table from '../../common/Table';
-import CardSection from '../../common/CardSection';
-import SearchInput from '../../common/SearchInput';
-import FilterDropdown from '../../common/FilterDropdown';
-import DateInput from '../../common/DateInput';
-import SelectInput from '../../common/SelectInput';
-import activityMaintenanceService from '../../../services/activityMaintenance.service';
+import Table from '../../common/Table/Table';
+import CardSection from '../../common/CardSection/CardSection';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import DateInput from '../../common/DateInput/DateInput';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import activityMaintenanceService from '../../../services/activityMaintenance/activityMaintenance.service';
 
 const USER_TYPES = ['All', 'Teacher', 'Student'];
 const ACTIVITY_FILTERS = ['All', 'Login', 'Logout', 'Failed Login', 'Password Changed'];
@@ -221,10 +221,10 @@ const ActivityMaintenance = () => {
           <FilterDropdown label="Activity Type" options={ACTIVITY_FILTERS} value={activityFilter} onChange={(v) => { setActivityFilter(v); setCurrentPage(1); }} />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-end">
-          <DateInput label="From" name="fromDate" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setCurrentPage(1); }} className="mb-0" />
-          <DateInput label="To" name="toDate" value={toDate} onChange={(e) => { setToDate(e.target.value); setCurrentPage(1); }} className="mb-0" />
+          <DateInput label="From" name="fromDate" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setCurrentPage(1); }} />
+          <DateInput label="To" name="toDate" value={toDate} onChange={(e) => { setToDate(e.target.value); setCurrentPage(1); }} />
           <button onClick={handleRefresh}
-            className="justify-self-start px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2 cursor-pointer">
+            className="justify-self-start mb-4 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2 cursor-pointer">
             <ArrowPathIcon className="h-4 w-4" /> Refresh
           </button>
         </div>

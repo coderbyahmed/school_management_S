@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import CardSection from '../../common/CardSection';
-import Input from '../../common/Input';
+import CardSection from '../../common/CardSection/CardSection';
+import Input from '../../common/Input/Input';
 
 const PROVINCES = ['Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan', 'Gilgit-Baltistan', 'Azad Kashmir', 'Islamabad'];
 

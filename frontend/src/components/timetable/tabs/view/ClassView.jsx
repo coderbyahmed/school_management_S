@@ -6,9 +6,9 @@ import TimetableFilters from './TimetableFilters';
 import TimetableGrid from './TimetableGrid';
 import TimetableEmptyState from './TimetableEmptyState';
 import TimetableEditorModal from './TimetableEditorModal';
-import ConfirmationModal from '../../../common/ConfirmationModal';
-import classService from '../../../../services/class.service';
-import timetableService from '../../../../services/timetable.service';
+import ConfirmationModal from '../../../common/ConfirmationModal/ConfirmationModal';
+import classService from '../../../../services/class/class.service';
+import timetableService from '../../../../services/timetable/timetable.service';
 import { useTimetableYear } from '../../../../contexts/TimetableContext';
 import { useTranslation } from '../../../../hooks/useLocalization';
 

@@ -4,8 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SchoolConfigProvider, useSchoolConfig } from './contexts/SchoolConfigContext';
 import { LoaderProvider } from './contexts/LoaderContext';
-import SplashScreen from './components/common/SplashScreen';
-import FullPageLoader from './components/common/FullPageLoader';
+import SplashScreen from './components/common/SplashScreen/SplashScreen';
+import FullPageLoader from './components/common/FullPageLoader/FullPageLoader';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ADMIN_MODULES } from './constants/adminModules';
 

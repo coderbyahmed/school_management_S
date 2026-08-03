@@ -2,16 +2,16 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from '../../../hooks/useLocalization';
 import { ArrowTrendingUpIcon, AcademicCapIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import StatCard from '../../common/StatCard';
-import SelectInput from '../../common/SelectInput';
-import SearchInput from '../../common/SearchInput';
-import Table from '../../common/Table';
-import Button from '../../common/Button';
-import ConfirmationModal from '../../common/ConfirmationModal';
+import StatCard from '../../common/StatCard/StatCard';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import Table from '../../common/Table/Table';
+import Button from '../../common/Button/Button';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
 import { getImageUrl } from '../../../utils/imageUrl';
-import studentService from '../../../services/student.service';
+import studentService from '../../../services/student/student.service';
 import { CLASS_NAMES } from '../../../utils/classNames';
-import Spinner from '../../common/Spinner';
+import Spinner from '../../common/Spinner/Spinner';
 
 const PromotionHistory = () => {
   const { t } = useTranslation();

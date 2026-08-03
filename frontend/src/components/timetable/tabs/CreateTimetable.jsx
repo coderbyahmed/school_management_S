@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import CardSection from '../../common/CardSection';
-import SelectInput from '../../common/SelectInput';
+import CardSection from '../../common/CardSection/CardSection';
+import SelectInput from '../../common/SelectInput/SelectInput';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
-import classService from '../../../services/class.service';
-import teacherService from '../../../services/teacher.service';
-import subjectService from '../../../services/subject.service';
-import timetableService from '../../../services/timetable.service';
+import classService from '../../../services/class/class.service';
+import teacherService from '../../../services/teacher/teacher.service';
+import subjectService from '../../../services/subject/subject.service';
+import timetableService from '../../../services/timetable/timetable.service';
 import { useTimetableYear } from '../../../contexts/TimetableContext';
 import { useTranslation } from '../../../hooks/useLocalization';
 

@@ -1,5 +1,5 @@
 import { useTranslation } from '../../../../hooks/useLocalization';
-import SelectInput from '../../../common/SelectInput';
+import SelectInput from '../../../common/SelectInput/SelectInput';
 
 const TimetableFilters = ({ filters, onFilterChange }) => {
   const { t } = useTranslation();

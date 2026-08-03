@@ -5,13 +5,13 @@ import {
   CalendarDaysIcon, UsersIcon,
   EyeIcon, ArrowPathIcon, ChevronDownIcon, InformationCircleIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import SelectInput from '../../common/SelectInput';
-import DateInput from '../../common/DateInput';
-import Modal from '../../common/Modal';
-import ConfirmationModal from '../../common/ConfirmationModal';
+import StatCard from '../../common/StatCard/StatCard';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import DateInput from '../../common/DateInput/DateInput';
+import Modal from '../../common/Modal/Modal';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
-import Spinner from '../../common/Spinner';
+import Spinner from '../../common/Spinner/Spinner';
 import { useFormatTime } from '../../../hooks/useLocalization';
 
 const STATUS_OPTIONS = ['Present', 'Absent', 'Leave', 'Late'];

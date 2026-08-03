@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from '../../../hooks/useLocalization';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import Modal from '../../common/Modal';
-import eventsService from '../../../services/events.service';
+import Modal from '../../common/Modal/Modal';
+import eventsService from '../../../services/events/events.service';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

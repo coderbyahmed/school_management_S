@@ -2,11 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '../../../hooks/useLocalization';
 import { ArrowPathIcon, CameraIcon, TrashIcon } from '@heroicons/react/24/outline';
-import SelectInput from '../../common/SelectInput';
-import DateInput from '../../common/DateInput';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import Button from '../../common/Button';
-import eventsService from '../../../services/events.service';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import DateInput from '../../common/DateInput/DateInput';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import Button from '../../common/Button/Button';
+import eventsService from '../../../services/events/events.service';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const initialForm = {

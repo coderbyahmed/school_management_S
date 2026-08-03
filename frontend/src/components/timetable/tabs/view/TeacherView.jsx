@@ -5,8 +5,8 @@ import { ACADEMIC_YEARS } from '../../../../utils/classNames';
 import TimetableFilters from './TimetableFilters';
 import TimetableGrid from './TimetableGrid';
 import TimetableEmptyState from './TimetableEmptyState';
-import teacherService from '../../../../services/teacher.service';
-import timetableService from '../../../../services/timetable.service';
+import teacherService from '../../../../services/teacher/teacher.service';
+import timetableService from '../../../../services/timetable/timetable.service';
 import { useTimetableYear } from '../../../../contexts/TimetableContext';
 import { useTranslation } from '../../../../hooks/useLocalization';
 

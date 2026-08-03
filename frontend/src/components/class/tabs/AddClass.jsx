@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '../../../hooks/useLocalization';
-import CardSection from '../../common/CardSection';
-import SelectInput from '../../common/SelectInput';
-import Alert from '../../common/Alert';
-import classService from '../../../services/class.service';
+import CardSection from '../../common/CardSection/CardSection';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import Alert from '../../common/Alert/Alert';
+import classService from '../../../services/class/class.service';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 

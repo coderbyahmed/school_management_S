@@ -6,13 +6,13 @@ import {
   WrenchScrewdriverIcon, TrashIcon,
 } from '@heroicons/react/24/outline';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import StatCard from '../../common/StatCard';
-import CardSection from '../../common/CardSection';
-import SelectInput from '../../common/SelectInput';
-import SearchInput from '../../common/SearchInput';
-import FilterDropdown from '../../common/FilterDropdown';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import userDashboardService from '../../../services/userDashboard.service';
+import StatCard from '../../common/StatCard/StatCard';
+import CardSection from '../../common/CardSection/CardSection';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import userDashboardService from '../../../services/userDashboard/userDashboard.service';
 
 const getInitials = (name) => {
   if (!name) return 'N/A';

@@ -4,14 +4,16 @@ import {
   UserGroupIcon, AcademicCapIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon, FunnelIcon,
   Squares2X2Icon, UserCircleIcon, CurrencyDollarIcon, ClipboardDocumentListIcon,
   ChartBarIcon, CalendarDaysIcon, ClockIcon, BookOpenIcon, SunIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import CardSection from '../../common/CardSection';
-import SearchInput from '../../common/SearchInput';
-import FilterDropdown from '../../common/FilterDropdown';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import Table from '../../common/Table';
-import portalControlService from '../../../services/portalControl.service';
+import StatCard from '../../common/StatCard/StatCard';
+import CardSection from '../../common/CardSection/CardSection';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import Modal from '../../common/Modal/Modal';
+import Table from '../../common/Table/Table';
+import portalControlService from '../../../services/portalControl/portalControl.service';
 
 const STATUS_FILTERS = ['All', 'Enabled', 'Disabled'];
 const ITEMS_PER_PAGE = 10;
@@ -39,7 +41,7 @@ const columns = [
   { key: 'action', label: 'Action' },
 ];
 
-const PortalSection = ({ portalKey, label, icon: SectionIcon, portal, modules, activeUsers, onTogglePortal, onToggleModule, onEnableAll, onDisableAll, onReset }) => {
+const PortalSection = ({ portalKey, label, icon: SectionIcon, portal, modules, activeUsers, onTogglePortal, onToggleModule, onEnableAll, onDisableAll, onReset, openLabel, onOpenAccess }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
@@ -169,13 +171,22 @@ const PortalSection = ({ portalKey, label, icon: SectionIcon, portal, modules, a
                   </span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <button
-                    onClick={() => onToggleModule(module)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${module.enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    title={module.enabled ? 'Disable module' : 'Enable module'}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${module.enabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onToggleModule(module)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${module.enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                      title={module.enabled ? 'Disable module' : 'Enable module'}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${module.enabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                    </button>
+                    <button
+                      onClick={onOpenAccess}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all cursor-pointer whitespace-nowrap"
+                      title={openLabel}
+                    >
+                      <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" /> {openLabel}
+                    </button>
+                  </div>
                 </td>
               </>
             );
@@ -223,9 +234,11 @@ const PortalSection = ({ portalKey, label, icon: SectionIcon, portal, modules, a
 };
 
 const PortalControl = () => {
+  const [activeTab, setActiveTab] = useState('Student');
   const [portals, setPortals] = useState({ Student: {}, Teacher: {} });
   const [modules, setModules] = useState({ Student: [], Teacher: [] });
   const [resetOpen, setResetOpen] = useState(false);
+  const [accessOpen, setAccessOpen] = useState(null);
 
   const loadData = () => {
     const data = portalControlService.getData();
@@ -290,33 +303,64 @@ const PortalControl = () => {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage access to Student Portal and Teacher Panel.</p>
       </div>
 
-      <PortalSection
-        portalKey="Student"
-        label={portalMeta.Student.label}
-        icon={portalMeta.Student.icon}
-        portal={portals.Student}
-        modules={modules.Student || []}
-        activeUsers={activeUsers.Student}
-        onTogglePortal={handleTogglePortal}
-        onToggleModule={handleToggleModule}
-        onEnableAll={handleEnableAll}
-        onDisableAll={handleDisableAll}
-        onReset={() => setResetOpen(true)}
-      />
+      <div className="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-700/50 p-1 w-fit max-w-full overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('Student')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${
+            activeTab === 'Student'
+              ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+          }`}
+        >
+          Student Portal
+        </button>
+        <button
+          onClick={() => setActiveTab('Teacher')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${
+            activeTab === 'Teacher'
+              ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+          }`}
+        >
+          Teacher Panel
+        </button>
+      </div>
 
-      <PortalSection
-        portalKey="Teacher"
-        label={portalMeta.Teacher.label}
-        icon={portalMeta.Teacher.icon}
-        portal={portals.Teacher}
-        modules={modules.Teacher || []}
-        activeUsers={activeUsers.Teacher}
-        onTogglePortal={handleTogglePortal}
-        onToggleModule={handleToggleModule}
-        onEnableAll={handleEnableAll}
-        onDisableAll={handleDisableAll}
-        onReset={() => setResetOpen(true)}
-      />
+      <div className={activeTab === 'Student' ? '' : 'hidden'}>
+        <PortalSection
+          portalKey="Student"
+          label={portalMeta.Student.label}
+          icon={portalMeta.Student.icon}
+          portal={portals.Student}
+          modules={modules.Student || []}
+          activeUsers={activeUsers.Student}
+          onTogglePortal={handleTogglePortal}
+          onToggleModule={handleToggleModule}
+          onEnableAll={handleEnableAll}
+          onDisableAll={handleDisableAll}
+          onReset={() => setResetOpen(true)}
+          openLabel="Open Portal"
+          onOpenAccess={() => setAccessOpen('Student')}
+        />
+      </div>
+
+      <div className={activeTab === 'Teacher' ? '' : 'hidden'}>
+        <PortalSection
+          portalKey="Teacher"
+          label={portalMeta.Teacher.label}
+          icon={portalMeta.Teacher.icon}
+          portal={portals.Teacher}
+          modules={modules.Teacher || []}
+          activeUsers={activeUsers.Teacher}
+          onTogglePortal={handleTogglePortal}
+          onToggleModule={handleToggleModule}
+          onEnableAll={handleEnableAll}
+          onDisableAll={handleDisableAll}
+          onReset={() => setResetOpen(true)}
+          openLabel="Open Panel"
+          onOpenAccess={() => setAccessOpen('Teacher')}
+        />
+      </div>
 
       <ConfirmationModal
         isOpen={resetOpen}
@@ -327,6 +371,27 @@ const PortalControl = () => {
         variant="danger"
         onConfirm={handleResetConfirm}
       />
+
+      <Modal
+        isOpen={accessOpen !== null}
+        onClose={() => setAccessOpen(null)}
+        title={accessOpen === 'Teacher' ? 'Teacher Panel - Direct Admin Access' : 'Student Portal - Direct Admin Access'}
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <ArrowTopRightOnSquareIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Direct Admin Access will be connected after backend integration.
+            </p>
+          </div>
+          <button
+            onClick={() => setAccessOpen(null)}
+            className="w-full py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer"
+          >
+            Got It
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 };

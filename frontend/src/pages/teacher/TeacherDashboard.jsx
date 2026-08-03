@@ -1,5 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext';
-import Button from '../../components/common/Button';
+import Button from '../../components/common/Button/Button';
 
 const TeacherDashboard = () => {
   const { user, logout } = useAuth();

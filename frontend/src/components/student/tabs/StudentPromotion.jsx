@@ -1,16 +1,16 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from '../../../hooks/useLocalization';
-import CardSection from '../../common/CardSection';
-import SelectInput from '../../common/SelectInput';
-import SearchInput from '../../common/SearchInput';
-import Table from '../../common/Table';
-import StatusBadge from '../../common/StatusBadge';
-import ConfirmationModal from '../../common/ConfirmationModal';
+import CardSection from '../../common/CardSection/CardSection';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import Table from '../../common/Table/Table';
+import StatusBadge from '../../common/StatusBadge/StatusBadge';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
 import { getImageUrl } from '../../../utils/imageUrl';
-import studentService from '../../../services/student.service';
+import studentService from '../../../services/student/student.service';
 import { toast } from 'react-hot-toast';
 import { CLASS_NAMES } from '../../../utils/classNames';
-import Spinner from '../../common/Spinner';
+import Spinner from '../../common/Spinner/Spinner';
 
 const promotionMap = {
   'Montessori': 'Nursery',

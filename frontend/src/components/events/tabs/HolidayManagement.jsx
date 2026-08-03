@@ -5,9 +5,9 @@ import {
   ChevronDownIcon, EyeIcon, PencilSquareIcon, TrashIcon,
   XMarkIcon, PlusIcon,
 } from '@heroicons/react/24/outline';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import Button from '../../common/Button';
-import eventsService from '../../../services/events.service';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import Button from '../../common/Button/Button';
+import eventsService from '../../../services/events/events.service';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const ITEMS_PER_PAGE = 10;

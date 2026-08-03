@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import CardSection from '../../common/CardSection';
-import SelectInput from '../../common/SelectInput';
+import CardSection from '../../common/CardSection/CardSection';
+import SelectInput from '../../common/SelectInput/SelectInput';
 
 const LOADER_STYLES = ['Spinner', 'Pulse', 'Progress Bar', 'Skeleton'];
 

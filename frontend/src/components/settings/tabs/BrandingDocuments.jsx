@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { CameraIcon } from '@heroicons/react/24/outline';
-import CardSection from '../../common/CardSection';
-import Input from '../../common/Input';
-import Spinner from '../../common/Spinner';
-import schoolSettingsService from '../../../services/schoolSettings.service';
+import CardSection from '../../common/CardSection/CardSection';
+import Input from '../../common/Input/Input';
+import Spinner from '../../common/Spinner/Spinner';
+import schoolSettingsService from '../../../services/schoolSettings/schoolSettings.service';
 
 const IMAGE_FIELDS = [
   { key: 'schoolLogo', label: 'School Logo', apiField: 'schoolLogo' },

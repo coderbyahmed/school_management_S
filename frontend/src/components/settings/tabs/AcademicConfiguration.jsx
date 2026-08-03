@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
-import CardSection from '../../common/CardSection';
-import SelectInput from '../../common/SelectInput';
+import CardSection from '../../common/CardSection/CardSection';
+import SelectInput from '../../common/SelectInput/SelectInput';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 
 const SCHOOL_SHIFTS = ['Morning', 'Evening', 'Both'];

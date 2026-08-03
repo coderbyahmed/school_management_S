@@ -5,17 +5,17 @@ import {
   PlusIcon, FunnelIcon, EyeIcon, PencilSquareIcon, TrashIcon,
   KeyIcon, ArrowUpCircleIcon, ArrowDownCircleIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import CardSection from '../../common/CardSection';
-import SearchInput from '../../common/SearchInput';
-import FilterDropdown from '../../common/FilterDropdown';
-import Modal from '../../common/Modal';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import Button from '../../common/Button';
-import Input from '../../common/Input';
-import SelectInput from '../../common/SelectInput';
-import Table from '../../common/Table';
-import userAccountsService from '../../../services/userAccounts.service';
+import StatCard from '../../common/StatCard/StatCard';
+import CardSection from '../../common/CardSection/CardSection';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import Modal from '../../common/Modal/Modal';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import Button from '../../common/Button/Button';
+import Input from '../../common/Input/Input';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import Table from '../../common/Table/Table';
+import userAccountsService from '../../../services/userAccounts/userAccounts.service';
 
 const USER_TYPES = ['All', 'Teacher', 'Student'];
 const STATUS_FILTERS = ['All', 'Active', 'Inactive'];

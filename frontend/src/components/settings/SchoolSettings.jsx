@@ -6,9 +6,9 @@ import BrandingDocuments from './tabs/BrandingDocuments';
 import Localization from './tabs/Localization';
 import SystemPreferences from './tabs/SystemPreferences';
 import LoginSplashScreen from './tabs/LoginSplashScreen';
-import schoolSettingsService from '../../services/schoolSettings.service';
+import schoolSettingsService from '../../services/schoolSettings/schoolSettings.service';
 import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
-import Spinner from '../common/Spinner';
+import Spinner from '../common/Spinner/Spinner';
 
 const TABS = [
   { id: 'general', label: 'General Information' },

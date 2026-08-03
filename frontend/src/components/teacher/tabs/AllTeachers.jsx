@@ -1,20 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { UsersIcon, UserGroupIcon, UserMinusIcon, UserPlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import FilterDropdown from '../../common/FilterDropdown';
-import SearchInput from '../../common/SearchInput';
-import ViewToggle from '../../common/ViewToggle';
-import Table from '../../common/Table';
-import StatusBadge from '../../common/StatusBadge';
-import ActionButtons from '../../common/ActionButtons';
-import TeacherCard from '../../common/TeacherCard';
-import TeacherViewModal from '../../common/TeacherViewModal';
-import EditTeacherModal from '../../common/EditTeacherModal';
-import ConfirmationModal from '../../common/ConfirmationModal';
+import StatCard from '../../common/StatCard/StatCard';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import ViewToggle from '../../common/ViewToggle/ViewToggle';
+import Table from '../../common/Table/Table';
+import StatusBadge from '../../common/StatusBadge/StatusBadge';
+import ActionButtons from '../../common/ActionButtons/ActionButtons';
+import TeacherCard from '../../common/TeacherCard/TeacherCard';
+import TeacherViewModal from '../../common/TeacherViewModal/TeacherViewModal';
+import EditTeacherModal from '../../common/EditTeacherModal/EditTeacherModal';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
 import { getImageUrl } from '../../../utils/imageUrl';
 import { useTranslation } from '../../../hooks/useLocalization';
-import teacherService from '../../../services/teacher.service';
+import teacherService from '../../../services/teacher/teacher.service';
 
 const ITEMS_PER_PAGE = 10;
 

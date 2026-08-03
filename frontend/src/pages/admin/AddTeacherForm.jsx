@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { CameraIcon } from '@heroicons/react/24/outline';
-import CardSection from '../../components/common/CardSection';
-import Input from '../../components/common/Input';
-import SelectInput from '../../components/common/SelectInput';
-import DateInput from '../../components/common/DateInput';
-import Alert from '../../components/common/Alert';
-import teacherService from '../../services/teacher.service';
+import CardSection from '../../components/common/CardSection/CardSection';
+import Input from '../../components/common/Input/Input';
+import SelectInput from '../../components/common/SelectInput/SelectInput';
+import DateInput from '../../components/common/DateInput/DateInput';
+import Alert from '../../components/common/Alert/Alert';
+import teacherService from '../../services/teacher/teacher.service';
 
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];

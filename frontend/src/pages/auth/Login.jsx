@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
-import authService from '../../services/auth.service';
+import authService from '../../services/auth/auth.service';
 import { getImageUrl } from '../../utils/imageUrl';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import Alert from '../../components/common/Alert';
+import Input from '../../components/common/Input/Input';
+import Button from '../../components/common/Button/Button';
+import Alert from '../../components/common/Alert/Alert';
 import { toast } from 'react-hot-toast';
 import { EnvelopeIcon, IdentificationIcon, LockClosedIcon, UserGroupIcon, AcademicCapIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 

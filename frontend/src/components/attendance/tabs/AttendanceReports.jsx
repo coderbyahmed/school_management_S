@@ -7,10 +7,10 @@ import {
   PrinterIcon, EyeIcon, MagnifyingGlassIcon, ChevronDownIcon,
   ChartBarSquareIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
+import StatCard from '../../common/StatCard/StatCard';
 import { ACADEMIC_YEARS, CLASS_NAMES, DEPARTMENTS } from '../../../utils/classNames';
-import attendanceReportsService from '../../../services/attendanceReports.service';
-import Spinner from '../../common/Spinner';
+import attendanceReportsService from '../../../services/attendanceReports/attendanceReports.service';
+import Spinner from '../../common/Spinner/Spinner';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const PAGE_SIZE = 10;

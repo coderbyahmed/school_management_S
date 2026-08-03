@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '../../../hooks/useLocalization';
 import { BookOpenIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import FilterDropdown from '../../common/FilterDropdown';
-import SearchInput from '../../common/SearchInput';
-import ViewToggle from '../../common/ViewToggle';
-import Table from '../../common/Table';
-import StatusBadge from '../../common/StatusBadge';
-import ActionButtons from '../../common/ActionButtons';
-import SubjectCard from '../../common/SubjectCard';
-import SubjectViewModal from '../../common/SubjectViewModal';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import subjectService from '../../../services/subject.service';
+import StatCard from '../../common/StatCard/StatCard';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import ViewToggle from '../../common/ViewToggle/ViewToggle';
+import Table from '../../common/Table/Table';
+import StatusBadge from '../../common/StatusBadge/StatusBadge';
+import ActionButtons from '../../common/ActionButtons/ActionButtons';
+import SubjectCard from '../../common/SubjectCard/SubjectCard';
+import SubjectViewModal from '../../common/SubjectViewModal/SubjectViewModal';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import subjectService from '../../../services/subject/subject.service';
 
 const ITEMS_PER_PAGE = 10;
 

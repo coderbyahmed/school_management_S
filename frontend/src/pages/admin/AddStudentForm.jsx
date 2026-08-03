@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from '../../hooks/useLocalization';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import CardSection from '../../components/common/CardSection';
-import Input from '../../components/common/Input';
-import SelectInput from '../../components/common/SelectInput';
-import DateInput from '../../components/common/DateInput';
-import Alert from '../../components/common/Alert';
-import studentService from '../../services/student.service';
+import CardSection from '../../components/common/CardSection/CardSection';
+import Input from '../../components/common/Input/Input';
+import SelectInput from '../../components/common/SelectInput/SelectInput';
+import DateInput from '../../components/common/DateInput/DateInput';
+import Alert from '../../components/common/Alert/Alert';
+import studentService from '../../services/student/student.service';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../utils/classNames';
 import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
 

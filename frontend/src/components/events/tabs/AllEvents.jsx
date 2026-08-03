@@ -5,9 +5,9 @@ import {
   MagnifyingGlassIcon, ChevronDownIcon, EyeIcon, PencilSquareIcon,
   TrashIcon, XMarkIcon, CalendarDaysIcon, ClockIcon, MapPinIcon,
 } from '@heroicons/react/24/outline';
-import SearchInput from '../../common/SearchInput';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import eventsService from '../../../services/events.service';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import eventsService from '../../../services/events/events.service';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const ITEMS_PER_PAGE = 10;

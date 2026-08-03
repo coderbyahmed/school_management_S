@@ -4,17 +4,17 @@ import {
   DocumentTextIcon, CheckCircleIcon, ReceiptPercentIcon, CurrencyDollarIcon,
   PlusIcon, FunnelIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import CardSection from '../../common/CardSection';
-import SearchInput from '../../common/SearchInput';
-import FilterDropdown from '../../common/FilterDropdown';
-import ActionButtons from '../../common/ActionButtons';
-import Modal from '../../common/Modal';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import Button from '../../common/Button';
-import Input from '../../common/Input';
-import SelectInput from '../../common/SelectInput';
-import feeStructureService from '../../../services/feeStructure.service';
+import StatCard from '../../common/StatCard/StatCard';
+import CardSection from '../../common/CardSection/CardSection';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import ActionButtons from '../../common/ActionButtons/ActionButtons';
+import Modal from '../../common/Modal/Modal';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import Button from '../../common/Button/Button';
+import Input from '../../common/Input/Input';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import feeStructureService from '../../../services/feeStructure/feeStructure.service';
 
 const SESSIONS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
 const CLASSES = ['Montessori', 'Nursery', 'KG-1', 'KG-2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];

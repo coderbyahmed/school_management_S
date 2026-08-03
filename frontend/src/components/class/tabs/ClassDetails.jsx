@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../../hooks/useLocalization';
-import StatusBadge from '../../common/StatusBadge';
-import classService from '../../../services/class.service';
+import StatusBadge from '../../common/StatusBadge/StatusBadge';
+import classService from '../../../services/class/class.service';
 
 const ClassDetails = ({ classData, onBack }) => {
   const { t } = useTranslation();

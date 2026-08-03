@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
-import timetableService from '../../../services/timetable.service';
-import timetableDesignService from '../../../services/timetableDesign.service';
+import timetableService from '../../../services/timetable/timetable.service';
+import timetableDesignService from '../../../services/timetableDesign/timetableDesign.service';
 import { ACADEMIC_YEARS } from '../../../utils/classNames';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 import { useTimetableYear } from '../../../contexts/TimetableContext';

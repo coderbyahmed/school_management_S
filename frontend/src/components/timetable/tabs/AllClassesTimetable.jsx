@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
-import timetableService from '../../../services/timetable.service';
+import timetableService from '../../../services/timetable/timetable.service';
 import { useTimetableYear } from '../../../contexts/TimetableContext';
 import { useTranslation } from '../../../hooks/useLocalization';
 

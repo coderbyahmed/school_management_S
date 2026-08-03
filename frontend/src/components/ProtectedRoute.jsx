@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import FullPageLoader from './common/FullPageLoader';
+import FullPageLoader from './common/FullPageLoader/FullPageLoader';
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const { user, role, loading, DASHBOARD_ROUTES } = useAuth();

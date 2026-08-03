@@ -4,12 +4,12 @@ import {
   ArrowTrendingUpIcon, ScaleIcon, ArrowPathIcon, DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import StatCard from '../../common/StatCard';
-import CardSection from '../../common/CardSection';
-import Modal from '../../common/Modal';
-import Button from '../../common/Button';
-import SelectInput from '../../common/SelectInput';
-import feeDashboardService from '../../../services/feeDashboard.service';
+import StatCard from '../../common/StatCard/StatCard';
+import CardSection from '../../common/CardSection/CardSection';
+import Modal from '../../common/Modal/Modal';
+import Button from '../../common/Button/Button';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import feeDashboardService from '../../../services/feeDashboard/feeDashboard.service';
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 

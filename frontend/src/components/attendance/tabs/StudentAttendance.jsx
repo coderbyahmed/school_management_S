@@ -5,18 +5,18 @@ import {
   CalendarDaysIcon, UserGroupIcon,
   EyeIcon, ArrowPathIcon, ChevronDownIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import SelectInput from '../../common/SelectInput';
-import DateInput from '../../common/DateInput';
-import Modal from '../../common/Modal';
-import ConfirmationModal from '../../common/ConfirmationModal';
+import StatCard from '../../common/StatCard/StatCard';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import DateInput from '../../common/DateInput/DateInput';
+import Modal from '../../common/Modal/Modal';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import { getImageUrl } from '../../../utils/imageUrl';
-import Spinner from '../../common/Spinner';
-import Button from '../../common/Button';
+import Spinner from '../../common/Spinner/Spinner';
+import Button from '../../common/Button/Button';
 import { useFormatTime } from '../../../hooks/useLocalization';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
-import studentAttendanceService from '../../../services/studentAttendance.service';
+import studentAttendanceService from '../../../services/studentAttendance/studentAttendance.service';
 
 const BASE_STATUS_OPTIONS = ['Select Status', 'Present', 'Absent', 'Late'];
 const ATTENDANCE_METHODS = ['Manual Attendance', 'QR Scanner'];

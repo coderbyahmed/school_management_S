@@ -4,15 +4,15 @@ import {
   DocumentChartBarIcon, CurrencyDollarIcon, ClockIcon, ArrowTrendingUpIcon,
   ArrowPathIcon, DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import CardSection from '../../common/CardSection';
-import SearchInput from '../../common/SearchInput';
-import FilterDropdown from '../../common/FilterDropdown';
-import Modal from '../../common/Modal';
-import Button from '../../common/Button';
-import Input from '../../common/Input';
-import SelectInput from '../../common/SelectInput';
-import reportsSettingsService from '../../../services/reportsSettings.service';
+import StatCard from '../../common/StatCard/StatCard';
+import CardSection from '../../common/CardSection/CardSection';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
+import Modal from '../../common/Modal/Modal';
+import Button from '../../common/Button/Button';
+import Input from '../../common/Input/Input';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import reportsSettingsService from '../../../services/reportsSettings/reportsSettings.service';
 
 const SESSIONS = reportsSettingsService.sessions;
 const MONTHS = reportsSettingsService.months;

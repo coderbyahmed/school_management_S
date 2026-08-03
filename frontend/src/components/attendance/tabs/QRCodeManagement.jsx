@@ -6,14 +6,14 @@ import {
   PrinterIcon, DocumentArrowDownIcon, DocumentCheckIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import SearchInput from '../../common/SearchInput';
-import Modal from '../../common/Modal';
+import StatCard from '../../common/StatCard/StatCard';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import Modal from '../../common/Modal/Modal';
 import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
 import { VerticalTemplate, HorizontalTemplate } from '../templates';
 import { getInitials } from '../templates/shared/cardHtmlUtils';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
-import Spinner from '../../common/Spinner';
+import Spinner from '../../common/Spinner/Spinner';
 
 const CARD_STATUSES = ['All', 'Pending', 'Generated', 'Printed'];
 

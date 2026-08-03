@@ -5,9 +5,9 @@ import {
   CameraIcon, EyeIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon,
   ChevronDownIcon, PlusIcon, TrashIcon, PhotoIcon,
 } from '@heroicons/react/24/outline';
-import SearchInput from '../../common/SearchInput';
-import ConfirmationModal from '../../common/ConfirmationModal';
-import eventsService from '../../../services/events.service';
+import SearchInput from '../../common/SearchInput/SearchInput';
+import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
+import eventsService from '../../../services/events/events.service';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];

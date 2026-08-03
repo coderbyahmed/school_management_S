@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import schoolSettingsService from '../services/schoolSettings.service';
+import schoolSettingsService from '../services/schoolSettings/schoolSettings.service';
 import { useAuth } from './AuthContext';
 
 const SchoolConfigContext = createContext();

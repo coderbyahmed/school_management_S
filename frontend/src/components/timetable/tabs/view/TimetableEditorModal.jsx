@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import Modal from '../../../common/Modal';
-import ConfirmationModal from '../../../common/ConfirmationModal';
+import Modal from '../../../common/Modal/Modal';
+import ConfirmationModal from '../../../common/ConfirmationModal/ConfirmationModal';
 import { TYPE_OPTIONS, validatePeriods, isTimetableFormValid, getFirstError, hasOverlapError } from '../../../../utils/timetableValidation';
 import { useTranslation } from '../../../../hooks/useLocalization';
-import teacherService from '../../../../services/teacher.service';
-import timetableService from '../../../../services/timetable.service';
+import teacherService from '../../../../services/teacher/teacher.service';
+import timetableService from '../../../../services/timetable/timetable.service';
 
 const labelCls = 'block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5';
 const fieldBase = 'w-full px-2 py-1.5 rounded-md border text-xs transition-all bg-white dark:bg-gray-800 focus:outline-none focus:ring-2';

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '../../../hooks/useLocalization';
-import CardSection from '../../common/CardSection';
-import Input from '../../common/Input';
-import SelectInput from '../../common/SelectInput';
-import Alert from '../../common/Alert';
-import subjectService from '../../../services/subject.service';
+import CardSection from '../../common/CardSection/CardSection';
+import Input from '../../common/Input/Input';
+import SelectInput from '../../common/SelectInput/SelectInput';
+import Alert from '../../common/Alert/Alert';
+import subjectService from '../../../services/subject/subject.service';
 
 const initialState = {
   subjectName: '',

@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import authService from '../../services/auth.service';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import Alert from '../../components/common/Alert';
-import OtpInput from '../../components/common/OtpInput';
+import authService from '../../services/auth/auth.service';
+import Input from '../../components/common/Input/Input';
+import Button from '../../components/common/Button/Button';
+import Alert from '../../components/common/Alert/Alert';
+import OtpInput from '../../components/common/OtpInput/OtpInput';
 import { toast } from 'react-hot-toast';
 import { ArrowLeftIcon, EnvelopeIcon, KeyIcon, LockClosedIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 

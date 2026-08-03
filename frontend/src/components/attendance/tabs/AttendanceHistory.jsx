@@ -5,10 +5,10 @@ import {
   UserGroupIcon, ArrowPathIcon,
   PrinterIcon, EyeIcon, MagnifyingGlassIcon, ChevronDownIcon, XMarkIcon,
 } from '@heroicons/react/24/outline';
-import StatCard from '../../common/StatCard';
-import SearchInput from '../../common/SearchInput';
+import StatCard from '../../common/StatCard/StatCard';
+import SearchInput from '../../common/SearchInput/SearchInput';
 import { CLASS_NAMES, ACADEMIC_YEARS, DEPARTMENTS } from '../../../utils/classNames';
-import attendanceHistoryService from '../../../services/attendanceHistory.service';
+import attendanceHistoryService from '../../../services/attendanceHistory/attendanceHistory.service';
 
 const STATUS_OPTIONS = ['All', 'Present', 'Absent', 'Leave', 'Late'];
 const PAGE_SIZE = 10;

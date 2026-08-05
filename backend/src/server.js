@@ -34,7 +34,7 @@ const server = await connectDB()
     return srv;
   })
   .catch((err) => {
-    console.error('❌ Server startup failed:', err.message);
+    console.error('❌ Server ghoop ghoop:', err.message);
     process.exit(1);
   });
 

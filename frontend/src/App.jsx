@@ -31,6 +31,7 @@ import ActivityMaintenance from './pages/admin/ActivityMaintenance';
 import FeeStructure from './pages/admin/fee/Structure';
 import StudentFees from './pages/admin/fee/Students';
 import FeeReports from './pages/admin/fee/Reports';
+import FeeReceipts from './pages/admin/fee/Receipts';
 import SchoolSettings from './pages/admin/SchoolSettings';
 
 function IndexRedirect() {
@@ -91,6 +92,7 @@ function AppContent() {
               <Route path="structure" element={<FeeStructure />} />
               <Route path="students" element={<StudentFees />} />
               <Route path="reports" element={<FeeReports />} />
+              <Route path="receipts" element={<FeeReceipts />} />
             </Route>
             <Route path="users/dashboard" element={<UserDashboard />} />
             <Route path="user-accounts" element={<UserAccounts />} />

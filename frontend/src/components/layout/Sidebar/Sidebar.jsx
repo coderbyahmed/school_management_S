@@ -331,6 +331,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                       {[
                         { to: '/admin/fees/structure', label: t('feeStructure') },
                         { to: '/admin/fees/students', label: t('studentFees') },
+                        { to: '/admin/fees/receipts', label: t('receiptHistory') },
                         { to: '/admin/fees/reports', label: t('reportsAndSettings') },
                       ].map((item) => (
                         <NavLink

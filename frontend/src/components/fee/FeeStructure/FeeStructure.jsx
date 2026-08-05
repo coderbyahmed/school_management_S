@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
   DocumentTextIcon, CheckCircleIcon, ReceiptPercentIcon, CurrencyDollarIcon,
@@ -15,17 +15,17 @@ import Button from '../../common/Button/Button';
 import Input from '../../common/Input/Input';
 import SelectInput from '../../common/SelectInput/SelectInput';
 import feeStructureService from '../../../services/feeStructure/feeStructure.service';
+import { useCurrency } from '../../../hooks/useLocalization';
 
-const SESSIONS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
-const CLASSES = ['Montessori', 'Nursery', 'KG-1', 'KG-2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+const { SESSIONS, CLASSES } = feeStructureService;
 const STATUS_OPTIONS = ['All', 'Active', 'Inactive'];
+const ITEMS_PER_PAGE = 10;
 
-const formatCurrency = (val) => {
-  const n = Number(val);
-  if (isNaN(n)) return 'Rs. 0';
-  if (n >= 100000) return 'Rs. ' + (n / 100000).toFixed(1) + 'L';
-  if (n >= 1000) return 'Rs. ' + (n / 1000).toFixed(0) + 'K';
-  return 'Rs. ' + n.toLocaleString();
+const formatDate = (val) => {
+  if (!val) return '-';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString();
 };
 
 const emptyForm = {
@@ -42,12 +42,19 @@ const emptyForm = {
 };
 
 const FeeStructure = () => {
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('All Fee Structures');
   const [structures, setStructures] = useState([]);
   const [search, setSearch] = useState('');
   const [yearFilter, setYearFilter] = useState('All');
   const [classFilter, setClassFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [monthlyCollectionEstimate, setMonthlyCollectionEstimate] = useState(0);
+  const [fetchLoading, setFetchLoading] = useState(true);
+  const [reload, setReload] = useState(0);
 
   const [viewItem, setViewItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
@@ -58,38 +65,48 @@ const FeeStructure = () => {
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const loadData = () => {
-    try {
-      const data = feeStructureService.getAll();
-      setStructures(data || []);
-    } catch {
-      setStructures([]);
-    }
-  };
+  const fetchStructures = useCallback(async () => {
+    const params = { page: currentPage, limit: ITEMS_PER_PAGE };
+    if (yearFilter !== 'All') params.academicYear = yearFilter;
+    if (classFilter !== 'All') params.class = classFilter;
+    if (statusFilter !== 'All') params.status = statusFilter;
+    if (search) params.search = search;
+    return feeStructureService.getAll(params);
+  }, [currentPage, yearFilter, classFilter, statusFilter, search]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
-  }, []);
+    let active = true;
+    fetchStructures()
+      .then((result) => {
+        if (!active) return;
+        setStructures(result.structures || []);
+        setTotalPages(result.pagination?.totalPages || 1);
+        setTotalItems(result.pagination?.totalItems || 0);
+        setMonthlyCollectionEstimate(result.summary?.monthlyCollectionEstimate ?? 0);
+      })
+      .catch(() => {
+        if (!active) return;
+        setStructures([]);
+        setTotalPages(1);
+        setTotalItems(0);
+        setMonthlyCollectionEstimate(0);
+      })
+      .finally(() => {
+        if (active) setFetchLoading(false);
+      });
+    return () => { active = false; };
+  }, [fetchStructures, reload]);
 
-  const filtered = structures.filter((item) => {
-    const matchSearch = !search || item.class.toLowerCase().includes(search.toLowerCase()) || item.academicYear.includes(search);
-    const matchYear = yearFilter === 'All' || item.academicYear === yearFilter;
-    const matchClass = classFilter === 'All' || item.class === classFilter;
-    const matchStatus = statusFilter === 'All' || item.status === statusFilter;
-    return matchSearch && matchYear && matchClass && matchStatus;
-  });
-
-  const totalStructures = structures.length;
+  const totalStructures = totalItems;
   const activeStructures = structures.filter((s) => s.status === 'Active').length;
   const discountedStructures = structures.filter((s) => Number(s.discount) > 0).length;
-  const monthlyEstimate = structures.reduce((sum, s) => sum + Number(s.monthlyFee || 0), 0);
 
   const handleResetFilters = () => {
     setSearch('');
     setYearFilter('All');
     setClassFilter('All');
     setStatusFilter('All');
+    setCurrentPage(1);
   };
 
   const handleView = (item) => setViewItem(item);
@@ -118,12 +135,12 @@ const FeeStructure = () => {
     if (!deleteItem) return;
     setDeleteLoading(true);
     try {
-      feeStructureService.delete(deleteItem.id);
+      await feeStructureService.delete(deleteItem._id);
       toast.success('Fee structure deleted successfully');
       setDeleteItem(null);
-      loadData();
-    } catch {
-      toast.error('Failed to delete fee structure');
+      setReload((r) => r + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete fee structure');
     } finally {
       setDeleteLoading(false);
     }
@@ -167,20 +184,20 @@ const FeeStructure = () => {
       };
 
       if (editItem) {
-        feeStructureService.update(editItem.id, payload);
+        await feeStructureService.update(editItem._id, payload);
         toast.success('Fee structure updated successfully');
       } else {
-        feeStructureService.create(payload);
+        await feeStructureService.create(payload);
         toast.success('Fee structure created successfully');
       }
 
       setForm({ ...emptyForm });
       setFormErrors({});
       setEditItem(null);
-      loadData();
+      setReload((r) => r + 1);
       setActiveTab('All Fee Structures');
-    } catch {
-      toast.error('Failed to save fee structure');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save fee structure');
     } finally {
       setSaving(false);
     }
@@ -247,7 +264,7 @@ const FeeStructure = () => {
             </div>
             <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-2.5">
               <p className="text-[9px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Updated</p>
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">{viewItem.lastUpdated}</p>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">{formatDate(viewItem.updatedAt)}</p>
             </div>
           </div>
           {viewItem.notes && (
@@ -312,22 +329,22 @@ const FeeStructure = () => {
             <StatCard icon={DocumentTextIcon} label="Total Structures" value={totalStructures} color="blue" />
             <StatCard icon={CheckCircleIcon} label="Active Structures" value={activeStructures} color="green" />
             <StatCard icon={ReceiptPercentIcon} label="Discounted Structures" value={discountedStructures} color="yellow" />
-            <StatCard icon={CurrencyDollarIcon} label="Monthly Collection Est." value={formatCurrency(monthlyEstimate)} color="blue" />
+            <StatCard icon={CurrencyDollarIcon} label="Monthly Collection Est." value={formatCurrency(monthlyCollectionEstimate)} color="blue" />
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
             <div className="flex flex-wrap items-end gap-3">
               <div className="w-full sm:w-56">
-                <SearchInput placeholder="Search class or year..." value={search} onChange={setSearch} />
+                <SearchInput placeholder="Search class or year..." value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} />
               </div>
               <div className="w-32">
-                <FilterDropdown label="Year" options={['All', ...SESSIONS]} value={yearFilter} onChange={setYearFilter} />
+                <FilterDropdown label="Year" options={['All', ...SESSIONS]} value={yearFilter} onChange={(v) => { setYearFilter(v); setCurrentPage(1); }} />
               </div>
               <div className="w-36">
-                <FilterDropdown label="Class" options={['All', ...CLASSES]} value={classFilter} onChange={setClassFilter} />
+                <FilterDropdown label="Class" options={['All', ...CLASSES]} value={classFilter} onChange={(v) => { setClassFilter(v); setCurrentPage(1); }} />
               </div>
               <div className="w-28">
-                <FilterDropdown label="Status" options={STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
+                <FilterDropdown label="Status" options={STATUS_OPTIONS} value={statusFilter} onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }} />
               </div>
               <button onClick={handleResetFilters}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2 cursor-pointer">
@@ -340,7 +357,7 @@ const FeeStructure = () => {
             </div>
           </div>
 
-          <CardSection title={`Fee Structures (${filtered.length})`}>
+          <CardSection title={`Fee Structures (${totalItems})`}>
             <div>
               <table className="w-full text-sm">
                 <thead>
@@ -359,13 +376,19 @@ const FeeStructure = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filtered.length === 0 ? (
+                  {fetchLoading ? (
+                    <tr>
+                      <td colSpan={11} className="px-1.5 py-8 text-center">
+                        <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      </td>
+                    </tr>
+                  ) : structures.length === 0 ? (
                     <tr>
                       <td colSpan={11} className="px-1.5 py-6 text-center text-gray-400 dark:text-gray-500">No fee structures found</td>
                     </tr>
                   ) : (
-                    filtered.map((item) => (
-                      <tr key={item.id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    structures.map((item) => (
+                      <tr key={item._id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <td className="px-1.5 py-2 text-[11px] font-medium text-gray-900 dark:text-white whitespace-nowrap">{item.class}</td>
                         <td className="px-1.5 py-2 text-[10px] text-gray-600 dark:text-gray-300 whitespace-nowrap">{item.academicYear}</td>
                         <td className="px-1.5 py-2 text-[11px] font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatCurrency(item.monthlyFee)}</td>
@@ -383,7 +406,7 @@ const FeeStructure = () => {
                             {item.status}
                           </span>
                         </td>
-                        <td className="px-1.5 py-2 text-[9px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{item.lastUpdated}</td>
+                        <td className="px-1.5 py-2 text-[9px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{formatDate(item.updatedAt)}</td>
                         <td className="px-1.5 py-2 whitespace-nowrap">
                           <ActionButtons onView={() => handleView(item)} onEdit={() => handleEdit(item)} onDelete={() => handleDelete(item)} />
                         </td>
@@ -394,6 +417,30 @@ const FeeStructure = () => {
               </table>
             </div>
           </CardSection>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Page {currentPage} of {totalPages} ({totalItems} total)
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

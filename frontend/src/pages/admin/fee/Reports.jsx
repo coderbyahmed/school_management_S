@@ -1,7 +1,7 @@
-import ReportsSettings from '../../../components/fee/ReportsSettings/ReportsSettings';
+import FeeReports from '../../../components/fee/FeeReports/FeeReports';
 
 const ReportsPage = () => {
-  return <ReportsSettings />;
+  return <FeeReports />;
 };
 
 export default ReportsPage;

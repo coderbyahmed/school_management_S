@@ -612,6 +612,7 @@ const en = {
   activityMaintenance: 'Activity & Maintenance',
   feeStructure: 'Fee Structure',
   studentFees: 'Student Fees',
+  receiptHistory: 'Receipt History',
   reportsAndSettings: 'Reports & Settings',
 
   // Notifications

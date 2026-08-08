@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import {
   UsersIcon, CurrencyDollarIcon, BanknotesIcon, ExclamationTriangleIcon,
-  PlusIcon, FunnelIcon, DocumentTextIcon, MagnifyingGlassIcon,
+  PlusIcon, FunnelIcon, MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import StatCard from '../../common/StatCard/StatCard';
 import CardSection from '../../common/CardSection/CardSection';
@@ -15,13 +15,30 @@ import Input from '../../common/Input/Input';
 import SelectInput from '../../common/SelectInput/SelectInput';
 import DateInput from '../../common/DateInput/DateInput';
 import studentFeesService from '../../../services/studentFees/studentFees.service';
-import receiptsService from '../../../services/receipts/receipts.service';
 import { useCurrency } from '../../../hooks/useLocalization';
 
 const SESSIONS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
 const CLASSES = ['All', 'Montessori', 'Nursery', 'KG-1', 'KG-2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
 const STATUS_FILTERS = ['All', 'Paid', 'Partial', 'Pending'];
 const PAYMENT_METHODS = ['Cash', 'Cheque', 'UPI', 'Bank Transfer'];
+const FEE_TYPES = ['Admission Fee', 'Monthly Fee', 'Examination Fee'];
+const FEE_TYPE_FILTERS = ['All Fees', ...FEE_TYPES];
+
+const getFeeTypeBase = (feeStructure, type) => {
+  const fs = feeStructure || {};
+  if (type === 'Admission Fee') return Number(fs.admissionFee || 0);
+  if (type === 'Examination Fee') return Number(fs.examFee || 0);
+  return Number(fs.monthlyFee || 0);
+};
+
+const feeTypeBadge = (type) => {
+  const map = {
+    'Admission Fee': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700',
+    'Monthly Fee': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700',
+    'Examination Fee': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700',
+  };
+  return map[type] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600';
+};
 
 const formatDate = (val) => {
   if (!val) return '-';
@@ -100,12 +117,13 @@ const StudentFees = () => {
   const [yearFilter, setYearFilter] = useState('All');
   const [classFilter, setClassFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [feeTypeFilter, setFeeTypeFilter] = useState('All Fees');
   const [currentPage, setCurrentPage] = useState(1);
+  const [feeTypeOverrides, setFeeTypeOverrides] = useState({});
   const [fetchLoading, setFetchLoading] = useState(true);
   const [reload, setReload] = useState(0);
 
   const [viewItem, setViewItem] = useState(null);
-  const [generatingReceipt, setGeneratingReceipt] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({ discount: '', lateFine: '', paidAmount: '', paymentMethod: 'Cash', paymentDate: todayStr(), remarks: '' });
   const [editErrors, setEditErrors] = useState({});
@@ -118,6 +136,7 @@ const StudentFees = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [feeDetails, setFeeDetails] = useState(null);
   const [feeDetailsLoading, setFeeDetailsLoading] = useState(false);
+  const [collectFeeType, setCollectFeeType] = useState('Monthly Fee');
   const [collectForm, setCollectForm] = useState({ ...collectFormEmpty });
   const [collectErrors, setCollectErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -164,8 +183,19 @@ const StudentFees = () => {
     setYearFilter('All');
     setClassFilter('All');
     setStatusFilter('All');
+    setFeeTypeFilter('All Fees');
     setCurrentPage(1);
   };
+
+  const resolveFeeType = useCallback(
+    (item) => item?.feeType || feeTypeOverrides[item?._id] || feeTypeOverrides[item?.receiptNumber] || 'Monthly Fee',
+    [feeTypeOverrides]
+  );
+
+  const filteredCollections = useMemo(() => {
+    if (feeTypeFilter === 'All Fees') return collections;
+    return collections.filter((item) => resolveFeeType(item) === feeTypeFilter);
+  }, [collections, feeTypeFilter, resolveFeeType]);
 
   const handleView = (item) => setViewItem(item);
 
@@ -175,6 +205,7 @@ const StudentFees = () => {
     setSearchResults([]);
     setSelectedStudent(null);
     setFeeDetails(null);
+    setCollectFeeType('Monthly Fee');
     setCollectForm({ ...collectFormEmpty });
     setCollectErrors({});
   };
@@ -216,12 +247,15 @@ const StudentFees = () => {
     try {
       const data = await studentFeesService.loadStudentFeeDetails(student._id);
       setFeeDetails(data);
+      const discount = Number(data.calculation?.discount || 0);
+      const lateFine = collectFeeType === 'Admission Fee' ? 0 : Number(data.calculation?.lateFine || 0);
+      const baseAmount = getFeeTypeBase(data.feeStructure, collectFeeType);
       setCollectForm((prev) => ({
         ...prev,
         studentId: student._id,
         discount: String(data.calculation?.discount || '0'),
         lateFine: String(data.calculation?.lateFine || '0'),
-        paidAmount: String(data.calculation?.totalAmount || ''),
+        paidAmount: String(Math.max(0, baseAmount + lateFine - discount)),
         paymentMethod: 'Cash',
         paymentDate: todayStr(),
         remarks: '',
@@ -235,24 +269,29 @@ const StudentFees = () => {
     }
   };
 
+  const handleCollectFeeTypeChange = (e) => {
+    const type = e.target.value;
+    setCollectFeeType(type);
+    setCollectForm((prev) => {
+      if (!feeDetails) return prev;
+      const baseAmount = getFeeTypeBase(feeDetails.feeStructure, type);
+      const discount = Number(prev.discount) || 0;
+      const lateFine = type === 'Admission Fee' ? 0 : Number(prev.lateFine) || 0;
+      return { ...prev, paidAmount: String(Math.max(0, baseAmount + lateFine - discount)) };
+    });
+  };
+
   const handleCollectFormChange = (e) => {
     const { name, value } = e.target;
     setCollectForm((prev) => {
       const next = { ...prev, [name]: value };
       if (name === 'discount' || name === 'lateFine') {
         if (feeDetails) {
-          const fs = feeDetails.feeStructure || {};
-          const baseAmount =
-            Number(fs.monthlyFee || 0) +
-            Number(fs.admissionFee || 0) +
-            Number(fs.examFee || 0) +
-            Number(fs.labFee || 0) +
-            Number(fs.libraryFee || 0) +
-            Number(fs.transportFee || 0) +
-            Number(fs.otherCharges || 0);
+          const baseAmount = getFeeTypeBase(feeDetails.feeStructure, collectFeeType);
           const discount = name === 'discount' ? Number(value) || 0 : Number(next.discount) || 0;
           const lateFine = name === 'lateFine' ? Number(value) || 0 : Number(next.lateFine) || 0;
-          next.paidAmount = String(Math.max(0, baseAmount + lateFine - discount));
+          const effectiveLateFine = collectFeeType === 'Admission Fee' ? 0 : lateFine;
+          next.paidAmount = String(Math.max(0, baseAmount + effectiveLateFine - discount));
         }
       }
       return next;
@@ -262,21 +301,13 @@ const StudentFees = () => {
 
   const collectCalc = useMemo(() => {
     if (!feeDetails) return { baseAmount: 0, totalAmount: 0, remainingAmount: 0 };
-    const fs = feeDetails.feeStructure || {};
-    const baseAmount =
-      Number(fs.monthlyFee || 0) +
-      Number(fs.admissionFee || 0) +
-      Number(fs.examFee || 0) +
-      Number(fs.labFee || 0) +
-      Number(fs.libraryFee || 0) +
-      Number(fs.transportFee || 0) +
-      Number(fs.otherCharges || 0);
+    const baseAmount = getFeeTypeBase(feeDetails.feeStructure, collectFeeType);
     const discount = Number(collectForm.discount) || 0;
-    const lateFine = Number(collectForm.lateFine) || 0;
+    const lateFine = collectFeeType === 'Admission Fee' ? 0 : Number(collectForm.lateFine) || 0;
     const totalAmount = Math.max(0, baseAmount + lateFine - discount);
     const paidAmount = Number(collectForm.paidAmount) || 0;
     return { baseAmount, totalAmount, remainingAmount: Math.max(0, totalAmount - paidAmount) };
-  }, [feeDetails, collectForm.discount, collectForm.lateFine, collectForm.paidAmount]);
+  }, [feeDetails, collectFeeType, collectForm.discount, collectForm.lateFine, collectForm.paidAmount]);
 
   const validateCollectForm = () => {
     const errors = {};
@@ -293,7 +324,7 @@ const StudentFees = () => {
     if (!validateCollectForm()) return;
     setSaving(true);
     try {
-      await studentFeesService.collectFee({
+      const res = await studentFeesService.collectFee({
         studentId: collectForm.studentId,
         paidAmount: Number(collectForm.paidAmount),
         discount: Number(collectForm.discount || 0),
@@ -302,9 +333,14 @@ const StudentFees = () => {
         paymentDate: collectForm.paymentDate,
         remarks: collectForm.remarks,
       });
+      const created = res?.data?.collection;
+      if (created?._id) {
+        setFeeTypeOverrides((prev) => ({ ...prev, [created._id]: collectFeeType }));
+      }
       toast.success('Fee collected successfully');
       setCollectModal(null);
       setCollectForm({ ...collectFormEmpty });
+      setCollectFeeType('Monthly Fee');
       setCollectSearchId('');
       setSearchResults([]);
       setSelectedStudent(null);
@@ -336,15 +372,16 @@ const StudentFees = () => {
     if (editErrors[name]) setEditErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const editCalc = useMemo(() => {
+const editCalc = useMemo(() => {
     if (!editItem) return { baseAmount: 0, totalAmount: 0, remainingAmount: 0 };
-    const baseAmount = Number(editItem.monthlyFee || 0) + Number(editItem.admissionFee || 0) + Number(editItem.examFee || 0) + Number(editItem.otherCharges || 0);
+    const feeType = resolveFeeType(editItem);
+    const baseAmount = getFeeTypeBase(editItem, feeType);
     const discount = Number(editForm.discount) || 0;
-    const lateFine = Number(editForm.lateFine) || 0;
+    const lateFine = feeType === 'Admission Fee' ? 0 : Number(editForm.lateFine) || 0;
     const totalAmount = Math.max(0, baseAmount + lateFine - discount);
     const paidAmount = Number(editForm.paidAmount) || 0;
     return { baseAmount, totalAmount, remainingAmount: Math.max(0, totalAmount - paidAmount) };
-  }, [editItem, editForm.discount, editForm.lateFine, editForm.paidAmount]);
+  }, [editItem, resolveFeeType, editForm.discount, editForm.lateFine, editForm.paidAmount]);
 
   const validateEditForm = () => {
     const errors = {};
@@ -397,21 +434,6 @@ const StudentFees = () => {
     }
   };
 
-  const handleGenerateReceipt = async () => {
-    if (!viewItem || generatingReceipt) return;
-    setGeneratingReceipt(true);
-    try {
-      const res = await receiptsService.generate(viewItem._id);
-      toast.success(res?.message || 'Receipt generated successfully');
-      setViewItem(null);
-      setReload((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to generate receipt');
-    } finally {
-      setGeneratingReceipt(false);
-    }
-  };
-
   const renderViewModal = () => {
     if (!viewItem) return null;
     const student = viewItem.studentId || {};
@@ -424,7 +446,10 @@ const StudentFees = () => {
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{student.fullName || '-'}</h3>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">{student.studentId || '-'} · {student.admissionNumber || '-'}</p>
             </div>
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border flex-shrink-0 ${statusBadge(viewItem.paymentStatus)}`}>{viewItem.paymentStatus}</span>
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${statusBadge(viewItem.paymentStatus)}`}>{viewItem.paymentStatus}</span>
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${feeTypeBadge(resolveFeeType(viewItem))}`}>{resolveFeeType(viewItem)}</span>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-2.5">
@@ -466,13 +491,6 @@ const StudentFees = () => {
               <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{viewItem.remarks}</p>
             </div>
           )}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Button variant="primary" onClick={handleGenerateReceipt} loading={generatingReceipt} disabled={generatingReceipt}>
-                <DocumentTextIcon className="h-3.5 w-3.5 mr-1 inline" /> Generate Receipt
-              </Button>
-            </div>
-          </div>
         </div>
       </Modal>
     );
@@ -525,6 +543,10 @@ const StudentFees = () => {
             </div>
           )}
 
+          <div className="w-full sm:w-64">
+            <SelectInput label="Fee Type" name="collectFeeType" value={collectFeeType} onChange={handleCollectFeeTypeChange} options={FEE_TYPES} required />
+          </div>
+
           {selectedStudent && (
             <>
               {feeDetailsLoading || !feeDetails ? (
@@ -544,43 +566,35 @@ const StudentFees = () => {
 
                   <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 space-y-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">Monthly Fee</span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(feeDetails.feeStructure.monthlyFee)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">Admission Fee</span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(feeDetails.feeStructure.admissionFee)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">Exam Fee</span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(feeDetails.feeStructure.examFee)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">Other Charges</span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(feeDetails.feeStructure.otherCharges)}</span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {collectFeeType === 'Admission Fee' ? 'Default Admission Fee' : collectFeeType === 'Examination Fee' ? 'Default Examination Fee' : 'Default Monthly Fee'}
+                      </span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(collectCalc.baseAmount)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-500 dark:text-gray-400">Discount</span>
                       <span className="font-medium text-green-600 dark:text-green-400">- {formatCurrency(Number(collectForm.discount) || 0)}</span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">Late Fine</span>
-                      <span className="font-medium text-orange-600 dark:text-orange-400">+ {formatCurrency(Number(collectForm.lateFine) || 0)}</span>
-                    </div>
+                    {collectFeeType !== 'Admission Fee' && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Late Fine</span>
+                        <span className="font-medium text-orange-600 dark:text-orange-400">+ {formatCurrency(Number(collectForm.lateFine) || 0)}</span>
+                      </div>
+                    )}
                     <div className="border-t border-gray-300 dark:border-gray-600 pt-1.5 flex justify-between text-xs font-semibold">
-                      <span className="text-gray-700 dark:text-gray-300">Total Amount</span>
+                      <span className="text-gray-700 dark:text-gray-300">Total Payable</span>
                       <span className="text-gray-900 dark:text-white">{formatCurrency(collectCalc.totalAmount)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs font-semibold">
-                      <span className="text-gray-700 dark:text-gray-300">Remaining After Payment</span>
-                      <span className="text-red-600 dark:text-red-400">{formatCurrency(collectCalc.remainingAmount)}</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-x-3">
+                  {collectFeeType === 'Admission Fee' ? (
                     <Input label="Discount" name="discount" type="number" value={collectForm.discount} onChange={handleCollectFormChange} error={collectErrors.discount} />
-                    <Input label="Late Fine" name="lateFine" type="number" value={collectForm.lateFine} onChange={handleCollectFormChange} error={collectErrors.lateFine} />
-                  </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-x-3">
+                      <Input label="Discount" name="discount" type="number" value={collectForm.discount} onChange={handleCollectFormChange} error={collectErrors.discount} />
+                      <Input label="Late Fine" name="lateFine" type="number" value={collectForm.lateFine} onChange={handleCollectFormChange} error={collectErrors.lateFine} />
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-x-3">
                     <Input label="Amount Receiving" name="paidAmount" type="number" value={collectForm.paidAmount} onChange={handleCollectFormChange} required error={collectErrors.paidAmount} />
                     <SelectInput label="Payment Method" name="paymentMethod" value={collectForm.paymentMethod} onChange={handleCollectFormChange} options={PAYMENT_METHODS} required />
@@ -610,6 +624,7 @@ const StudentFees = () => {
   const renderEditModal = () => {
     if (!editItem) return null;
     const student = editItem.studentId || {};
+    const feeType = resolveFeeType(editItem);
     return (
       <Modal isOpen title={`Edit Fee Collection - ${student.fullName || ''}`} onClose={() => setEditItem(null)} maxWidth="max-w-md">
         <div className="max-h-[75vh] overflow-y-auto space-y-3">
@@ -619,48 +634,43 @@ const StudentFees = () => {
               <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{student.fullName || '-'}</p>
               <p className="text-[10px] text-gray-500 dark:text-gray-400">{editItem.receiptNumber} · {editItem.class}</p>
             </div>
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border flex-shrink-0 ${statusBadge(editItem.paymentStatus)}`}>{editItem.paymentStatus}</span>
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${statusBadge(editItem.paymentStatus)}`}>{editItem.paymentStatus}</span>
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${feeTypeBadge(feeType)}`}>{feeType}</span>
+            </div>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 space-y-1.5">
             <div className="flex justify-between text-xs">
-              <span className="text-gray-500 dark:text-gray-400">Monthly Fee</span>
-              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(editItem.monthlyFee)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500 dark:text-gray-400">Admission Fee</span>
-              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(editItem.admissionFee)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500 dark:text-gray-400">Exam Fee</span>
-              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(editItem.examFee)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500 dark:text-gray-400">Other Charges</span>
-              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(editItem.otherCharges)}</span>
+              <span className="text-gray-500 dark:text-gray-400">
+                {feeType === 'Admission Fee' ? 'Default Admission Fee' : feeType === 'Examination Fee' ? 'Default Examination Fee' : 'Default Monthly Fee'}
+              </span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(editCalc.baseAmount)}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-gray-500 dark:text-gray-400">Discount</span>
               <span className="font-medium text-green-600 dark:text-green-400">- {formatCurrency(Number(editForm.discount) || 0)}</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500 dark:text-gray-400">Late Fine</span>
-              <span className="font-medium text-orange-600 dark:text-orange-400">+ {formatCurrency(Number(editForm.lateFine) || 0)}</span>
-            </div>
+            {feeType !== 'Admission Fee' && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500 dark:text-gray-400">Late Fine</span>
+                <span className="font-medium text-orange-600 dark:text-orange-400">+ {formatCurrency(Number(editForm.lateFine) || 0)}</span>
+              </div>
+            )}
             <div className="border-t border-gray-300 dark:border-gray-600 pt-1.5 flex justify-between text-xs font-semibold">
-              <span className="text-gray-700 dark:text-gray-300">Total Amount</span>
+              <span className="text-gray-700 dark:text-gray-300">Total Payable</span>
               <span className="text-gray-900 dark:text-white">{formatCurrency(editCalc.totalAmount)}</span>
-            </div>
-            <div className="flex justify-between text-xs font-semibold">
-              <span className="text-gray-700 dark:text-gray-300">Remaining</span>
-              <span className="text-red-600 dark:text-red-400">{formatCurrency(editCalc.remainingAmount)}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-3">
+          {feeType === 'Admission Fee' ? (
             <Input label="Discount" name="discount" type="number" value={editForm.discount} onChange={handleEditFormChange} error={editErrors.discount} />
-            <Input label="Late Fine" name="lateFine" type="number" value={editForm.lateFine} onChange={handleEditFormChange} error={editErrors.lateFine} />
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-x-3">
+              <Input label="Discount" name="discount" type="number" value={editForm.discount} onChange={handleEditFormChange} error={editErrors.discount} />
+              <Input label="Late Fine" name="lateFine" type="number" value={editForm.lateFine} onChange={handleEditFormChange} error={editErrors.lateFine} />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-x-3">
             <Input label="Paid Amount" name="paidAmount" type="number" value={editForm.paidAmount} onChange={handleEditFormChange} required error={editErrors.paidAmount} />
             <SelectInput label="Payment Method" name="paymentMethod" value={editForm.paymentMethod} onChange={handleEditFormChange} options={PAYMENT_METHODS} required />
@@ -723,6 +733,9 @@ const StudentFees = () => {
           <div className="w-24">
             <FilterDropdown label="Status" options={STATUS_FILTERS} value={statusFilter} onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }} />
           </div>
+          <div className="w-32">
+            <FilterDropdown label="Fee Type" options={FEE_TYPE_FILTERS} value={feeTypeFilter} onChange={(v) => { setFeeTypeFilter(v); setCurrentPage(1); }} />
+          </div>
           <div className="w-full sm:w-56">
             <SearchInput placeholder="Search name, receipt or ID..." value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} />
           </div>
@@ -741,7 +754,8 @@ const StudentFees = () => {
                 <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">Student</th>
                 <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">Receipt No</th>
                 <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">Class</th>
-                <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">M. Fee</th>
+                <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">Fee Type</th>
+                <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">{feeTypeFilter === 'Admission Fee' ? 'A Fee' : feeTypeFilter === 'Examination Fee' ? 'E Fee' : 'M Fee'}</th>
                 <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">Disc.</th>
                 <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">Paid</th>
                 <th className="px-1.5 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 text-[10px] uppercase tracking-wider whitespace-nowrap">Rem.</th>
@@ -753,16 +767,16 @@ const StudentFees = () => {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {fetchLoading ? (
                 <tr>
-                  <td colSpan={10} className="px-2 py-10 text-center">
+                  <td colSpan={11} className="px-2 py-10 text-center">
                     <div className="inline-block w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                   </td>
                 </tr>
-              ) : collections.length === 0 ? (
+              ) : filteredCollections.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-2 py-8 text-center text-gray-400 dark:text-gray-500">No fee collections found</td>
+                  <td colSpan={11} className="px-2 py-8 text-center text-gray-400 dark:text-gray-500">No fee collections found</td>
                 </tr>
               ) : (
-                collections.map((item) => {
+                filteredCollections.map((item) => {
                   const student = item.studentId || {};
   return (
                     <tr key={item._id} className="bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -774,7 +788,10 @@ const StudentFees = () => {
                       </td>
                       <td className="px-1.5 py-2 text-[10px] font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap">{item.receiptNumber}</td>
                       <td className="px-1.5 py-2 text-[11px] text-gray-600 dark:text-gray-300 whitespace-nowrap">{item.class}</td>
-                      <td className="px-1.5 py-2 text-xs font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatCurrency(item.monthlyFee)}</td>
+                      <td className="px-1.5 py-2 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${feeTypeBadge(resolveFeeType(item))}`}>{resolveFeeType(item)}</span>
+                      </td>
+                      <td className="px-1.5 py-2 text-xs font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{formatCurrency(feeTypeFilter === 'Admission Fee' ? item.admissionFee : feeTypeFilter === 'Examination Fee' ? item.examFee : item.monthlyFee)}</td>
                       <td className="px-1.5 py-2 text-[11px] text-green-600 dark:text-green-400 whitespace-nowrap">{item.discount ? formatCurrency(item.discount) : '-'}</td>
                       <td className="px-1.5 py-2 text-xs font-medium text-green-700 dark:text-green-400 whitespace-nowrap">{item.paidAmount > 0 ? formatCurrency(item.paidAmount) : '-'}</td>
                       <td className="px-1.5 py-2 text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap">{item.remainingAmount > 0 ? formatCurrency(item.remainingAmount) : '-'}</td>
@@ -851,7 +868,7 @@ const StudentFees = () => {
         isOpen={!!deleteItem}
         onClose={() => setDeleteItem(null)}
         title="Delete Fee Collection"
-        message={`Are you sure you want to delete the fee collection ${deleteItem?.receiptNumber} for ${deleteItem?.studentId?.fullName || 'this student'}? This action cannot be undone.`}
+        message={`Are you sure you want to delete the ${deleteItem ? resolveFeeType(deleteItem) : ''} record ${deleteItem?.receiptNumber} for ${deleteItem?.studentId?.fullName || 'this student'}? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
         onConfirm={handleDeleteConfirm}

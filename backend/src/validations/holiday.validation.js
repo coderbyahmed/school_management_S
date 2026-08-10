@@ -15,7 +15,7 @@ const HOLIDAY_STATUSES = ['Upcoming', 'Ongoing', 'Completed'];
 
 const AUDIENCES = ['All', 'Students', 'Teachers', 'Parents', 'Staff'];
 
-const ACADEMIC_YEAR_REGEX = /^(202[5-9]|203[0-5])$/;
+const ACADEMIC_YEAR_REGEX = /^\d{4}$/;
 
 const isValidDate = (dateStr) => {
   if (!dateStr || typeof dateStr !== 'string') return false;

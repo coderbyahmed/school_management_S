@@ -18,8 +18,31 @@ const EventGallery = ({ onDataChange }) => {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [academicYear, setAcademicYear] = useState(academic.currentYear);
+  const [yearOptions, setYearOptions] = useState([]);
   const [category, setCategory] = useState('');
   const [month, setMonth] = useState('');
+  const yearInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (yearInitializedRef.current) return;
+    if (academic.currentYear) {
+      yearInitializedRef.current = true;
+      setAcademicYear(academic.currentYear);
+    }
+  }, [academic.currentYear]);
+
+  useEffect(() => {
+    let mounted = true;
+    eventsService
+      .getEventAcademicYears()
+      .then((years) => {
+        if (mounted) setYearOptions(years || []);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const [selected, setSelected] = useState(null);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -217,7 +240,7 @@ const EventGallery = ({ onDataChange }) => {
               <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">{t('allYears')}</option>
-                {eventsService.ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>

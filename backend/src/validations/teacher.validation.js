@@ -20,6 +20,7 @@ const validateCreateTeacher = (req, res, next) => {
     experience,
     joiningDate,
     status,
+    academicYear,
   } = req.body;
 
   if (!req.file) {
@@ -130,6 +131,11 @@ const validateCreateTeacher = (req, res, next) => {
   if (status && !['Active', 'Inactive'].includes(status)) {
     throw new ApiError(400, 'Status must be Active or Inactive');
   }
+
+  if (!academicYear || typeof academicYear !== 'string' || !academicYear.trim()) {
+    throw new ApiError(400, 'Academic year is required');
+  }
+  req.body.academicYear = academicYear.trim();
 
   next();
 };

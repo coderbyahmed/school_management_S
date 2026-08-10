@@ -7,10 +7,11 @@ import {
   deleteSubject,
   assignSubjectsToClass,
   getClassAssignments,
+  getClassAssignmentYears,
   assignSubjectsToTeacher,
   getTeacherAssignments,
 } from '../controllers/subject.controller.js';
-import { validateCreateSubject, validateUpdateSubject } from '../validations/subject.validation.js';
+import { validateCreateSubject, validateUpdateSubject, validateAssignSubjectsToClass } from '../validations/subject.validation.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
 
@@ -27,6 +28,7 @@ router.post(
   '/assign-class',
   protect,
   authorize('admin'),
+  validateAssignSubjectsToClass,
   assignSubjectsToClass,
 );
 
@@ -35,6 +37,13 @@ router.get(
   protect,
   authorize('admin'),
   getClassAssignments,
+);
+
+router.get(
+  '/assign-class/years',
+  protect,
+  authorize('admin'),
+  getClassAssignmentYears,
 );
 
 router.post(

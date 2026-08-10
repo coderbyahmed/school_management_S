@@ -120,9 +120,9 @@ const eventSchema = new mongoose.Schema(
       required: [true, 'Academic year is required'],
       validate: {
         validator: function (v) {
-          return /^(202[5-9]|203[0-5])$/.test(v);
+          return /^\d{4}$/.test(v);
         },
-        message: 'Academic year must be between 2025 and 2035',
+        message: 'Invalid academic year format. Use a valid year (e.g. 2025)',
       },
     },
     createdBy: {

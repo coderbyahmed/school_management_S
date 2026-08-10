@@ -1,6 +1,5 @@
 import api from '../../api/axios';
 
-const ACADEMIC_YEARS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
 const EVENT_CATEGORIES = ['Annual Function', 'Sports Day', 'Independence Day', 'Teachers Day', 'Parents Meeting', 'Science Exhibition', 'Seminar', 'Workshop', 'Competition', 'Examination', 'Orientation', 'Cultural Program', 'Other'];
 const HOLIDAY_TYPES = ['Public Holiday', 'National Holiday', 'Religious Holiday', 'School Holiday', 'Emergency Holiday', 'Summer Vacation', 'Winter Vacation', 'Exam Break'];
 const AUDIENCES = ['All', 'Students', 'Teachers', 'Parents', 'Staff'];
@@ -37,6 +36,11 @@ const eventsService = {
     return response.data.data;
   },
 
+  getEventAcademicYears: async () => {
+    const response = await api.get('/events/academic-years');
+    return response.data.data?.years || [];
+  },
+
   createEvent: async (formData) => {
     const response = await api.post('/events', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -69,6 +73,11 @@ const eventsService = {
   getHolidayById: async (id) => {
     const response = await api.get(`/holidays/${id}`);
     return response.data.data;
+  },
+
+  getHolidayAcademicYears: async () => {
+    const response = await api.get('/holidays/academic-years');
+    return response.data.data?.years || [];
   },
 
   createHoliday: async (data) => {
@@ -140,7 +149,6 @@ const eventsService = {
     };
   },
 
-  ACADEMIC_YEARS,
   EVENT_CATEGORIES,
   HOLIDAY_TYPES,
   AUDIENCES,

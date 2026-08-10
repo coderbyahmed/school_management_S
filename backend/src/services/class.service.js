@@ -1,19 +1,28 @@
 import Class from '../models/class.model.js';
 import Student from '../models/student.model.js';
 import Teacher from '../models/teacher.model.js';
-import Timetable from '../models/timetable.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 const createClass = async (data) => {
   const { className, academicYear, status } = data;
 
-  const existing = await Class.findOne({ className, academicYear });
+  const existing = await Class.findOne({ className, academicYear, isDeleted: { $ne: true } });
 
   if (existing) {
     throw new ApiError(409, 'Class already exists for selected academic year');
   }
 
+  const deleted = await Class.findOne({ className, academicYear, isDeleted: true });
+
   try {
+    if (deleted) {
+      deleted.isDeleted = false;
+      deleted.status = status;
+      await deleted.save();
+
+      return deleted;
+    }
+
     const newClass = await Class.create({ className, academicYear, status });
 
     return newClass;
@@ -37,9 +46,25 @@ const CLASS_ORDER = [
   'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
 ];
 
+const classMembershipFilter = (className, academicYear) => ({
+  $or: [
+    { class: className, academicYear, enrollments: { $exists: false } },
+    { class: className, academicYear, enrollments: { $size: 0 } },
+    {
+      enrollments: {
+        $elemMatch: {
+          academicYear,
+          class: className,
+          status: { $in: ['Active', 'Historical'] },
+        },
+      },
+    },
+  ],
+});
+
 const getAllClasses = async () => {
   const [classes, totalStudents] = await Promise.all([
-    Class.find().lean(),
+    Class.find({ isDeleted: { $ne: true } }).lean(),
     Student.countDocuments(),
   ]);
 
@@ -47,10 +72,7 @@ const getAllClasses = async () => {
 
   const classStudentCounts = await Promise.all(
     classes.map(async (cls) => {
-      const count = await Student.countDocuments({
-        class: cls.className,
-        academicYear: cls.academicYear,
-      });
+      const count = await Student.countDocuments(classMembershipFilter(cls.className, cls.academicYear));
       return { ...cls, totalStudents: count };
     }),
   );
@@ -70,7 +92,7 @@ const getAllClasses = async () => {
 };
 
 const updateClass = async (id, data) => {
-  const existing = await Class.findById(id);
+  const existing = await Class.findOne({ _id: id, isDeleted: { $ne: true } });
 
   if (!existing) {
     throw new ApiError(404, 'Class not found');
@@ -83,6 +105,7 @@ const updateClass = async (id, data) => {
       _id: { $ne: id },
       className,
       academicYear,
+      isDeleted: { $ne: true },
     });
 
     if (duplicate) {
@@ -113,26 +136,17 @@ const updateClass = async (id, data) => {
 };
 
 const deleteClass = async (id) => {
-  const existing = await Class.findById(id);
+  const existing = await Class.findOne({ _id: id, isDeleted: { $ne: true } });
 
   if (!existing) {
     throw new ApiError(404, 'Class not found');
   }
 
-  const { className, academicYear } = existing;
-
-  await Promise.all([
-    Class.findByIdAndDelete(id),
-    Student.updateMany(
-      { class: className, academicYear },
-      { $unset: { class: '' } },
-    ),
-    Timetable.deleteMany({ classId: id }),
-  ]);
+  await Class.findByIdAndUpdate(id, { isDeleted: true });
 };
 
 const getClassDetails = async (classId) => {
-  const classInfo = await Class.findById(classId).populate('assignedSubjects');
+  const classInfo = await Class.findOne({ _id: classId, isDeleted: { $ne: true } }).populate('assignedSubjects');
 
   if (!classInfo) {
     throw new ApiError(404, 'Class not found');
@@ -141,8 +155,8 @@ const getClassDetails = async (classId) => {
   const { className, academicYear, assignedSubjects } = classInfo;
 
   const [totalStudents, students, teachers] = await Promise.all([
-    Student.countDocuments({ class: className, academicYear }),
-    Student.find({ class: className, academicYear }).select('studentImage studentId fullName status').sort({ fullName: 1 }),
+    Student.countDocuments(classMembershipFilter(className, academicYear)),
+    Student.find(classMembershipFilter(className, academicYear)).select('studentImage studentId fullName status').sort({ fullName: 1 }),
     Teacher.find({ assignedSubjects: { $in: assignedSubjects } }).select('teacherImage teacherId fullName status'),
   ]);
 

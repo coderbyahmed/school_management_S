@@ -35,6 +35,7 @@ const TeacherViewModal = ({ teacher, isOpen, onClose }) => {
       </div>
 
       <div className="mt-4">
+        <InfoRow label={t('academicYear')} value={teacher.academicYear} />
         <InfoRow label="Father Name" value={teacher.fatherName} />
         <InfoRow label="Qualification" value={teacher.qualification} />
         <InfoRow label="Experience" value={teacher.experience} />

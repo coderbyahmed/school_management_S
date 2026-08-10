@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import {
-  PrinterIcon, EyeIcon, DocumentArrowDownIcon, FunnelIcon,
+  PrinterIcon, DocumentArrowDownIcon, FunnelIcon,
   PlusIcon, MagnifyingGlassIcon, AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import CardSection from '../../common/CardSection/CardSection';
@@ -16,93 +16,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const SESSIONS = ['All', '2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
 const CLASSES = ['All', 'Montessori', 'Nursery', 'KG-1', 'KG-2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
 
-const DUMMY_SPECS = [
-  { year: 2026, monthNum: 1, month: 'January' },
-  { year: 2026, monthNum: 2, month: 'February' },
-  { year: 2026, monthNum: 3, month: 'March' },
-  { year: 2026, monthNum: 4, month: 'April' },
-  { year: 2026, monthNum: 5, month: 'May' },
-  { year: 2026, monthNum: 6, month: 'June' },
-  { year: 2026, monthNum: 7, month: 'July' },
-  { year: 2025, monthNum: 9, month: 'September' },
-  { year: 2025, monthNum: 10, month: 'October' },
-  { year: 2025, monthNum: 11, month: 'November' },
-];
-
-const buildReceipts = (baseFee) => DUMMY_SPECS.map((m, i) => {
-  const monthlyFee = baseFee;
-  const admissionFee = 0;
-  const examFee = m.month === 'June' || m.month === 'September' ? 500 : 0;
-  const otherCharges = 0;
-  const discount = m.month === 'January' ? 200 : 0;
-  const lateFine = i > 0 && i % 3 === 0 ? 100 : 0;
-  const totalAmount = monthlyFee + admissionFee + examFee + otherCharges + lateFine - discount;
-  const methods = ['Cash', 'Bank Transfer', 'Cheque', 'Cash', 'Cash'];
-  return {
-    year: m.year,
-    monthNum: m.monthNum,
-    month: m.month,
-    receiptNumber: `RCP-${m.year}-${String(1000 + i + 1).padStart(4, '0')}`,
-    paymentDate: `${m.year}-${String(m.monthNum).padStart(2, '0')}-05`,
-    monthlyFee,
-    admissionFee,
-    examFee,
-    otherCharges,
-    discount,
-    lateFine,
-    totalAmount,
-    paidAmount: totalAmount,
-    remainingAmount: 0,
-    paymentMethod: methods[i % methods.length],
-    collectedBy: 'Rashid Ahmed',
-  };
-});
-
-const finalizeStudent = (student) => {
-  const sorted = [...student.receipts].sort((a, b) => new Date(a.paymentDate) - new Date(b.paymentDate));
-  const last = sorted[sorted.length - 1];
-  return {
-    ...student,
-    lastPaymentDate: last.paymentDate,
-    lastPaidMonth: last.month,
-    lastReceiptNumber: last.receiptNumber,
-    totalReceipts: sorted.length,
-    receipts: sorted,
-  };
-};
-
-const DUMMY_STUDENTS = [
-  {
-    id: 'STU-2025-0081', studentId: 'STU-2025-0081', fullName: 'Ayesha Khan',
-    class: 'Class 5', gender: 'Female', fatherName: 'Imran Khan', academicYear: '2026',
-    receipts: buildReceipts(5000),
-  },
-  {
-    id: 'STU-2025-0034', studentId: 'STU-2025-0034', fullName: 'Mohammad Bilal',
-    class: 'Class 8', gender: 'Male', fatherName: 'Saeed Ahmed', academicYear: '2026',
-    receipts: buildReceipts(6000),
-  },
-  {
-    id: 'STU-2024-0112', studentId: 'STU-2024-0112', fullName: 'Fatima Zahra',
-    class: 'Class 3', gender: 'Female', fatherName: 'Adnan Raza', academicYear: '2026',
-    receipts: buildReceipts(4000),
-  },
-  {
-    id: 'STU-2026-0007', studentId: 'STU-2026-0007', fullName: 'Ali Hassan',
-    class: 'KG-1', gender: 'Male', fatherName: 'Khalid Hassan', academicYear: '2026',
-    receipts: buildReceipts(4000),
-  },
-  {
-    id: 'STU-2025-0015', studentId: 'STU-2025-0015', fullName: 'Zainab Malik',
-    class: 'Montessori', gender: 'Female', fatherName: 'Tariq Malik', academicYear: '2026',
-    receipts: buildReceipts(3500),
-  },
-  {
-    id: 'STU-2025-0066', studentId: 'STU-2025-0066', fullName: 'Ahmed Raza',
-    class: 'Class 10', gender: 'Male', fatherName: 'Faisal Raza', academicYear: '2026',
-    receipts: buildReceipts(6000),
-  },
-].map(finalizeStudent);
+const DUMMY_STUDENTS = [];
 
 const formatCurrency = (val) => {
   const n = Number(val);
@@ -422,45 +336,12 @@ const ReceiptHistory = () => {
       </div>
 
       <CardSection title={`Students (${DUMMY_STUDENTS.length})`}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {DUMMY_STUDENTS.map((student) => (
-            <div key={student.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-              <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3">
-                <StudentAvatar student={student} size="w-11 h-11" textSize="text-xs" />
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{student.fullName}</h3>
-                  <p className="text-[11px] font-mono text-gray-500 dark:text-gray-400">{student.studentId}</p>
-                </div>
-              </div>
-              <div className="p-4 space-y-2.5 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Class</span>
-                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{student.class}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Last Payment</span>
-                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{formatDate(student.lastPaymentDate)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Last Month</span>
-                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{student.lastPaidMonth}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Last Receipt</span>
-                  <span className="text-[11px] font-mono font-semibold text-gray-800 dark:text-gray-200 truncate">{student.lastReceiptNumber}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Receipts</span>
-                  <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{student.totalReceipts}</span>
-                </div>
-              </div>
-              <div className="p-4 pt-0">
-                <Button variant="primary" onClick={() => setViewStudent(student)}>
-                  <EyeIcon className="h-3.5 w-3.5 mr-1 inline" /> View History
-                </Button>
-              </div>
-            </div>
-          ))}
+        <div className="py-12 text-center">
+          <div className="mx-auto w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <DocumentArrowDownIcon className="h-7 w-7 text-gray-400 dark:text-gray-500" />
+          </div>
+          <h3 className="mt-4 text-sm font-semibold text-gray-900 dark:text-white">No Receipts Available</h3>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Receipts will appear here once fee collection is connected to the new backend.</p>
         </div>
       </CardSection>
 

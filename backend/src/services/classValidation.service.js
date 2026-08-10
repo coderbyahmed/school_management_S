@@ -2,7 +2,7 @@ import Class from '../models/class.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 const validateClassExists = async (className, academicYear) => {
-  const existing = await Class.findOne({ className, academicYear }).lean();
+  const existing = await Class.findOne({ className, academicYear, isDeleted: { $ne: true } }).lean();
 
   if (!existing) {
     throw new ApiError(

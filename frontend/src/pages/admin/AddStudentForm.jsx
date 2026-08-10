@@ -8,12 +8,12 @@ import SelectInput from '../../components/common/SelectInput/SelectInput';
 import DateInput from '../../components/common/DateInput/DateInput';
 import Alert from '../../components/common/Alert/Alert';
 import studentService from '../../services/student/student.service';
-import { CLASS_NAMES, ACADEMIC_YEARS } from '../../utils/classNames';
+import { CLASS_NAMES } from '../../utils/classNames';
 import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
 
 const today = new Date().toISOString().split('T')[0];
 
-const getInitialState = (configYear) => ({
+const getInitialState = () => ({
   photo: null,
   fullName: '',
   fatherName: '',
@@ -22,7 +22,6 @@ const getInitialState = (configYear) => ({
   status: 'Active',
   admissionDate: today,
   class: '',
-  academicYear: configYear || '2026',
   fatherPhone: '',
   altPhone: '',
   city: '',
@@ -33,8 +32,9 @@ const AddStudentForm = ({ onSuccess }) => {
   const { t } = useTranslation();
   const genderOptions = [t('male'), t('female')];
   const statusOptions = [t('active'), t('inactive')];
-  const { academic } = useSchoolConfig();
-  const [form, setForm] = useState(() => getInitialState(academic?.currentYear));
+  const { academic, loading: configLoading } = useSchoolConfig();
+  const academicYear = (academic?.currentYear || '').trim();
+  const [form, setForm] = useState(() => getInitialState());
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,7 +54,7 @@ const AddStudentForm = ({ onSuccess }) => {
   };
 
   const resetForm = () => {
-    setForm(getInitialState(academic?.currentYear));
+    setForm(getInitialState());
     setPhotoPreview(null);
     setError('');
   };
@@ -79,7 +79,6 @@ const AddStudentForm = ({ onSuccess }) => {
       formData.append('status', form.status);
       formData.append('admissionDate', form.admissionDate);
       formData.append('class', form.class);
-      formData.append('academicYear', form.academicYear);
       formData.append('fatherPhone', form.fatherPhone);
       if (form.altPhone) {
         formData.append('alternatePhone', form.altPhone);
@@ -190,13 +189,18 @@ const AddStudentForm = ({ onSuccess }) => {
             onChange={handleChange('class')}
             options={CLASS_NAMES}
           />
-          <SelectInput
+          <Input
             label={t('academicYear')}
             name="academicYear"
-            value={form.academicYear}
-            onChange={handleChange('academicYear')}
-            options={ACADEMIC_YEARS}
+            value={configLoading ? '' : academicYear}
+            placeholder={configLoading ? t('loading') : '—'}
+            disabled
           />
+          {!configLoading && !academicYear && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Academic year not configured. Set it in School Settings → Attendance Settings → Current Academic Year.
+            </p>
+          )}
         </CardSection>
       </div>
 

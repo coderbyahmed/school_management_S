@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   UserGroupIcon, CurrencyDollarIcon, ClockIcon, BanknotesIcon,
@@ -14,11 +14,10 @@ import Modal from '../../common/Modal/Modal';
 import Button from '../../common/Button/Button';
 import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
 import DateInput from '../../common/DateInput/DateInput';
-import feeDashboardService from '../../../services/feeDashboard/feeDashboard.service';
 
-const MONTHS = feeDashboardService.months;
-const SESSIONS = feeDashboardService.sessions;
-const CLASSES = feeDashboardService.classes;
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const SESSIONS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
+const CLASSES = ['All', 'Montessori', 'Nursery', 'KG-1', 'KG-2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
 
 const ITEMS_PER_PAGE = 10;
 
@@ -104,43 +103,35 @@ const ChartSkeleton = () => (
 );
 
 const FeeDashboard = () => {
-  const [data, setData] = useState(null);
+  const [data] = useState({
+    cards: {
+      totalStudents: { total: 0, withFeeRecords: 0, withoutFeeRecords: 0 },
+      today: { totalCollection: 0, transactions: 0, averageTransaction: 0 },
+      outstanding: { totalRemaining: 0, pendingStudents: 0, partialStudents: 0 },
+      monthly: { currentMonth: '—', currentMonthCollection: 0, previousMonth: '—', percentageChange: 0, difference: 0 },
+    },
+    financialSummary: {
+      totalFees: 0, totalCollected: 0, totalOutstanding: 0, totalDiscount: 0, totalFine: 0, totalNetCollection: 0,
+    },
+    charts: {
+      monthlyTrend: [], feeStatusDistribution: [], classWise: [], paymentMethods: [],
+      collectionComparison: { currentMonth: 0, previousMonth: 0, currentAcademicYear: 0, previousAcademicYear: 0 },
+    },
+    recentCollections: [],
+    upcomingDues: [],
+    recentActivities: [],
+  });
   const [filters, setFilters] = useState({ ...emptyFilters });
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [viewItem, setViewItem] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await feeDashboardService.getDashboardData(filters);
-      setData(result);
-    } catch (err) {
-      setData(null);
-      toast.error(err.response?.data?.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadDashboard();
-  }, [loadDashboard]);
-
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     if (refreshing) return;
     setRefreshing(true);
-    try {
-      const result = await feeDashboardService.getDashboardData(filters);
-      setData(result);
-      toast.success('Dashboard refreshed');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to refresh dashboard');
-    } finally {
-      setRefreshing(false);
-    }
+    toast.success('Dashboard refresh will be available after the new backend is integrated.');
+    setRefreshing(false);
   };
 
   const handleFilterChange = (key) => (value) => {

@@ -108,6 +108,7 @@ const AllTeachers = ({ onSuccess }) => {
   const tableColumns = [
     { key: 'teacher', label: t('teacher') },
     { key: 'teacherId', label: t('teacherIdLabel') },
+    { key: 'academicYear', label: t('academicYear') },
     { key: 'phone', label: t('phoneNumber') },
     { key: 'joiningDate', label: t('joiningDate') },
     { key: 'status', label: t('status') },
@@ -136,6 +137,7 @@ const AllTeachers = ({ onSuccess }) => {
           </div>
         </td>
         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{teacher.teacherId}</td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{teacher.academicYear || '—'}</td>
         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{teacher.phoneNumber}</td>
         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{formatDate(teacher.joiningDate)}</td>
         <td className="px-4 py-3">

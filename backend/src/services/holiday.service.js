@@ -103,6 +103,12 @@ const getHolidayById = async (id) => {
   return holiday;
 };
 
+const getHolidayAcademicYears = async () => {
+  const years = await Holiday.distinct('academicYear');
+
+  return years.sort();
+};
+
 const updateHoliday = async (id, data) => {
   const existing = await Holiday.findById(id);
 
@@ -168,6 +174,7 @@ export default {
   createHoliday,
   getAllHolidays,
   getHolidayById,
+  getHolidayAcademicYears,
   updateHoliday,
   deleteHoliday,
 };

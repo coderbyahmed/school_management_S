@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from '../../../hooks/useLocalization';
 import CardSection from '../../common/CardSection/CardSection';
 import SelectInput from '../../common/SelectInput/SelectInput';
+import Input from '../../common/Input/Input';
 import SearchInput from '../../common/SearchInput/SearchInput';
 import Table from '../../common/Table/Table';
 import StatusBadge from '../../common/StatusBadge/StatusBadge';
@@ -39,15 +40,11 @@ const safeSplitName = (fullName) => {
   return fullName;
 };
 
-const MIN_YEAR = 2025;
-const MAX_YEAR = 2035;
-const yearRange = Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i));
-
 const StudentPromotion = () => {
   const { t } = useTranslation();
   const statusOptions = [t('all'), t('active'), t('inactive')];
-  const [fromYear, setFromYear] = useState('2026');
-  const [toYear, setToYear] = useState('2027');
+  const [fromYear, setFromYear] = useState('');
+  const [toYear, setToYear] = useState('');
   const [fromClass, setFromClass] = useState('');
   const [toClass, setToClass] = useState('');
   const [nameSearch, setNameSearch] = useState('');
@@ -60,8 +57,6 @@ const StudentPromotion = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [promoting, setPromoting] = useState(false);
 
-  const toYearOptions = fromYear ? yearRange.filter((y) => Number(y) > Number(fromYear)) : [];
-  const noValidToYear = fromYear && toYearOptions.length === 0;
   const fromClassIndex = CLASS_NAMES.indexOf(fromClass);
   const toClassOptions = fromClass ? CLASS_NAMES.slice(fromClassIndex + 1) : [];
 
@@ -129,6 +124,8 @@ const StudentPromotion = () => {
   const handleLoad = async () => {
     if (!fromYear) return toast.error(t('selectFromAcademicYear'));
     if (!toYear) return toast.error(t('selectToAcademicYear'));
+    if (!/^\d{4}$/.test(fromYear)) return toast.error(t('invalidFromYearFormat'));
+    if (!/^\d{4}$/.test(toYear)) return toast.error(t('invalidToYearFormat'));
     if (!fromClass) return toast.error(t('selectCurrentClass'));
     if (!toClass) return toast.error(t('selectTargetClass'));
     if (fromYear === toYear) return toast.error(t('academicYearsMustDiffer'));
@@ -256,21 +253,19 @@ const StudentPromotion = () => {
     <div className="space-y-5">
       <CardSection title={t('promotionSettings')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 sm:gap-3">
-          <SelectInput
+          <Input
             label={t('fromAcademicYear')}
             name="fromYear"
             value={fromYear}
             onChange={handleFromYearChange}
-            options={yearRange}
+            placeholder="e.g. 2025"
           />
-          <SelectInput
+          <Input
             label={t('toAcademicYear')}
             name="toYear"
             value={toYear}
             onChange={(e) => setToYear(e.target.value)}
-            options={toYearOptions}
-            disabled={noValidToYear}
-            placeholder={noValidToYear ? t('noHigherYear') : t('select')}
+            placeholder="e.g. 2026"
           />
           <SelectInput
             label={t('fromClass')}

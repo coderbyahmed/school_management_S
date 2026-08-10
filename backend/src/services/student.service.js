@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import Student from '../models/student.model.js';
 import StudentPromotion from '../models/studentPromotion.model.js';
 import AuditLog from '../models/auditLog.model.js';
+import SchoolSettings from '../models/schoolSettings.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { stripBaseUrl } from '../utils/imageUrl.js';
 import { writeUploadFile } from '../middlewares/upload.middleware.js';
@@ -28,6 +29,17 @@ const createStudent = async (data, file, baseUrl = '') => {
   const studentData = { ...data };
   delete studentData.studentId;
   delete studentData.admissionNumber;
+
+  const settings = await SchoolSettings.getSettings();
+  studentData.academicYear = settings.currentAcademicYear;
+  studentData.enrollments = [
+    {
+      academicYear: settings.currentAcademicYear,
+      class: studentData.class,
+      status: 'Active',
+      source: 'Admission',
+    },
+  ];
 
   const filename = writeUploadFile(file.buffer, 'student-images', file.originalname);
   const imagePath = `uploads/student-images/${filename}`;
@@ -133,34 +145,19 @@ const updateStudent = async (studentId, updateData, file, baseUrl = '') => {
   if (classChanged || yearChanged) {
     const targetClass = cleanData.class || existing.class;
     const targetYear = cleanData.academicYear || existing.academicYear;
-    await classValidation.validateClassExists(targetClass, targetYear);
-  }
 
-  if (cleanData.class && cleanData.class !== existing.class) {
-    const CLASS_ORDER = [
-      'Montessori', 'Nursery', 'KG 1', 'KG 2',
-      'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-      'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-    ];
+    const promotionCount = await StudentPromotion.countDocuments({ studentId: existing._id });
 
-    const promotions = await StudentPromotion.find({ studentId: existing._id })
-      .sort({ promotedAt: -1 })
-      .lean();
-
-    if (promotions.length > 0) {
-      const currentIdx = CLASS_ORDER.indexOf(existing.class);
-      const newIdx = CLASS_ORDER.indexOf(cleanData.class);
-
-      if (newIdx > currentIdx) {
-        throw new ApiError(400, 'This student already has a promotion history. Please use the Student Promotion module.');
-      }
-
-      await StudentPromotion.deleteMany({
-        studentId: existing._id,
-        fromClass: cleanData.class,
-        toClass: existing.class,
-      });
+    if (promotionCount > 0 && yearChanged) {
+      throw new ApiError(
+        400,
+        'This student has promotion history. To change the academic year, please reverse the promotion from the Promotion History tab instead of editing the academic year directly.',
+      );
     }
+
+    await classValidation.validateClassExists(targetClass, targetYear);
+
+    cleanData.enrollments = buildUpdatedEnrollments(existing, targetClass, targetYear, yearChanged);
   }
 
   const updated = await Student.findOneAndUpdate(
@@ -168,6 +165,46 @@ const updateStudent = async (studentId, updateData, file, baseUrl = '') => {
     { $set: cleanData },
     { returnDocument: "after", runValidators: true },
   );
+
+  return updated;
+};
+
+const buildUpdatedEnrollments = (existing, targetClass, targetYear, yearChanged) => {
+  const current = existing.enrollments || [];
+
+  const toObject = (e) => (e && typeof e.toObject === 'function' ? e.toObject() : { ...e });
+
+  if (yearChanged) {
+    if (current.length > 1) {
+      throw new ApiError(
+        400,
+        'Cannot change the academic year for a student with multiple enrollment records. Use the promotion correction flow instead.',
+      );
+    }
+
+    if (current.length === 1) {
+      const enrollment = toObject(current[0]);
+      return [{ ...enrollment, academicYear: targetYear, class: targetClass, status: 'Active', source: 'Correction' }];
+    }
+
+    return [{ academicYear: targetYear, class: targetClass, status: 'Active', source: 'Correction' }];
+  }
+
+  if (current.length === 0) {
+    return [{ academicYear: targetYear, class: targetClass, status: 'Active', source: 'Correction' }];
+  }
+
+  const updated = current.map((e) => {
+    const enrollment = toObject(e);
+    if (enrollment.status === 'Active') {
+      return { ...enrollment, class: targetClass };
+    }
+    return enrollment;
+  });
+
+  if (!updated.some((e) => e.status === 'Active')) {
+    updated.push({ academicYear: targetYear, class: targetClass, status: 'Active', source: 'Correction' });
+  }
 
   return updated;
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from '../../../hooks/useLocalization';
-import { ArrowTrendingUpIcon, AcademicCapIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline';
+import { ArrowTrendingUpIcon, AcademicCapIcon, ClockIcon, StarIcon, ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import StatCard from '../../common/StatCard/StatCard';
 import SelectInput from '../../common/SelectInput/SelectInput';
@@ -23,6 +23,8 @@ const PromotionHistory = () => {
   const [error, setError] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [reverseId, setReverseId] = useState(null);
+  const [reversing, setReversing] = useState(false);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -41,7 +43,8 @@ const PromotionHistory = () => {
           newYear: h.toAcademicYear || '—',
           date: h.promotedAt ? new Date(h.promotedAt).toLocaleDateString() : '—',
           promotedBy: h.promotedBy?.fullName || h.promotedByName || 'Admin',
-          status: h.status === 'Promoted' ? 'Completed' : (h.status || '—'),
+          status: h.reversed ? 'Reversed' : (h.status === 'Promoted' ? 'Completed' : (h.status || '—')),
+          reversed: !!h.reversed,
           promotedAt: h.promotedAt,
         }));
         setPromotions(mapped);
@@ -84,6 +87,31 @@ const PromotionHistory = () => {
       setDeleting(false);
     }
   }, [deleteId, fetchHistory]);
+
+  const handleReverseClick = useCallback((id) => {
+    setReverseId(id);
+  }, []);
+
+  const handleReverseConfirm = useCallback(async () => {
+    if (!reverseId) return;
+    setReversing(true);
+    try {
+      const res = await studentService.reverseStudentPromotion(reverseId);
+      if (res.success) {
+        toast.success(t('promotionReversedSuccessfully'));
+        setReverseId(null);
+        fetchHistory();
+      } else {
+        toast.error(res.message || t('reversePromotionFailed'));
+        setReverseId(null);
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || t('reversePromotionFailed'));
+      setReverseId(null);
+    } finally {
+      setReversing(false);
+    }
+  }, [reverseId, fetchHistory]);
 
   const resetFilters = useCallback(() => {
     setYearFilter(t('all'));
@@ -164,22 +192,35 @@ const PromotionHistory = () => {
       <td className="px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300">{promotion.promotedBy}</td>
       <td className="px-4 py-2.5">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-          promotion.status === 'Completed'
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+          promotion.status === 'Reversed'
+            ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+            : promotion.status === 'Completed'
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+              : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
         }`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${promotion.status === 'Completed' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+          <span className={`w-1.5 h-1.5 rounded-full ${promotion.status === 'Reversed' ? 'bg-gray-400' : promotion.status === 'Completed' ? 'bg-green-500' : 'bg-yellow-500'}`} />
           {promotion.status}
         </span>
       </td>
       <td className="px-4 py-2.5">
-        <Button
-          variant="danger"
-          onClick={() => handleDeleteClick(promotion.id)}
-          className="!w-auto !px-3 !py-1.5 text-xs"
-        >
-          {t('delete')}
-        </Button>
+        <div className="flex items-center gap-1">
+          {!promotion.reversed && (
+            <button
+              onClick={() => handleReverseClick(promotion.id)}
+              className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+              title={t('reverse')}
+            >
+              <ArrowPathIcon className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            onClick={() => handleDeleteClick(promotion.id)}
+            className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+            title={t('delete')}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </button>
+        </div>
       </td>
     </>
   );
@@ -264,6 +305,18 @@ const PromotionHistory = () => {
         variant="danger"
         loading={deleting}
         onConfirm={handleDeleteConfirm}
+      />
+
+      <ConfirmationModal
+        isOpen={!!reverseId}
+        onClose={() => setReverseId(null)}
+        title={t('reversePromotion')}
+        message={t('confirmReversePromotion')}
+        confirmLabel={t('reverse')}
+        cancelLabel={t('cancel')}
+        variant="primary"
+        loading={reversing}
+        onConfirm={handleReverseConfirm}
       />
     </div>
   );

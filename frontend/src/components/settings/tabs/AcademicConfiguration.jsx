@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import CardSection from '../../common/CardSection/CardSection';
 import SelectInput from '../../common/SelectInput/SelectInput';
-import { ACADEMIC_YEARS } from '../../../utils/classNames';
+import Input from '../../common/Input/Input';
 
 const SCHOOL_SHIFTS = ['Morning', 'Evening', 'Both'];
 
@@ -72,6 +72,10 @@ const AcademicConfiguration = ({ data, onSave, saving }) => {
       toast.error('Please fill all required fields');
       return;
     }
+    if (!/^\d{4}$/.test(form.currentAcademicYear.trim())) {
+      toast.error('Current academic year must be a valid 4-digit year (e.g. 2026)');
+      return;
+    }
     await onSave(form);
     setEditing(false);
     setUserEdits({});
@@ -81,13 +85,12 @@ const AcademicConfiguration = ({ data, onSave, saving }) => {
     <div className="space-y-6">
       <CardSection title="Academic Year">
         <div className="max-w-md">
-          <SelectInput
+          <Input
             label="Current Academic Year"
             name="currentAcademicYear"
             value={form.currentAcademicYear}
             onChange={handleChange('currentAcademicYear')}
-            options={ACADEMIC_YEARS}
-            placeholder="Select year"
+            placeholder="e.g. 2026"
             required
             disabled={!editing}
           />

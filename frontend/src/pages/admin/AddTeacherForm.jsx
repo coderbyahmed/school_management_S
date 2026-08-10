@@ -7,6 +7,7 @@ import SelectInput from '../../components/common/SelectInput/SelectInput';
 import DateInput from '../../components/common/DateInput/DateInput';
 import Alert from '../../components/common/Alert/Alert';
 import teacherService from '../../services/teacher/teacher.service';
+import { useSchoolConfig } from '../../contexts/SchoolConfigContext';
 
 const genderOptions = ['Male', 'Female'];
 const statusOptions = ['Active', 'Inactive'];
@@ -28,6 +29,7 @@ const initialFormState = {
   experience: '',
   joiningDate: today,
   status: 'Active',
+  academicYear: '',
   phone: '',
   alternatePhone: '',
   email: '',
@@ -36,7 +38,8 @@ const initialFormState = {
 };
 
 const AddTeacherForm = ({ onSuccess }) => {
-  const [form, setForm] = useState(initialFormState);
+  const { academic } = useSchoolConfig();
+  const [form, setForm] = useState(() => ({ ...initialFormState, academicYear: academic?.currentYear || '' }));
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,7 +59,7 @@ const AddTeacherForm = ({ onSuccess }) => {
   };
 
   const resetForm = () => {
-    setForm(initialFormState);
+    setForm((prev) => ({ ...initialFormState, academicYear: academic?.currentYear || prev.academicYear || '' }));
     setPhotoPreview(null);
     setError('');
   };
@@ -82,6 +85,7 @@ const AddTeacherForm = ({ onSuccess }) => {
       formData.append('experience', form.experience);
       formData.append('joiningDate', form.joiningDate);
       formData.append('status', form.status);
+      formData.append('academicYear', form.academicYear.trim());
       formData.append('phoneNumber', form.phone.trim());
       if (form.alternatePhone) formData.append('alternatePhoneNumber', form.alternatePhone.trim());
       if (form.email) formData.append('email', form.email.trim());
@@ -205,6 +209,13 @@ const AddTeacherForm = ({ onSuccess }) => {
             value={form.status}
             onChange={handleChange('status')}
             options={statusOptions}
+          />
+          <Input
+            label="Academic Year"
+            name="academicYear"
+            value={form.academicYear}
+            onChange={handleChange('academicYear')}
+            placeholder="e.g. 2026"
           />
         </CardSection>
       </div>

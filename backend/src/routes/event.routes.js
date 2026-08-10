@@ -3,6 +3,7 @@ import {
   createEvent,
   getAllEvents,
   getEventById,
+  getEventAcademicYears,
   updateEvent,
   deleteEvent,
 } from '../controllers/event.controller.js';
@@ -66,6 +67,13 @@ router.get(
     next();
   },
   getAllEvents,
+);
+
+router.get(
+  '/academic-years',
+  protect,
+  authorize('admin'),
+  getEventAcademicYears,
 );
 
 router.get(

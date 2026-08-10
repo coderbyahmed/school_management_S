@@ -101,6 +101,12 @@ const getEventById = async (id) => {
   return event;
 };
 
+const getEventAcademicYears = async () => {
+  const years = await Event.distinct('academicYear');
+
+  return years.sort();
+};
+
 const updateEvent = async (id, data, userId) => {
   const existing = await Event.findById(id);
 
@@ -148,6 +154,7 @@ export default {
   createEvent,
   getAllEvents,
   getEventById,
+  getEventAcademicYears,
   updateEvent,
   deleteEvent,
 };

@@ -111,10 +111,7 @@ const validateCreateStudent = (req, res, next) => {
     throw new ApiError(400, 'Invalid class selection');
   }
 
-  if (!academicYear) {
-    throw new ApiError(400, 'Academic year is required');
-  }
-  if (!/^\d{4}$/.test(academicYear)) {
+  if (academicYear !== undefined && !/^\d{4}$/.test(academicYear)) {
     throw new ApiError(400, 'Invalid academic year format');
   }
 

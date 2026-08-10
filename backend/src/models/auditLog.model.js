@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const auditLogSchema = new mongoose.Schema({
   action: {
     type: String,
-    enum: ['CREATE', 'UPDATE', 'DELETE', 'PROMOTE', 'LOGIN', 'LOGOUT'],
+    enum: ['CREATE', 'UPDATE', 'DELETE', 'PROMOTE', 'REVERSE_PROMOTION', 'LOGIN', 'LOGOUT'],
     required: true,
   },
   module: {

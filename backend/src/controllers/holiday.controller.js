@@ -31,6 +31,16 @@ const getHolidayById = asyncHandler(async (req, res) => {
   });
 });
 
+const getHolidayAcademicYears = asyncHandler(async (req, res) => {
+  const years = await holidayService.getHolidayAcademicYears();
+
+  return res.status(200).json({
+    success: true,
+    message: 'Academic years fetched successfully',
+    data: { years },
+  });
+});
+
 const updateHoliday = asyncHandler(async (req, res) => {
   const holiday = await holidayService.updateHoliday(req.params.id, req.body);
 
@@ -54,6 +64,7 @@ export {
   createHoliday,
   getAllHolidays,
   getHolidayById,
+  getHolidayAcademicYears,
   updateHoliday,
   deleteHoliday,
 };

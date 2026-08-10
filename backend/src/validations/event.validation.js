@@ -31,7 +31,7 @@ const EVENT_COLORS = [
   '#f97316',
 ];
 
-const ACADEMIC_YEAR_REGEX = /^(202[5-9]|203[0-5])$/;
+const ACADEMIC_YEAR_REGEX = /^\d{4}$/;
 
 const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 const MAX_BANNER_SIZE = 5 * 1024 * 1024;

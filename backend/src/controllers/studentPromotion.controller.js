@@ -74,4 +74,17 @@ const deleteStudentPromotion = asyncHandler(async (req, res) => {
   });
 });
 
-export { filterStudentsForPromotion, promoteStudents, getPromotionHistory, getStudentPromotions, deleteStudentPromotion };
+const reversePromotion = asyncHandler(async (req, res) => {
+  await studentPromotionService.reversePromotion(
+    req.params.id,
+    req.user._id,
+    req.user.fullName,
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: 'Promotion reversed successfully. Student returned to the previous enrollment.',
+  });
+});
+
+export { filterStudentsForPromotion, promoteStudents, getPromotionHistory, getStudentPromotions, deleteStudentPromotion, reversePromotion };

@@ -98,6 +98,11 @@ const teacherSchema = new mongoose.Schema(
       enum: ['Active', 'Inactive'],
       default: 'Active',
     },
+    academicYear: {
+      type: String,
+      required: [true, 'Academic year is required'],
+      trim: true,
+    },
     assignedSubjects: [
       {
         type: mongoose.Schema.Types.ObjectId,

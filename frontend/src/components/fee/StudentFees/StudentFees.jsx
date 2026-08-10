@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
   UsersIcon, CurrencyDollarIcon, BanknotesIcon, ExclamationTriangleIcon,
@@ -14,7 +14,6 @@ import Button from '../../common/Button/Button';
 import Input from '../../common/Input/Input';
 import SelectInput from '../../common/SelectInput/SelectInput';
 import DateInput from '../../common/DateInput/DateInput';
-import studentFeesService from '../../../services/studentFees/studentFees.service';
 import { useCurrency } from '../../../hooks/useLocalization';
 
 const SESSIONS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
@@ -88,8 +87,6 @@ const collectFormEmpty = {
   remarks: '',
 };
 
-const ITEMS_PER_PAGE = 10;
-
 const StudentAvatar = ({ student, size = 'w-7 h-7', textSize = 'text-[8px]' }) => {
   if (student?.studentImage) {
     return (
@@ -110,18 +107,17 @@ const StudentAvatar = ({ student, size = 'w-7 h-7', textSize = 'text-[8px]' }) =
 
 const StudentFees = () => {
   const { formatCurrency } = useCurrency();
-  const [collections, setCollections] = useState([]);
-  const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalItems: 0 });
-  const [stats, setStats] = useState({ totalCollections: 0, collectedToday: 0, outstandingAmount: 0, pendingCount: 0 });
+  const [collections] = useState([]);
+  const [pagination] = useState({ currentPage: 1, totalPages: 1, totalItems: 0 });
+  const [stats] = useState({ totalCollections: 0, collectedToday: 0, outstandingAmount: 0, pendingCount: 0 });
   const [search, setSearch] = useState('');
   const [yearFilter, setYearFilter] = useState('All');
   const [classFilter, setClassFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [feeTypeFilter, setFeeTypeFilter] = useState('All Fees');
   const [currentPage, setCurrentPage] = useState(1);
-  const [feeTypeOverrides, setFeeTypeOverrides] = useState({});
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [reload, setReload] = useState(0);
+  const [feeTypeOverrides] = useState({});
+  const [fetchLoading] = useState(false);
 
   const [viewItem, setViewItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
@@ -132,10 +128,10 @@ const StudentFees = () => {
   const [collectModal, setCollectModal] = useState(null);
   const [collectSearchId, setCollectSearchId] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
+  const [searching] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [feeDetails, setFeeDetails] = useState(null);
-  const [feeDetailsLoading, setFeeDetailsLoading] = useState(false);
+  const [feeDetailsLoading] = useState(false);
   const [collectFeeType, setCollectFeeType] = useState('Monthly Fee');
   const [collectForm, setCollectForm] = useState({ ...collectFormEmpty });
   const [collectErrors, setCollectErrors] = useState({});
@@ -143,40 +139,6 @@ const StudentFees = () => {
 
   const [deleteItem, setDeleteItem] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const searchTimeoutRef = useRef(null);
-
-  useEffect(() => () => clearTimeout(searchTimeoutRef.current), []);
-
-  const fetchCollections = useCallback(async () => {
-    const params = { page: currentPage, limit: ITEMS_PER_PAGE };
-    if (yearFilter !== 'All') params.academicYear = yearFilter;
-    if (classFilter !== 'All') params.class = classFilter;
-    if (statusFilter !== 'All') params.paymentStatus = statusFilter;
-    if (search) params.search = search;
-    return studentFeesService.getAll(params);
-  }, [currentPage, yearFilter, classFilter, statusFilter, search]);
-
-  useEffect(() => {
-    let active = true;
-    fetchCollections()
-      .then((data) => {
-        if (!active) return;
-        setCollections(data.collections || []);
-        setPagination(data.pagination || { currentPage: 1, totalPages: 1, totalItems: 0 });
-        setStats(data.stats || { totalCollections: 0, collectedToday: 0, outstandingAmount: 0, pendingCount: 0 });
-      })
-      .catch(() => {
-        if (!active) return;
-        setCollections([]);
-        setPagination({ currentPage: 1, totalPages: 1, totalItems: 0 });
-        setStats({ totalCollections: 0, collectedToday: 0, outstandingAmount: 0, pendingCount: 0 });
-      })
-      .finally(() => {
-        if (active) setFetchLoading(false);
-      });
-    return () => { active = false; };
-  }, [fetchCollections, reload]);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -212,7 +174,6 @@ const StudentFees = () => {
 
   const handleCollectSearchChange = (val) => {
     setCollectSearchId(val);
-    clearTimeout(searchTimeoutRef.current);
 
     const term = val.trim();
     if (term.length < 3) {
@@ -224,49 +185,13 @@ const StudentFees = () => {
       return;
     }
 
-    searchTimeoutRef.current = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const data = await studentFeesService.searchStudents(term);
-        setSearchResults(data.students || []);
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 350);
+    setSearchResults([]);
   };
 
-  const handleSelectStudent = async (student) => {
+  const handleSelectStudent = (student) => {
     setSelectedStudent(student);
     setSearchResults([]);
     setCollectErrors((prev) => ({ ...prev, studentId: '' }));
-    setFeeDetails(null);
-    setFeeDetailsLoading(true);
-
-    try {
-      const data = await studentFeesService.loadStudentFeeDetails(student._id);
-      setFeeDetails(data);
-      const discount = Number(data.calculation?.discount || 0);
-      const lateFine = collectFeeType === 'Admission Fee' ? 0 : Number(data.calculation?.lateFine || 0);
-      const baseAmount = getFeeTypeBase(data.feeStructure, collectFeeType);
-      setCollectForm((prev) => ({
-        ...prev,
-        studentId: student._id,
-        discount: String(data.calculation?.discount || '0'),
-        lateFine: String(data.calculation?.lateFine || '0'),
-        paidAmount: String(Math.max(0, baseAmount + lateFine - discount)),
-        paymentMethod: 'Cash',
-        paymentDate: todayStr(),
-        remarks: '',
-      }));
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to load fee details');
-      setSelectedStudent(null);
-      setFeeDetails(null);
-    } finally {
-      setFeeDetailsLoading(false);
-    }
   };
 
   const handleCollectFeeTypeChange = (e) => {
@@ -320,37 +245,18 @@ const StudentFees = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleCollectFee = async () => {
+  const handleCollectFee = () => {
     if (!validateCollectForm()) return;
     setSaving(true);
-    try {
-      const res = await studentFeesService.collectFee({
-        studentId: collectForm.studentId,
-        paidAmount: Number(collectForm.paidAmount),
-        discount: Number(collectForm.discount || 0),
-        lateFine: Number(collectForm.lateFine || 0),
-        paymentMethod: collectForm.paymentMethod,
-        paymentDate: collectForm.paymentDate,
-        remarks: collectForm.remarks,
-      });
-      const created = res?.data?.collection;
-      if (created?._id) {
-        setFeeTypeOverrides((prev) => ({ ...prev, [created._id]: collectFeeType }));
-      }
-      toast.success('Fee collected successfully');
-      setCollectModal(null);
-      setCollectForm({ ...collectFormEmpty });
-      setCollectFeeType('Monthly Fee');
-      setCollectSearchId('');
-      setSearchResults([]);
-      setSelectedStudent(null);
-      setFeeDetails(null);
-      setReload((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to collect fee');
-    } finally {
-      setSaving(false);
-    }
+    toast.success('Fee collection will be available after the new backend is integrated.');
+    setCollectModal(null);
+    setCollectForm({ ...collectFormEmpty });
+    setCollectFeeType('Monthly Fee');
+    setCollectSearchId('');
+    setSearchResults([]);
+    setSelectedStudent(null);
+    setFeeDetails(null);
+    setSaving(false);
   };
 
   const handleEdit = (item) => {
@@ -395,43 +301,22 @@ const editCalc = useMemo(() => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleEditSave = async () => {
+  const handleEditSave = () => {
     if (!validateEditForm() || !editItem) return;
     setEditSaving(true);
-    try {
-      await studentFeesService.update(editItem._id, {
-        discount: Number(editForm.discount || 0),
-        lateFine: Number(editForm.lateFine || 0),
-        paidAmount: Number(editForm.paidAmount || 0),
-        paymentMethod: editForm.paymentMethod,
-        paymentDate: editForm.paymentDate,
-        remarks: editForm.remarks,
-      });
-      toast.success('Fee collection updated successfully');
-      setEditItem(null);
-      setReload((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update fee collection');
-    } finally {
-      setEditSaving(false);
-    }
+    toast.success('Fee collection updates will be available after the new backend is integrated.');
+    setEditItem(null);
+    setEditSaving(false);
   };
 
   const handleDelete = (item) => setDeleteItem(item);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (!deleteItem) return;
     setDeleteLoading(true);
-    try {
-      await studentFeesService.delete(deleteItem._id);
-      toast.success('Fee collection deleted successfully');
-      setDeleteItem(null);
-      setReload((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete fee collection');
-    } finally {
-      setDeleteLoading(false);
-    }
+    toast.success('Fee collection deletion will be available after the new backend is integrated.');
+    setDeleteItem(null);
+    setDeleteLoading(false);
   };
 
   const renderViewModal = () => {

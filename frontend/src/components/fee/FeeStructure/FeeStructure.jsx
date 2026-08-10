@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   DocumentTextIcon, CheckCircleIcon, ReceiptPercentIcon, CurrencyDollarIcon,
@@ -14,12 +14,11 @@ import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal'
 import Button from '../../common/Button/Button';
 import Input from '../../common/Input/Input';
 import SelectInput from '../../common/SelectInput/SelectInput';
-import feeStructureService from '../../../services/feeStructure/feeStructure.service';
 import { useCurrency } from '../../../hooks/useLocalization';
 
-const { SESSIONS, CLASSES } = feeStructureService;
+const SESSIONS = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
+const CLASSES = ['Montessori', 'Nursery', 'KG-1', 'KG-2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
 const STATUS_OPTIONS = ['All', 'Active', 'Inactive'];
-const ITEMS_PER_PAGE = 10;
 
 const formatDate = (val) => {
   if (!val) return '-';
@@ -44,17 +43,16 @@ const emptyForm = {
 const FeeStructure = () => {
   const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('All Fee Structures');
-  const [structures, setStructures] = useState([]);
+  const [structures] = useState([]);
   const [search, setSearch] = useState('');
   const [yearFilter, setYearFilter] = useState('All');
   const [classFilter, setClassFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [monthlyCollectionEstimate, setMonthlyCollectionEstimate] = useState(0);
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [reload, setReload] = useState(0);
+  const [totalPages] = useState(1);
+  const [totalItems] = useState(0);
+  const [monthlyCollectionEstimate] = useState(0);
+  const [fetchLoading] = useState(false);
 
   const [viewItem, setViewItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
@@ -64,38 +62,6 @@ const FeeStructure = () => {
   const [form, setForm] = useState({ ...emptyForm });
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
-
-  const fetchStructures = useCallback(async () => {
-    const params = { page: currentPage, limit: ITEMS_PER_PAGE };
-    if (yearFilter !== 'All') params.academicYear = yearFilter;
-    if (classFilter !== 'All') params.class = classFilter;
-    if (statusFilter !== 'All') params.status = statusFilter;
-    if (search) params.search = search;
-    return feeStructureService.getAll(params);
-  }, [currentPage, yearFilter, classFilter, statusFilter, search]);
-
-  useEffect(() => {
-    let active = true;
-    fetchStructures()
-      .then((result) => {
-        if (!active) return;
-        setStructures(result.structures || []);
-        setTotalPages(result.pagination?.totalPages || 1);
-        setTotalItems(result.pagination?.totalItems || 0);
-        setMonthlyCollectionEstimate(result.summary?.monthlyCollectionEstimate ?? 0);
-      })
-      .catch(() => {
-        if (!active) return;
-        setStructures([]);
-        setTotalPages(1);
-        setTotalItems(0);
-        setMonthlyCollectionEstimate(0);
-      })
-      .finally(() => {
-        if (active) setFetchLoading(false);
-      });
-    return () => { active = false; };
-  }, [fetchStructures, reload]);
 
   const totalStructures = totalItems;
   const activeStructures = structures.filter((s) => s.status === 'Active').length;
@@ -131,19 +97,12 @@ const FeeStructure = () => {
 
   const handleDelete = (item) => setDeleteItem(item);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (!deleteItem) return;
     setDeleteLoading(true);
-    try {
-      await feeStructureService.delete(deleteItem._id);
-      toast.success('Fee structure deleted successfully');
-      setDeleteItem(null);
-      setReload((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete fee structure');
-    } finally {
-      setDeleteLoading(false);
-    }
+    toast.success('Fee structure deletion will be available after the new backend is integrated.');
+    setDeleteItem(null);
+    setDeleteLoading(false);
   };
 
   const validateForm = () => {
@@ -166,41 +125,15 @@ const FeeStructure = () => {
     if (formErrors[name]) setFormErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!validateForm()) return;
     setSaving(true);
-    try {
-      const payload = {
-        class: form.class,
-        academicYear: form.academicYear,
-        monthlyFee: Number(form.monthlyFee),
-        admissionFee: Number(form.admissionFee || 0),
-        examFee: Number(form.examFee || 0),
-        otherCharges: Number(form.otherCharges || 0),
-        discount: Number(form.discount || 0),
-        lateFine: Number(form.lateFine || 0),
-        status: form.status,
-        notes: form.notes,
-      };
-
-      if (editItem) {
-        await feeStructureService.update(editItem._id, payload);
-        toast.success('Fee structure updated successfully');
-      } else {
-        await feeStructureService.create(payload);
-        toast.success('Fee structure created successfully');
-      }
-
-      setForm({ ...emptyForm });
-      setFormErrors({});
-      setEditItem(null);
-      setReload((r) => r + 1);
-      setActiveTab('All Fee Structures');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save fee structure');
-    } finally {
-      setSaving(false);
-    }
+    toast.success('Fee structure saving will be available after the new backend is integrated.');
+    setForm({ ...emptyForm });
+    setFormErrors({});
+    setEditItem(null);
+    setActiveTab('All Fee Structures');
+    setSaving(false);
   };
 
   const handleResetForm = () => {

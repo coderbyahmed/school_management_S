@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from '../../../hooks/useLocalization';
 import toast from 'react-hot-toast';
 import {
@@ -19,6 +19,7 @@ const initialForm = {
   type: '',
   appliesTo: '',
   description: '',
+  academicYear: '',
 };
 
 const getStatusStyle = (status) => {
@@ -35,8 +36,9 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
   const { academic } = useSchoolConfig();
   const [holidays, setHolidays] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ ...initialForm });
+  const [form, setForm] = useState({ ...initialForm, academicYear: academic.currentYear || '' });
   const [academicYear, setAcademicYear] = useState(academic.currentYear);
+  const [yearOptions, setYearOptions] = useState([]);
   const [typeFilter, setTypeFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewHoliday, setViewHoliday] = useState(null);
@@ -46,6 +48,37 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const yearInitializedRef = useRef(false);
+  const yearDefaultRef = useRef(false);
+
+  useEffect(() => {
+    if (yearInitializedRef.current) return;
+    if (academic.currentYear) {
+      yearInitializedRef.current = true;
+      setAcademicYear(academic.currentYear);
+    }
+  }, [academic.currentYear]);
+
+  useEffect(() => {
+    if (yearDefaultRef.current) return;
+    if (academic.currentYear && !form.academicYear) {
+      yearDefaultRef.current = true;
+      setForm((prev) => ({ ...prev, academicYear: academic.currentYear }));
+    }
+  }, [academic.currentYear, form.academicYear]);
+
+  useEffect(() => {
+    let mounted = true;
+    eventsService
+      .getHolidayAcademicYears()
+      .then((years) => {
+        if (mounted) setYearOptions(years || []);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const isEditing = !!editHoliday;
 
@@ -81,10 +114,11 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
         type: editHoliday.type || '',
         appliesTo: editHoliday.appliesTo || '',
         description: editHoliday.description || '',
+        academicYear: editHoliday.academicYear || academic.currentYear || '',
       });
       setShowForm(true);
     }
-  }, [editHoliday]);
+  }, [editHoliday, academic.currentYear]);
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -102,11 +136,19 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
       toast.error(t('endDateAfterStart'));
       return;
     }
+    if (!form.academicYear) {
+      toast.error(t('pleaseFillRequired'));
+      return;
+    }
+    if (!/^\d{4}$/.test(form.academicYear)) {
+      toast.error(t('invalidAcademicYear'));
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         ...form,
-        academicYear: academic.currentYear || eventsService.ACADEMIC_YEARS[0],
+        academicYear: form.academicYear,
       };
       if (isEditing) {
         await eventsService.updateHoliday(editHoliday._id, payload);
@@ -116,7 +158,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
         await eventsService.createHoliday(payload);
         toast.success(`${t('holiday')} ${t('savedSuccessfully')}`);
       }
-      setForm({ ...initialForm });
+      setForm({ ...initialForm, academicYear: academic.currentYear || '' });
       setShowForm(false);
       onDataChange();
     } catch (err) {
@@ -207,6 +249,17 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder={t('holidayName')} />
               </div>
               <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('academicYearLabel')} <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={form.academicYear}
+                  onChange={(e) => update('academicYear', e.target.value.replace(/[^\d]/g, '').slice(0, 4))}
+                  placeholder={t('enterAcademicYear')}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                />
+              </div>
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('startDate')} <span className="text-red-500">*</span></label>
                 <input type="date" value={form.startDate} onChange={(e) => update('startDate', e.target.value)}
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
@@ -248,7 +301,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
               <Button onClick={handleAdd} loading={saving} className="!w-auto !px-5">
                 {isEditing ? t('updateHoliday') : t('saveHoliday')}
               </Button>
-              <button onClick={() => { setForm({ ...initialForm }); setShowForm(false); if (isEditing) onClearHolidayEdit(); }}
+              <button onClick={() => { setForm({ ...initialForm, academicYear: academic.currentYear || '' }); setShowForm(false); if (isEditing) onClearHolidayEdit(); }}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">
                 {t('cancel')}
               </button>
@@ -263,7 +316,7 @@ const HolidayManagement = ({ onDataChange, editHoliday, onEditHoliday, onClearHo
               <select value={academicYear} onChange={(e) => { setAcademicYear(e.target.value); setCurrentPage(1); }}
                 className="appearance-none w-full px-3 py-2.5 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                 <option value="">{t('allYears')}</option>
-                {eventsService.ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>

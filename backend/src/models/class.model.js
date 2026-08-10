@@ -6,7 +6,7 @@ const VALID_CLASS_NAMES = [
   'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
 ];
 
-const ACADEMIC_YEAR_REGEX = /^(202[5-9]|203[0-5])$/;
+const ACADEMIC_YEAR_REGEX = /^\d{4}$/;
 
 const classSchema = new mongoose.Schema(
   {
@@ -36,6 +36,10 @@ const classSchema = new mongoose.Schema(
         values: ['Active', 'Inactive'],
         message: 'Status must be either Active or Inactive',
       },
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
     assignedSubjects: [
       {

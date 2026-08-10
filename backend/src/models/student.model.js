@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 import Counter from './counter.model.js';
 
+const VALID_CLASS_NAMES = [
+  'Montessori', 'Nursery', 'KG 1', 'KG 2',
+  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+];
+
 const studentSchema = new mongoose.Schema(
   {
     studentImage: {
@@ -75,17 +81,45 @@ const studentSchema = new mongoose.Schema(
     },
     class: {
       type: String,
-      enum: [
-        'Montessori', 'Nursery', 'KG 1', 'KG 2',
-        'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-        'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-      ],
+      enum: VALID_CLASS_NAMES,
       required: [true, 'Class is required'],
     },
     academicYear: {
       type: String,
       required: [true, 'Academic year is required'],
     },
+    enrollments: [
+      {
+        academicYear: {
+          type: String,
+          required: true,
+        },
+        class: {
+          type: String,
+          enum: VALID_CLASS_NAMES,
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ['Active', 'Historical', 'Reversed'],
+          default: 'Active',
+        },
+        source: {
+          type: String,
+          enum: ['Admission', 'Promotion', 'Correction', 'Reversal'],
+          default: 'Admission',
+        },
+        promotedFrom: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'StudentPromotion',
+          default: null,
+        },
+        enrolledAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -96,6 +130,7 @@ studentSchema.index({ fatherPhone: 1 });
 studentSchema.index({ status: 1 });
 studentSchema.index({ class: 1 });
 studentSchema.index({ academicYear: 1 });
+studentSchema.index({ 'enrollments.academicYear': 1, 'enrollments.class': 1, 'enrollments.status': 1 });
 
 studentSchema.pre('save', async function () {
   if (this.isNew) {

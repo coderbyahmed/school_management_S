@@ -9,7 +9,7 @@ import DateInput from '../DateInput/DateInput';
 import Button from '../Button/Button';
 import Alert from '../Alert/Alert';
 import { getImageUrl } from '../../../utils/imageUrl';
-import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
+import { CLASS_NAMES } from '../../../utils/classNames';
 import { useTranslation } from '../../../hooks/useLocalization';
 
 const getInitialFormData = (student) => student ? {
@@ -138,7 +138,7 @@ const EditStudentModal = ({ student, isOpen, onClose, onSave }) => {
           <CardSection title={t('academicInformation')}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
               <SelectInput label={t('class')} name="class" value={formData.class} onChange={handleChange('class')} options={CLASS_NAMES} placeholder={t('selectClass')} />
-              <SelectInput label={t('academicYear')} name="academicYear" value={formData.academicYear} onChange={handleChange('academicYear')} options={ACADEMIC_YEARS} placeholder={t('selectYear')} />
+              <Input label={t('academicYear')} name="academicYear" value={formData.academicYear} onChange={handleChange('academicYear')} placeholder={t('enterAcademicYear')} />
             </div>
           </CardSection>
         </div>

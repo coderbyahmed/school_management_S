@@ -12,22 +12,25 @@ import ActionButtons from '../../common/ActionButtons/ActionButtons';
 import ClassCard from '../../common/ClassCard/ClassCard';
 import ConfirmationModal from '../../common/ConfirmationModal/ConfirmationModal';
 import classService from '../../../services/class/class.service';
-import { ACADEMIC_YEARS } from '../../../utils/classNames';
 
 const ITEMS_PER_PAGE = 10;
 
 const AllClasses = ({ onViewDetails, onEditClass }) => {
   const { t } = useTranslation();
-  const academicYearOptions = [t('allYears'), ...ACADEMIC_YEARS];
   const statusOptions = [t('all'), t('active'), t('inactive')];
   const [view, setView] = useState('table');
-  const [academicYearFilter, setAcademicYearFilter] = useState(t('allYears'));
+  const [academicYearFilter, setAcademicYearFilter] = useState(t('selectYear'));
   const [statusFilter, setStatusFilter] = useState(t('all'));
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingClass, setDeletingClass] = useState(null);
+
+  const academicYearOptions = [
+    t('selectYear'),
+    ...[...new Set(classes.map((c) => c.academicYear).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+  ];
 
   const fetchClasses = async () => {
     try {
@@ -67,8 +70,8 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
   }, []);
 
   const filteredClasses = classes.filter((c) => {
-    if (academicYearFilter !== 'All Years' && c.academicYear !== academicYearFilter) return false;
-    if (statusFilter !== 'All' && c.status !== statusFilter) return false;
+    if (academicYearFilter !== t('selectYear') && c.academicYear !== academicYearFilter) return false;
+    if (statusFilter !== t('all') && c.status !== statusFilter) return false;
     if (searchQuery && !c.className?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
@@ -80,7 +83,7 @@ const AllClasses = ({ onViewDetails, onEditClass }) => {
   );
 
   const handleReset = () => {
-    setAcademicYearFilter(t('allYears'));
+    setAcademicYearFilter(t('selectYear'));
     setStatusFilter(t('all'));
     setSearchQuery('');
     setCurrentPage(1);

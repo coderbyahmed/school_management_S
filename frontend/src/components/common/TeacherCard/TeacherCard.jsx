@@ -30,6 +30,10 @@ const TeacherCard = ({ teacher, onView, onEdit, onDelete }) => {
 
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{teacher.phoneNumber}</p>
 
+      {teacher.academicYear && (
+        <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">{teacher.academicYear}</p>
+      )}
+
       <div className="mt-2">
         <StatusBadge status={teacher.status} />
       </div>

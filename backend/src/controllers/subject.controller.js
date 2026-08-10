@@ -76,6 +76,16 @@ const getClassAssignments = asyncHandler(async (req, res) => {
   });
 });
 
+const getClassAssignmentYears = asyncHandler(async (req, res) => {
+  const years = await subjectService.getClassAssignmentAcademicYears();
+
+  return res.status(200).json({
+    success: true,
+    message: 'Academic years fetched successfully',
+    data: { years },
+  });
+});
+
 const assignSubjectsToTeacher = asyncHandler(async (req, res) => {
   const { teacherId, subjectIds } = req.body;
   const result = await subjectService.assignSubjectsToTeacher(teacherId, subjectIds);
@@ -110,6 +120,7 @@ export {
   deleteSubject,
   assignSubjectsToClass,
   getClassAssignments,
+  getClassAssignmentYears,
   assignSubjectsToTeacher,
   getTeacherAssignments,
 };

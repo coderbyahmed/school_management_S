@@ -54,6 +54,11 @@ const studentService = {
     const response = await api.delete(`/students/promotions/${id}`);
     return response.data;
   },
+
+  reverseStudentPromotion: async (id) => {
+    const response = await api.post(`/students/promotions/${id}/reverse`);
+    return response.data;
+  },
 };
 
 export default studentService;

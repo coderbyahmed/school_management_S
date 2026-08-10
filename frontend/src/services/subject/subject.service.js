@@ -36,6 +36,11 @@ const subjectService = {
     return response.data;
   },
 
+  getClassAssignmentYears: async () => {
+    const response = await api.get('/subjects/assign-class/years');
+    return response.data;
+  },
+
   assignSubjectsToTeacher: async (teacherId, subjectIds) => {
     const response = await api.post('/subjects/assign-teacher', { teacherId, subjectIds });
     return response.data;

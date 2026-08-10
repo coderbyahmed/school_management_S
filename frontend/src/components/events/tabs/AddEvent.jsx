@@ -21,16 +21,26 @@ const initialForm = {
   audience: '',
   description: '',
   status: 'Upcoming',
+  academicYear: '',
 };
 
 const AddEvent = ({ onDataChange, editEvent, onClearEdit }) => {
   const { t } = useTranslation();
   const { academic } = useSchoolConfig();
-  const [form, setForm] = useState({ ...initialForm });
+  const [form, setForm] = useState({ ...initialForm, academicYear: academic.currentYear || '' });
   const [imagePreview, setImagePreview] = useState(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef(null);
+  const yearDefaultRef = useRef(false);
+
+  useEffect(() => {
+    if (yearDefaultRef.current) return;
+    if (academic.currentYear && !form.academicYear) {
+      yearDefaultRef.current = true;
+      setForm((prev) => ({ ...prev, academicYear: academic.currentYear }));
+    }
+  }, [academic.currentYear, form.academicYear]);
 
   useEffect(() => {
     if (editEvent) {
@@ -46,10 +56,11 @@ const AddEvent = ({ onDataChange, editEvent, onClearEdit }) => {
         audience: editEvent.audience || '',
         description: editEvent.description || '',
         status: editEvent.status || 'Upcoming',
+        academicYear: editEvent.academicYear || academic.currentYear || '',
       });
       setImagePreview(editEvent.banner || null);
     }
-  }, [editEvent]);
+  }, [editEvent, academic.currentYear]);
 
   const isEditing = !!editEvent;
 
@@ -78,6 +89,14 @@ const AddEvent = ({ onDataChange, editEvent, onClearEdit }) => {
       toast.error(t('pleaseFillRequired'));
       return;
     }
+    if (!form.academicYear) {
+      toast.error(t('pleaseFillRequired'));
+      return;
+    }
+    if (!/^\d{4}$/.test(form.academicYear)) {
+      toast.error(t('invalidAcademicYear'));
+      return;
+    }
     setSaving(true);
     try {
       const fd = new FormData();
@@ -92,7 +111,7 @@ const AddEvent = ({ onDataChange, editEvent, onClearEdit }) => {
       fd.append('audience', form.audience);
       fd.append('description', form.description);
       fd.append('status', form.status);
-      fd.append('academicYear', academic.currentYear || eventsService.ACADEMIC_YEARS[0]);
+      fd.append('academicYear', form.academicYear);
       if (fileInputRef.current?.files?.[0]) {
         fd.append('image', fileInputRef.current.files[0]);
       }
@@ -104,7 +123,7 @@ const AddEvent = ({ onDataChange, editEvent, onClearEdit }) => {
         await eventsService.createEvent(fd);
         toast.success(`${t('event')} ${t('savedSuccessfully')}`);
       }
-      setForm({ ...initialForm });
+      setForm({ ...initialForm, academicYear: academic.currentYear || '' });
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       onDataChange();
@@ -120,7 +139,7 @@ const AddEvent = ({ onDataChange, editEvent, onClearEdit }) => {
     if (isEditing) {
       onClearEdit();
     }
-    setForm({ ...initialForm });
+    setForm({ ...initialForm, academicYear: academic.currentYear || '' });
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -167,6 +186,17 @@ const AddEvent = ({ onDataChange, editEvent, onClearEdit }) => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('eventTitle')} <span className="text-red-500">*</span></label>
             <input type="text" value={form.name} onChange={(e) => update('name', e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all mb-4" placeholder={t('enterEventTitle')} />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('academicYearLabel')} <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.academicYear}
+              onChange={(e) => update('academicYear', e.target.value.replace(/[^\d]/g, '').slice(0, 4))}
+              placeholder={t('enterAcademicYear')}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            />
           </div>
           <SelectInput label={t('eventCategory')} name="category" value={form.category} onChange={(e) => update('category', e.target.value)} options={eventsService.EVENT_CATEGORIES} placeholder={t('selectCategory')} required />
           <SelectInput label={t('audience')} name="audience" value={form.audience} onChange={(e) => update('audience', e.target.value)} options={eventsService.AUDIENCES} placeholder={t('selectAudience')} />

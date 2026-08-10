@@ -41,6 +41,16 @@ const getEventById = asyncHandler(async (req, res) => {
   });
 });
 
+const getEventAcademicYears = asyncHandler(async (req, res) => {
+  const years = await eventService.getEventAcademicYears();
+
+  return res.status(200).json({
+    success: true,
+    message: 'Academic years fetched successfully',
+    data: { years },
+  });
+});
+
 const updateEvent = asyncHandler(async (req, res) => {
   const event = await eventService.updateEvent(req.params.id, req.body, req.user?._id);
 
@@ -72,6 +82,7 @@ export {
   createEvent,
   getAllEvents,
   getEventById,
+  getEventAcademicYears,
   updateEvent,
   deleteEvent,
 };

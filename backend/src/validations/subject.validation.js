@@ -1,5 +1,32 @@
 import { ApiError } from '../utils/apiError.js';
 
+const ACADEMIC_YEAR_REGEX = /^\d{4}$/;
+
+const validateAssignSubjectsToClass = (req, res, next) => {
+  const { className, academicYear, subjectIds } = req.body;
+
+  if (!className || !className.trim()) {
+    throw new ApiError(400, 'Class name is required');
+  }
+
+  if (!academicYear || !academicYear.trim()) {
+    throw new ApiError(400, 'Academic year is required');
+  }
+
+  if (!ACADEMIC_YEAR_REGEX.test(academicYear.trim())) {
+    throw new ApiError(400, 'Invalid academic year format. Use a valid year (e.g. 2025)');
+  }
+
+  if (!Array.isArray(subjectIds)) {
+    throw new ApiError(400, 'subjectIds must be an array');
+  }
+
+  req.body.className = className.trim();
+  req.body.academicYear = academicYear.trim();
+
+  next();
+};
+
 const validateCreateSubject = (req, res, next) => {
   const { subjectName, status, description } = req.body;
 
@@ -56,4 +83,4 @@ const validateUpdateSubject = (req, res, next) => {
   next();
 };
 
-export { validateCreateSubject, validateUpdateSubject };
+export { validateCreateSubject, validateUpdateSubject, validateAssignSubjectsToClass };

@@ -33,6 +33,13 @@ const studentPromotionSchema = new mongoose.Schema({
   promotedByName: { type: String },
   promotedAt: { type: Date, default: Date.now },
   remarks: { type: String, default: null },
+  reversed: { type: Boolean, default: false },
+  reversedAt: { type: Date, default: null },
+  reversedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
 }, { timestamps: true });
 
 studentPromotionSchema.index({ studentId: 1, toClass: 1, toAcademicYear: 1 });

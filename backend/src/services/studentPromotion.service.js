@@ -23,8 +23,27 @@ const filterStudentsForPromotion = async (query) => {
   return students;
 };
 
+const toEnrollmentObject = (e) => (e && typeof e.toObject === 'function' ? e.toObject() : { ...e });
+
+const buildPromotionEnrollments = (student, fromClass, fromAcademicYear, toClass, toAcademicYear) => {
+  let enrollments = (student.enrollments || []).map((e) => toEnrollmentObject(e));
+
+  enrollments = enrollments.filter((e) => !(e.academicYear === toAcademicYear && e.status === 'Reversed'));
+
+  const fromIdx = enrollments.findIndex((e) => e.academicYear === fromAcademicYear);
+  if (fromIdx >= 0) {
+    enrollments[fromIdx] = { ...enrollments[fromIdx], status: 'Historical', class: fromClass };
+  } else {
+    enrollments.push({ academicYear: fromAcademicYear, class: fromClass, status: 'Historical', source: 'Promotion' });
+  }
+
+  enrollments.push({ academicYear: toAcademicYear, class: toClass, status: 'Active', source: 'Promotion' });
+
+  return enrollments;
+};
+
 const promoteStudents = async (studentIds, fromClass, toClass, fromAcademicYear, toAcademicYear, remarks, adminId, adminName) => {
-  const students = await Student.find({ studentId: { $in: studentIds } }).select('_id studentId studentImage admissionNumber fullName fatherName class academicYear status');
+  const students = await Student.find({ studentId: { $in: studentIds } }).select('_id studentId studentImage admissionNumber fullName fatherName class academicYear status enrollments');
 
   if (students.length !== studentIds.length) {
     const foundIds = students.map((s) => s.studentId);
@@ -37,6 +56,8 @@ const promoteStudents = async (studentIds, fromClass, toClass, fromAcademicYear,
     if (s.status !== 'Active') errors.push(`${s.studentId} is ${s.status}`);
     if (s.class !== fromClass) errors.push(`${s.studentId} class is ${s.class}, expected ${fromClass}`);
     if (s.academicYear !== fromAcademicYear) errors.push(`${s.studentId} academic year is ${s.academicYear}, expected ${fromAcademicYear}`);
+    const alreadyInYear = (s.enrollments || []).some((e) => e.academicYear === toAcademicYear && e.status !== 'Reversed');
+    if (alreadyInYear) errors.push(`${s.studentId} is already enrolled in academic year ${toAcademicYear}`);
   }
   if (errors.length > 0) {
     throw new ApiError(400, `Validation failed: ${errors.join('; ')}`);
@@ -62,11 +83,19 @@ const promoteStudents = async (studentIds, fromClass, toClass, fromAcademicYear,
   try {
     session.startTransaction();
 
-    await Student.updateMany(
-      { _id: { $in: studentObjectIds } },
-      { $set: { class: toClass, academicYear: toAcademicYear } },
-      { session },
-    );
+    for (const s of students) {
+      await Student.updateOne(
+        { _id: s._id },
+        {
+          $set: {
+            class: toClass,
+            academicYear: toAcademicYear,
+            enrollments: buildPromotionEnrollments(s, fromClass, fromAcademicYear, toClass, toAcademicYear),
+          },
+        },
+        { session },
+      );
+    }
 
     const logs = students.map((s) => ({
       studentId: s._id,
@@ -198,7 +227,7 @@ const getStudentPromotions = async (query) => {
 
   let promotions = await StudentPromotion.find(filter)
     .populate('promotedBy', 'fullName')
-    .select('studentId studentCode studentName studentImage fromClass toClass fromAcademicYear toAcademicYear promotedAt promotedBy promotedByName status')
+    .select('studentId studentCode studentName studentImage fromClass toClass fromAcademicYear toAcademicYear promotedAt promotedBy promotedByName status reversed reversedAt')
     .sort({ promotedAt: -1 })
     .lean();
 
@@ -238,4 +267,105 @@ const deleteStudentPromotion = async (id) => {
   return promotion;
 };
 
-export default { filterStudentsForPromotion, promoteStudents, getPromotionHistory, getStudentPromotions, deleteStudentPromotion };
+const reversePromotion = async (id, adminId, adminName) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(404, 'Promotion history not found');
+  }
+
+  const promotion = await StudentPromotion.findById(id);
+  if (!promotion) {
+    throw new ApiError(404, 'Promotion history not found');
+  }
+  if (promotion.status !== 'Promoted') {
+    throw new ApiError(400, 'Only completed promotions can be reversed');
+  }
+  if (promotion.reversed) {
+    throw new ApiError(409, 'This promotion has already been reversed');
+  }
+
+  const student = await Student.findById(promotion.studentId);
+  if (!student) {
+    throw new ApiError(404, 'Student not found');
+  }
+
+  const latest = await StudentPromotion.findOne({
+    studentId: student._id,
+    status: 'Promoted',
+    reversed: { $ne: true },
+  }).sort({ promotedAt: -1 });
+
+  if (!latest || latest._id.toString() !== promotion._id.toString()) {
+    throw new ApiError(400, 'Only the most recent promotion can be reversed. Please reverse later promotions first.');
+  }
+
+  if (student.class !== promotion.toClass || student.academicYear !== promotion.toAcademicYear) {
+    throw new ApiError(400, "The student's current enrollment does not match this promotion. Reversal is not possible.");
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const updated = await StudentPromotion.findByIdAndUpdate(
+      id,
+      { reversed: true, reversedAt: new Date(), reversedBy: adminId },
+      { new: true, session },
+    );
+
+    const studentDoc = await Student.findById(student._id).session(session);
+    let enrollments = (studentDoc.enrollments || []).map((e) => toEnrollmentObject(e));
+
+    enrollments = enrollments.map((e) => {
+      if (e.academicYear === promotion.toAcademicYear && e.status === 'Active') {
+        return { ...e, status: 'Reversed' };
+      }
+      return e;
+    });
+
+    const fromIdx = enrollments.findIndex(
+      (e) => e.academicYear === promotion.fromAcademicYear && e.class === promotion.fromClass,
+    );
+    if (fromIdx >= 0) {
+      enrollments[fromIdx] = { ...enrollments[fromIdx], status: 'Active' };
+    } else {
+      enrollments.push({
+        academicYear: promotion.fromAcademicYear,
+        class: promotion.fromClass,
+        status: 'Active',
+        source: 'Reversal',
+      });
+    }
+
+    await Student.updateOne(
+      { _id: student._id },
+      { $set: { class: promotion.fromClass, academicYear: promotion.fromAcademicYear, enrollments } },
+      { session },
+    );
+
+    await AuditLog.create([{
+      action: 'REVERSE_PROMOTION',
+      module: 'PROMOTION',
+      entityId: promotion._id.toString(),
+      entityType: 'Student',
+      performedBy: adminId,
+      details: {
+        studentId: student.studentId,
+        fromClass: promotion.fromClass,
+        toClass: promotion.toClass,
+        fromAcademicYear: promotion.fromAcademicYear,
+        toAcademicYear: promotion.toAcademicYear,
+        reversedBy: adminName || adminId,
+      },
+    }], { session });
+
+    await session.commitTransaction();
+    return updated;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+export default { filterStudentsForPromotion, promoteStudents, getPromotionHistory, getStudentPromotions, deleteStudentPromotion, reversePromotion };

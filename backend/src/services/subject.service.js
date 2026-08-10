@@ -95,7 +95,7 @@ const deleteSubject = async (id) => {
   await Subject.findByIdAndDelete(id);
 
   const [classesWithSubject, teachersWithSubject] = await Promise.all([
-    Class.find({ assignedSubjects: subjectId }),
+    Class.find({ assignedSubjects: subjectId, isDeleted: { $ne: true } }),
     Teacher.find({ assignedSubjects: subjectId }),
   ]);
 
@@ -120,7 +120,7 @@ const deleteSubject = async (id) => {
 };
 
 const assignSubjectsToClass = async (className, academicYear, subjectIds) => {
-  const classDoc = await Class.findOne({ className, academicYear });
+  const classDoc = await Class.findOne({ className, academicYear, isDeleted: { $ne: true } });
 
   if (!classDoc) {
     throw new ApiError(404, 'Class not found');
@@ -155,7 +155,7 @@ const assignSubjectsToClass = async (className, academicYear, subjectIds) => {
 };
 
 const getClassAssignments = async (className, academicYear) => {
-  const classDoc = await Class.findOne({ className, academicYear }).populate('assignedSubjects');
+  const classDoc = await Class.findOne({ className, academicYear, isDeleted: { $ne: true } }).populate('assignedSubjects');
 
   if (!classDoc) {
     throw new ApiError(404, 'Class not found');
@@ -168,6 +168,12 @@ const getClassAssignments = async (className, academicYear) => {
     assignedSubjects: classDoc.assignedSubjects || [],
     allSubjects,
   };
+};
+
+const getClassAssignmentAcademicYears = async () => {
+  const years = await Class.distinct('academicYear', { isDeleted: { $ne: true } });
+
+  return years.sort();
 };
 
 const assignSubjectsToTeacher = async (teacherId, subjectIds) => {
@@ -225,7 +231,7 @@ const updateAssignmentCounts = async () => {
   const allSubjects = await Subject.find();
 
   for (const subject of allSubjects) {
-    const classesCount = await Class.countDocuments({ assignedSubjects: subject._id });
+    const classesCount = await Class.countDocuments({ assignedSubjects: subject._id, isDeleted: { $ne: true } });
     const teachersCount = await Teacher.countDocuments({ assignedSubjects: subject._id });
 
     if (subject.assignedClassesCount !== classesCount || subject.assignedTeachersCount !== teachersCount) {
@@ -245,6 +251,7 @@ export default {
   deleteSubject,
   assignSubjectsToClass,
   getClassAssignments,
+  getClassAssignmentAcademicYears,
   assignSubjectsToTeacher,
   getTeacherAssignments,
 };

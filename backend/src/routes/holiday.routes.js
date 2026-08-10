@@ -3,6 +3,7 @@ import {
   createHoliday,
   getAllHolidays,
   getHolidayById,
+  getHolidayAcademicYears,
   updateHoliday,
   deleteHoliday,
 } from '../controllers/holiday.controller.js';
@@ -45,6 +46,13 @@ router.get(
     next();
   },
   getAllHolidays,
+);
+
+router.get(
+  '/academic-years',
+  protect,
+  authorize('admin'),
+  getHolidayAcademicYears,
 );
 
 router.get(

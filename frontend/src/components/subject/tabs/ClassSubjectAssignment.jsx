@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '../../../hooks/useLocalization';
 import subjectService from '../../../services/subject/subject.service';
-import { CLASS_NAMES, ACADEMIC_YEARS } from '../../../utils/classNames';
+import { CLASS_NAMES } from '../../../utils/classNames';
 import { useSchoolConfig } from '../../../contexts/SchoolConfigContext';
 
 const ClassSubjectAssignment = () => {
@@ -16,6 +16,8 @@ const ClassSubjectAssignment = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [existingYears, setExistingYears] = useState([]);
+  const defaultYearApplied = useRef(!!academic?.currentYear);
 
   const fetchSubjects = useCallback(async () => {
     setFetching(true);
@@ -34,8 +36,23 @@ const ClassSubjectAssignment = () => {
     Promise.resolve().then(() => fetchSubjects());
   }, [fetchSubjects]);
 
+  useEffect(() => {
+    if (!defaultYearApplied.current && academic?.currentYear) {
+      defaultYearApplied.current = true;
+      setAcademicYear(academic.currentYear);
+    }
+  }, [academic?.currentYear]);
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      subjectService.getClassAssignmentYears()
+        .then((res) => setExistingYears(res.data?.years || []))
+        .catch(() => {});
+    });
+  }, []);
+
   const fetchAssignments = useCallback(async () => {
-    if (selectedClass && academicYear) {
+    if (selectedClass && /^\d{4}$/.test(academicYear || '')) {
       setLoading(true);
       try {
         const result = await subjectService.getClassAssignments(selectedClass, academicYear);
@@ -123,16 +140,19 @@ const ClassSubjectAssignment = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               {t('academicYearLabel')}
             </label>
-            <select
+            <input
+              type="text"
+              list="classSubjectAssignmentYears"
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="appearance-none w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              <option value="">{t('selectYear')}</option>
-              {ACADEMIC_YEARS.map((year) => (
+              placeholder={t('enterAcademicYear')}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            />
+            <datalist id="classSubjectAssignmentYears">
+              {existingYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
               ))}
-            </select>
+            </datalist>
           </div>
 
           {selectedClass && academicYear && (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   DocumentChartBarIcon, DocumentArrowDownIcon, PrinterIcon, ArrowPathIcon,
@@ -11,19 +11,24 @@ import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
 import Modal from '../../common/Modal/Modal';
 import Button from '../../common/Button/Button';
 import DateInput from '../../common/DateInput/DateInput';
-import feeReportsService from '../../../services/feeReports/feeReports.service';
 
-const SESSIONS = feeReportsService.sessions;
-const MONTHS = feeReportsService.months;
-const CLASSES = feeReportsService.classes;
-const STATUS_OPTIONS = feeReportsService.statusOptions;
-const PAYMENT_METHODS = feeReportsService.paymentMethods;
-const REPORT_TYPES = feeReportsService.reportTypes;
+const SESSIONS = ['2026', '2025', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034', '2035'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const CLASSES = ['All', 'Montessori', 'Nursery', 'KG-1', 'KG-2', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+const STATUS_OPTIONS = ['All', 'Paid', 'Partial', 'Pending'];
+const PAYMENT_METHODS = ['All', 'Cash', 'Cheque', 'UPI', 'Bank Transfer'];
+const REPORT_TYPES = [
+  { value: 'all', label: 'All Fee Collections' },
+  { value: 'paid', label: 'Paid Students' },
+  { value: 'pending', label: 'Pending Students' },
+  { value: 'partial', label: 'Partial Payments' },
+  { value: 'monthly', label: 'Monthly Collection' },
+  { value: 'classWise', label: 'Class Wise' },
+  { value: 'outstanding', label: 'Outstanding' },
+];
 
 const LIST_REPORT_TYPES = ['all', 'paid', 'pending', 'partial', 'outstanding'];
 const STATUS_LOCKED_TYPES = ['paid', 'pending', 'partial', 'outstanding'];
-
-const ITEMS_PER_PAGE = 10;
 
 const statusStyles = {
   Paid: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700',
@@ -77,131 +82,47 @@ const emptyFilters = {
 const FeeReports = () => {
   const [reportType, setReportType] = useState('all');
   const [filters, setFilters] = useState({ ...emptyFilters });
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [report] = useState(null);
+  const [loading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [printPreview, setPrintPreview] = useState(false);
   const [printLoading, setPrintLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [reload, setReload] = useState(0);
 
-  const buildParams = useCallback((page, { forExport = false } = {}) => {
-    const params = { reportType };
-    if (!forExport) {
-      params.page = page || 1;
-      params.limit = ITEMS_PER_PAGE;
-    }
-    if (filters.year !== 'All') params.academicYear = filters.year;
-    if (filters.class !== 'All') params.class = filters.class;
-    const monthIndex = MONTHS.indexOf(filters.month);
-    if (monthIndex >= 0) params.month = monthIndex + 1;
-    if (filters.status !== 'All') params.status = filters.status;
-    if (filters.paymentMethod !== 'All') params.paymentMethod = filters.paymentMethod;
-    if (filters.startDate) params.startDate = filters.startDate;
-    if (filters.endDate) params.endDate = filters.endDate;
-    if (filters.search.trim()) params.search = filters.search.trim();
-    return params;
-  }, [reportType, filters]);
-
-  const loadReport = useCallback(async (page) => {
-    setLoading(true);
-    try {
-      const data = await feeReportsService.generateReport(buildParams(page));
-      setReport(data);
-    } catch (err) {
-      setReport(null);
-      toast.error(err.response?.data?.message || 'Failed to generate report');
-    } finally {
-      setLoading(false);
-    }
-  }, [buildParams]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadReport(1);
-  }, [loadReport, reload]);
-
-  const handleGenerate = async () => {
-    setCurrentPage(1);
+  const handleGenerate = () => {
     setGenerating(true);
-    try {
-      const data = await feeReportsService.generateReport(buildParams(1));
-      setReport(data);
-      toast.success('Report generated successfully');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to generate report');
-    } finally {
-      setGenerating(false);
-    }
+    toast.success('Report generation will be available after the new backend is integrated.');
+    setGenerating(false);
   };
 
   const handleReset = () => {
     setFilters({ ...emptyFilters });
-    setCurrentPage(1);
-    setReload((r) => r + 1);
   };
 
   const handleFilterChange = (key) => (value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
   };
 
-  const saveBlob = (blob, filename) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExportPdf = async () => {
+  const handleExportPdf = () => {
     if (exportingPdf) return;
     setExportingPdf(true);
-    try {
-      const blob = await feeReportsService.downloadPdf(buildParams(1, { forExport: true }));
-      saveBlob(blob, `fee-report-${reportType}.pdf`);
-      toast.success('PDF exported successfully');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to export PDF');
-    } finally {
-      setExportingPdf(false);
-    }
+    toast.success('PDF export will be available after the new backend is integrated.');
+    setExportingPdf(false);
   };
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = () => {
     if (exportingExcel) return;
     setExportingExcel(true);
-    try {
-      const blob = await feeReportsService.downloadExcel(buildParams(1, { forExport: true }));
-      saveBlob(blob, `fee-report-${reportType}.xlsx`);
-      toast.success('Excel exported successfully');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to export Excel');
-    } finally {
-      setExportingExcel(false);
-    }
+    toast.success('Excel export will be available after the new backend is integrated.');
+    setExportingExcel(false);
   };
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     if (printLoading) return;
     setPrintLoading(true);
-    try {
-      let data = report;
-      if (!data) {
-        data = await feeReportsService.getPrintData(buildParams(1, { forExport: true }));
-        setReport(data);
-      }
-      setPrintPreview(true);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to prepare report for printing');
-    } finally {
-      setPrintLoading(false);
-    }
+    toast.success('Printing will be available after the new backend is integrated.');
+    setPrintLoading(false);
   };
 
   const printWindow = () => {
@@ -484,7 +405,7 @@ const FeeReports = () => {
         {REPORT_TYPES.map((type) => (
           <button
             key={type.value}
-            onClick={() => { setReportType(type.value); setCurrentPage(1); }}
+            onClick={() => setReportType(type.value)}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               reportType === type.value
                 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-sm'
@@ -574,30 +495,6 @@ const FeeReports = () => {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">{renderBody()}</tbody>
           </table>
         </div>
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} total)
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => { setCurrentPage(Math.max(1, currentPage - 1)); loadReport(Math.max(1, currentPage - 1)); }}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-              >
-                Previous
-              </button>
-              <span className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">{pagination.currentPage} / {pagination.totalPages}</span>
-              <button
-                onClick={() => { const next = Math.min(pagination.totalPages, currentPage + 1); setCurrentPage(next); loadReport(next); }}
-                disabled={currentPage === pagination.totalPages}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </CardSection>
 
       {renderPrintPreview()}

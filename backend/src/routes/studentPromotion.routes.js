@@ -1,5 +1,5 @@
 import express from 'express';
-import { filterStudentsForPromotion, promoteStudents, getPromotionHistory, getStudentPromotions, deleteStudentPromotion } from '../controllers/studentPromotion.controller.js';
+import { filterStudentsForPromotion, promoteStudents, getPromotionHistory, getStudentPromotions, deleteStudentPromotion, reversePromotion } from '../controllers/studentPromotion.controller.js';
 import { validatePromoteStudents, validatePromotionHistoryQuery } from '../validations/studentPromotion.validation.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
@@ -41,6 +41,13 @@ router.delete(
   protect,
   authorize('admin'),
   deleteStudentPromotion,
+);
+
+router.post(
+  '/promotions/:id/reverse',
+  protect,
+  authorize('admin'),
+  reversePromotion,
 );
 
 export default router;

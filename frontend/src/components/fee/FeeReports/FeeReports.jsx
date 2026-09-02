@@ -269,8 +269,8 @@ const FeeReports = () => {
           <div id="report-print-content" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-5 space-y-4">
             <div className="flex items-start justify-between gap-4 border-b border-gray-300 dark:border-gray-600 pb-4">
               <div className="flex items-center gap-3">
-                {report.school?.schoolLogo && (
-                  <img src={report.school.schoolLogo} alt="School" className="w-11 h-11 rounded-full object-cover" />
+                {report.school?.schoolLogo?.secure_url && (
+                  <img src={report.school.schoolLogo.secure_url} alt="School" className="w-11 h-11 rounded-full object-cover" />
                 )}
                 <div>
                   <h2 className="text-base font-bold text-gray-900 dark:text-white">{report.school?.schoolName}</h2>

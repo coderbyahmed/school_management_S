@@ -9,21 +9,22 @@ const eventGallerySchema = new mongoose.Schema(
       unique: true,
     },
     bannerImage: {
-      type: String,
-      default: null,
+      secure_url: { type: String, default: null },
+      public_id: { type: String, default: null },
     },
     galleryImages: [
       {
-        imageUrl: { type: String, required: true },
+        secure_url: { type: String, required: true },
+        public_id: { type: String, required: true },
         caption: { type: String, default: '', maxlength: 500 },
         sortOrder: { type: Number, default: 0 },
-        uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
         uploadedAt: { type: Date, default: Date.now },
       },
     ],
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Admin',
     },
   },
   {

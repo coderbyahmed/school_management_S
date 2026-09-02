@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const userSchema = new mongoose.Schema(
+const adminSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       unique: true,
-      sparse: true, // Allows null/missing for students/teachers if not needed, but admin must have it
+      sparse: true,
       lowercase: true,
       trim: true,
       match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address'],
@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      select: false, // Hidden by default
+      select: false,
     },
     role: {
       type: String,
@@ -53,6 +53,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    profileImagePublicId: {
+      type: String,
+      default: '',
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -61,7 +65,6 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    // Admin-only OTP fields (stripped from student/teacher on save)
     otp: {
       type: String,
       default: null,
@@ -96,11 +99,11 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Strip unnecessary fields for student and teacher roles before save
-userSchema.pre('save', function () {
+adminSchema.pre('save', function () {
   if (this.role === 'student' || this.role === 'teacher') {
     this.phone = '';
     this.profileImage = '';
+    this.profileImagePublicId = '';
     this.email = undefined;
     this.teacherId = undefined;
     this.otp = undefined;
@@ -113,24 +116,21 @@ userSchema.pre('save', function () {
   }
 });
 
-// Hash password before saving
-userSchema.pre('save', async function () {
+adminSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Method to compare password
-userSchema.methods.comparePassword = async function (candidatePassword) {
+adminSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Method to compare security lock
-userSchema.methods.compareSecurityLock = async function (candidateLock) {
+adminSchema.methods.compareSecurityLock = async function (candidateLock) {
   if (!this.securityLockHash) return false;
   return await bcrypt.compare(candidateLock, this.securityLockHash);
 };
 
-const User = mongoose.model('User', userSchema);
+const Admin = mongoose.model('Admin', adminSchema, 'admin');
 
-export default User;
+export default Admin;

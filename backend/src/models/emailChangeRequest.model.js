@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const emailChangeRequestSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true, index: true },
   oldEmail: { type: String, default: null },
   newEmail: { type: String, required: true },
   otp: { type: String, default: null },

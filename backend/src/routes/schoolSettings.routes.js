@@ -7,6 +7,7 @@ import {
   updateBrandingSettings,
   updateSystemPreferences,
   updateSchoolImage,
+  removeSchoolImage,
 } from '../controllers/schoolSettings.controller.js';
 import {
   validateSchoolInformation,
@@ -68,6 +69,13 @@ router.put(
   authorize('admin'),
   schoolSettingsUpload.single('image'),
   updateSchoolImage,
+);
+
+router.delete(
+  '/image/:field',
+  protect,
+  authorize('admin'),
+  removeSchoolImage,
 );
 
 export default router;

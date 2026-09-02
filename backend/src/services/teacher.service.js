@@ -1,21 +1,39 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import Teacher from '../models/teacher.model.js';
 import Timetable from '../models/timetable.model.js';
 import { ApiError } from '../utils/apiError.js';
-import { stripBaseUrl } from '../utils/imageUrl.js';
-import { writeUploadFile } from '../middlewares/upload.middleware.js';
+import cloudinary, { configureCloudinary, CLOUDINARY_FOLDERS } from '../config/cloudinary.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const uploadToCloudinary = (buffer, originalname) => {
+  configureCloudinary();
+  return new Promise((resolve, reject) => {
+    const ext = originalname.split('.').pop();
+    const publicId = `teacher-profile-${Date.now()}`;
 
-const deleteFileAtPath = (relativePath) => {
-  if (!relativePath) return;
-  const fullPath = path.resolve(__dirname, '../..', relativePath);
-    try {
-        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-      } catch (err) { console.error('Failed to delete file at path', relativePath, err); }
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: CLOUDINARY_FOLDERS.TEACHER_PROFILE,
+        public_id: publicId,
+        resource_type: 'image',
+        format: ext,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+};
+
+const deleteFromCloudinary = async (publicId) => {
+  if (!publicId) return;
+  configureCloudinary();
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Failed to delete image from Cloudinary', publicId, err);
+  }
 };
 
 const createTeacher = async (data, file, baseUrl = '') => {
@@ -29,16 +47,16 @@ const createTeacher = async (data, file, baseUrl = '') => {
     delete teacherData.joiningDate;
   }
 
-  const filename = writeUploadFile(file.buffer, 'teachers-images', file.originalname);
-  const imagePath = `uploads/teachers-images/${filename}`;
-  teacherData.teacherImage = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
+  const result = await uploadToCloudinary(file.buffer, file.originalname);
+  teacherData.teacherImage = result.secure_url;
+  teacherData.teacherImagePublicId = result.public_id;
 
   try {
     const teacher = await Teacher.create(teacherData);
     const created = await Teacher.findById(teacher._id);
     return created;
   } catch (error) {
-    deleteFileAtPath(imagePath);
+    await deleteFromCloudinary(result.public_id);
 
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
@@ -110,12 +128,13 @@ const updateTeacher = async (teacherId, updateData, file, baseUrl = '') => {
   }
 
   if (file) {
-    if (existing.teacherImage) {
-      deleteFileAtPath(stripBaseUrl(existing.teacherImage));
+    const oldPublicId = existing.teacherImagePublicId;
+    const result = await uploadToCloudinary(file.buffer, file.originalname);
+    cleanData.teacherImage = result.secure_url;
+    cleanData.teacherImagePublicId = result.public_id;
+    if (oldPublicId) {
+      await deleteFromCloudinary(oldPublicId);
     }
-    const filename = writeUploadFile(file.buffer, 'teachers-images', file.originalname);
-    const imagePath = `uploads/teachers-images/${filename}`;
-    cleanData.teacherImage = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
   }
 
   const updated = await Teacher.findOneAndUpdate(
@@ -133,8 +152,8 @@ const deleteTeacher = async (teacherId, performedBy) => {
     throw new ApiError(404, 'Teacher not found');
   }
 
-  if (existing.teacherImage) {
-    deleteFileAtPath(stripBaseUrl(existing.teacherImage));
+  if (existing.teacherImagePublicId) {
+    await deleteFromCloudinary(existing.teacherImagePublicId);
   }
 
   await Promise.all([

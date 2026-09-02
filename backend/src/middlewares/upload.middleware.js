@@ -1,13 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-import crypto from 'crypto';
 import { ApiError } from '../utils/apiError.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const BASE_UPLOAD_DIR = path.resolve(__dirname, '../../uploads');
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 const DEFAULT_MAX_SIZE = 2 * 1024 * 1024;
@@ -28,33 +21,3 @@ export const createUploader = (
 
   return multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: maxSize } });
 };
-
-export const deleteUploadFile = (url) => {
-  if (!url) return;
-  const parts = url.split('/uploads/event-gallery/');
-  if (parts.length < 2) return;
-  const filename = parts[1];
-  const filePath = path.join(BASE_UPLOAD_DIR, 'event-gallery', filename);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-};
-
-export const writeUploadFile = (buffer, subDir, originalname, allowedExtensions = ALLOWED_EXTENSIONS) => {
-  const ext = path.extname(originalname).toLowerCase();
-  if (!allowedExtensions.includes(ext)) {
-    throw new ApiError(400, `Only ${allowedExtensions.join(', ')} files are allowed`);
-  }
-
-  const dir = path.join(BASE_UPLOAD_DIR, subDir);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  const filename = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`;
-  fs.writeFileSync(path.join(dir, filename), buffer);
-  return filename;
-};
-
-const adminUpload = createUploader('admin-profile');
-
-export default adminUpload;

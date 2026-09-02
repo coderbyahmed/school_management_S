@@ -15,7 +15,7 @@ const auditLogSchema = new mongoose.Schema({
   entityType: { type: String },
   performedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Admin',
   },
   details: { type: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });

@@ -1,11 +1,8 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { toFullUrl } from '../utils/imageUrl.js';
 import teacherService from '../services/teacher.service.js';
 
 const createTeacher = asyncHandler(async (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const teacher = await teacherService.createTeacher(req.body, req.file, baseUrl);
-  if (teacher) teacher.teacherImage = toFullUrl(req, teacher.teacherImage);
+  const teacher = await teacherService.createTeacher(req.body, req.file);
 
   return res.status(201).json({
     success: true,
@@ -16,10 +13,7 @@ const createTeacher = asyncHandler(async (req, res) => {
 
 const getAllTeachers = asyncHandler(async (req, res) => {
   const result = await teacherService.getAllTeachers(req.query);
-  const teachers = result.teachers.map((t) => ({
-    ...t.toObject(),
-    teacherImage: toFullUrl(req, t.teacherImage),
-  }));
+  const teachers = result.teachers.map((t) => t.toObject());
 
   return res.status(200).json({
     success: true,
@@ -45,8 +39,6 @@ const getTeacherById = asyncHandler(async (req, res) => {
     });
   }
 
-  teacher.teacherImage = toFullUrl(req, teacher.teacherImage);
-
   return res.status(200).json({
     success: true,
     message: 'Teacher fetched successfully',
@@ -55,9 +47,7 @@ const getTeacherById = asyncHandler(async (req, res) => {
 });
 
 const updateTeacher = asyncHandler(async (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const teacher = await teacherService.updateTeacher(req.params.teacherId, req.body, req.file, baseUrl);
-  if (teacher) teacher.teacherImage = toFullUrl(req, teacher.teacherImage);
+  const teacher = await teacherService.updateTeacher(req.params.teacherId, req.body, req.file);
 
   return res.status(200).json({
     success: true,

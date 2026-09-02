@@ -1,21 +1,37 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import SchoolSettings from '../models/schoolSettings.model.js';
 import { ApiError } from '../utils/apiError.js';
-import { stripBaseUrl } from '../utils/imageUrl.js';
-import { writeUploadFile } from '../middlewares/upload.middleware.js';
+import cloudinary, { configureCloudinary, CLOUDINARY_FOLDERS } from '../config/cloudinary.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const uploadToCloudinary = (buffer, originalname) => {
+  configureCloudinary();
+  return new Promise((resolve, reject) => {
+    const ext = originalname.split('.').pop();
+    const publicId = `school-settings-${Date.now()}`;
 
-const deleteFileAtPath = (relativePath) => {
-  if (!relativePath) return;
-  const fullPath = path.resolve(__dirname, '../..', relativePath);
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: CLOUDINARY_FOLDERS.SCHOOL_SETTINGS,
+        public_id: publicId,
+        resource_type: 'image',
+        format: ext,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+};
+
+const deleteFromCloudinary = async (publicId) => {
+  if (!publicId) return;
+  configureCloudinary();
   try {
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-  } catch {
-    /* file may have been moved or already deleted */
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Failed to delete image from Cloudinary', publicId, err);
   }
 };
 
@@ -199,13 +215,13 @@ const updateSystemPreferences = async (data) => {
 };
 
 // ──────────────────────────────────────────────
-// Image Upload
+// Image Upload (Cloudinary)
 // ──────────────────────────────────────────────
 const ALLOWED_IMAGE_FIELDS = [
   'schoolLogo', 'adminPanelLogo', 'smallLogo', 'principalSignature', 'schoolStamp',
 ];
 
-const updateSchoolImage = async (field, file, baseUrl = '') => {
+const updateSchoolImage = async (field, file) => {
   if (!ALLOWED_IMAGE_FIELDS.includes(field)) {
     throw new ApiError(400, `Invalid image field: ${field}`);
   }
@@ -217,23 +233,73 @@ const updateSchoolImage = async (field, file, baseUrl = '') => {
   try {
     const settings = await SchoolSettings.getSettings();
 
-    if (settings[field]) {
-      const oldPath = stripBaseUrl(settings[field]);
-      deleteFileAtPath(oldPath);
-    }
+    const result = await uploadToCloudinary(file.buffer, file.originalname);
 
-    const filename = writeUploadFile(file.buffer, 'school-settings', file.originalname);
-    const imagePath = `uploads/school-settings/${filename}`;
-    const imageValue = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
+    const oldPublicId = settings[field]?.public_id;
 
     const updated = await SchoolSettings.findByIdAndUpdate(
       settings._id,
-      { $set: { [field]: imageValue } },
+      {
+        $set: {
+          [field]: {
+            secure_url: result.secure_url,
+            public_id: result.public_id,
+          },
+        },
+      },
+      { returnDocument: 'after', runValidators: true },
+    );
+
+    if (!updated) {
+      await deleteFromCloudinary(result.public_id);
+      throw new ApiError(404, 'School settings not found');
+    }
+
+    if (oldPublicId) {
+      await deleteFromCloudinary(oldPublicId);
+    }
+
+    return updated;
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      throw new ApiError(400, messages.join('. '));
+    }
+    throw error;
+  }
+};
+
+// ──────────────────────────────────────────────
+// Image Delete (Cloudinary)
+// ──────────────────────────────────────────────
+const removeSchoolImage = async (field) => {
+  if (!ALLOWED_IMAGE_FIELDS.includes(field)) {
+    throw new ApiError(400, `Invalid image field: ${field}`);
+  }
+
+  try {
+    const settings = await SchoolSettings.getSettings();
+    const oldPublicId = settings[field]?.public_id;
+
+    const updated = await SchoolSettings.findByIdAndUpdate(
+      settings._id,
+      {
+        $set: {
+          [field]: {
+            secure_url: '',
+            public_id: '',
+          },
+        },
+      },
       { returnDocument: 'after', runValidators: true },
     );
 
     if (!updated) {
       throw new ApiError(404, 'School settings not found');
+    }
+
+    if (oldPublicId) {
+      await deleteFromCloudinary(oldPublicId);
     }
 
     return updated;
@@ -253,4 +319,5 @@ export default {
   updateBrandingDocuments,
   updateSystemPreferences,
   updateSchoolImage,
+  removeSchoolImage,
 };

@@ -1,4 +1,4 @@
-import User from '../models/user.model.js';
+import Admin from '../models/admin.model.js';
 import Student from '../models/student.model.js';
 import RefreshToken from '../models/refreshToken.model.js';
 import EmailChangeRequest from '../models/emailChangeRequest.model.js';
@@ -73,26 +73,26 @@ const buildUserResponse = (user) => ({
 });
 
 const adminLogin = async (email, password) => {
-  const user = await User.findOne({ email, role: 'admin' }).select('+password');
-  if (!user) {
+  const admin = await Admin.findOne({ email, role: 'admin' }).select('+password');
+  if (!admin) {
     throw new ApiError(401, 'Email not found');
   }
-  if (!(await user.comparePassword(password))) {
+  if (!(await admin.comparePassword(password))) {
     throw new ApiError(401, 'Incorrect password');
   }
 
-  user.lastLogin = new Date();
-  await user.save();
+  admin.lastLogin = new Date();
+  await admin.save();
 
-  const accessToken = generateAccessToken(user._id);
-  const refreshToken = await createRefreshToken(user._id);
-  const loggedInUser = await User.findById(user._id);
+  const accessToken = generateAccessToken(admin._id);
+  const refreshToken = await createRefreshToken(admin._id);
+  const loggedInAdmin = await Admin.findById(admin._id);
 
-  return { user: buildUserResponse(loggedInUser), accessToken, refreshToken };
+  return { user: buildUserResponse(loggedInAdmin), accessToken, refreshToken };
 };
 
 const teacherLogin = async (teacherId, password) => {
-  const user = await User.findOne({ loginId: teacherId, role: 'teacher' }).select('+password');
+  const user = await Admin.findOne({ loginId: teacherId, role: 'teacher' }).select('+password');
   if (!user) {
     throw new ApiError(401, 'Teacher ID not found');
   }
@@ -105,13 +105,13 @@ const teacherLogin = async (teacherId, password) => {
 
   const accessToken = generateAccessToken(user._id);
   const refreshToken = await createRefreshToken(user._id);
-  const loggedInUser = await User.findById(user._id);
+  const loggedInUser = await Admin.findById(user._id);
 
   return { user: buildUserResponse(loggedInUser), accessToken, refreshToken };
 };
 
 const studentLogin = async (studentId, password) => {
-  const user = await User.findOne({ loginId: studentId, role: 'student' }).select('+password');
+  const user = await Admin.findOne({ loginId: studentId, role: 'student' }).select('+password');
   if (!user) {
     throw new ApiError(401, 'Student ID not found');
   }
@@ -144,13 +144,13 @@ const studentLogin = async (studentId, password) => {
 const forgotPassword = async (email) => {
   if (timing) console.time('forgotPassword');
   try {
-    const user = await User.findOne({ email, role: 'admin' });
-    if (!user) {
+    const admin = await Admin.findOne({ email, role: 'admin' });
+    if (!admin) {
       throw new ApiError(404, 'Admin with this email does not exist');
     }
 
-    if (user.otpExpiry && user.otpExpiry > new Date() && !user.isOtpVerified) {
-      const remainingMs = user.otpExpiry.getTime() - Date.now();
+    if (admin.otpExpiry && admin.otpExpiry > new Date() && !admin.isOtpVerified) {
+      const remainingMs = admin.otpExpiry.getTime() - Date.now();
       const remainingSec = Math.ceil(remainingMs / 1000);
       throw new ApiError(
         429,
@@ -159,7 +159,7 @@ const forgotPassword = async (email) => {
     }
 
     const windowStart = new Date(Date.now() - OTP_REQUEST_WINDOW_MINUTES * 60 * 1000);
-    const recentRequests = (user.otpRequestedAt || []).filter((t) => t > windowStart);
+    const recentRequests = (admin.otpRequestedAt || []).filter((t) => t > windowStart);
     if (recentRequests.length >= OTP_MAX_REQUESTS) {
       throw new ApiError(429, 'Too many OTP requests. Please try again later.');
     }
@@ -167,12 +167,12 @@ const forgotPassword = async (email) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + OTP_VALIDITY_MINUTES * 60 * 1000);
 
-    user.otp = await bcrypt.hash(otp, 10);
-    user.otpExpiry = otpExpiry;
-    user.isOtpVerified = false;
-    user.otpAttempts = 0;
-    user.otpRequestedAt = [...(recentRequests.length > 0 ? recentRequests : []), new Date()];
-    await user.save();
+    admin.otp = await bcrypt.hash(otp, 10);
+    admin.otpExpiry = otpExpiry;
+    admin.isOtpVerified = false;
+    admin.otpAttempts = 0;
+    admin.otpRequestedAt = [...(recentRequests.length > 0 ? recentRequests : []), new Date()];
+    await admin.save();
 
     sendOtpEmail(email, otp).catch((err) => console.error('ForgotPassword:email send failed', err));
 
@@ -183,43 +183,43 @@ const forgotPassword = async (email) => {
 };
 
 const verifyOtp = async (email, otp) => {
-  const user = await User.findOne({ email, role: 'admin' });
-  if (!user) {
+  const admin = await Admin.findOne({ email, role: 'admin' });
+  if (!admin) {
     throw new ApiError(404, 'Admin with this email does not exist');
   }
 
-  if (user.isOtpVerified) {
+  if (admin.isOtpVerified) {
     return true;
   }
 
-  if (!user.otp || !user.otpExpiry) {
+  if (!admin.otp || !admin.otpExpiry) {
     throw new ApiError(400, 'No OTP requested. Please request a new one.');
   }
 
-  if (user.otpExpiry < new Date()) {
-    await User.updateOne(
-      { _id: user._id },
+  if (admin.otpExpiry < new Date()) {
+    await Admin.updateOne(
+      { _id: admin._id },
       { $set: { otp: null, otpExpiry: null, otpAttempts: 0, otpRequestedAt: [] } }
     );
     throw new ApiError(400, 'OTP has expired. Please request a new one.');
   }
 
-  if (user.otpAttempts >= OTP_MAX_ATTEMPTS) {
-    await User.updateOne(
-      { _id: user._id },
+  if (admin.otpAttempts >= OTP_MAX_ATTEMPTS) {
+    await Admin.updateOne(
+      { _id: admin._id },
       { $set: { otp: null, otpExpiry: null, otpAttempts: 0, otpRequestedAt: [] } }
     );
     throw new ApiError(429, 'Too many failed attempts. Please request a new OTP.');
   }
 
-  const isMatch = await bcrypt.compare(otp, user.otp);
+  const isMatch = await bcrypt.compare(otp, admin.otp);
   if (!isMatch) {
-    await User.updateOne({ _id: user._id }, { $inc: { otpAttempts: 1 } });
+    await Admin.updateOne({ _id: admin._id }, { $inc: { otpAttempts: 1 } });
     throw new ApiError(400, 'Invalid OTP');
   }
 
-  await User.updateOne(
-    { _id: user._id },
+  await Admin.updateOne(
+    { _id: admin._id },
     { $set: { isOtpVerified: true, otpAttempts: 0 } }
   );
 
@@ -227,49 +227,49 @@ const verifyOtp = async (email, otp) => {
 };
 
 const resetPassword = async (email, newPassword) => {
-  const user = await User.findOne({ email, role: 'admin' });
-  if (!user) {
+  const admin = await Admin.findOne({ email, role: 'admin' });
+  if (!admin) {
     throw new ApiError(404, 'Admin with this email does not exist');
   }
 
-  if (!user.isOtpVerified) {
+  if (!admin.isOtpVerified) {
     throw new ApiError(400, 'OTP not verified. Please verify your OTP first.');
   }
 
-  user.password = newPassword;
-  user.otp = null;
-  user.otpExpiry = null;
-  user.isOtpVerified = false;
-  user.otpAttempts = 0;
-  user.otpRequestedAt = [];
-  await user.save();
+  admin.password = newPassword;
+  admin.otp = null;
+  admin.otpExpiry = null;
+  admin.isOtpVerified = false;
+  admin.otpAttempts = 0;
+  admin.otpRequestedAt = [];
+  await admin.save();
 
   return true;
 };
 
 const updatePassword = async (userId, currentPassword, newPassword) => {
-  const user = await User.findById(userId).select('+password');
-  if (!user) {
-    throw new ApiError(404, 'User not found');
+  const admin = await Admin.findById(userId).select('+password');
+  if (!admin) {
+    throw new ApiError(404, 'Admin not found');
   }
 
-  if (!(await user.comparePassword(currentPassword))) {
+  if (!(await admin.comparePassword(currentPassword))) {
     throw new ApiError(400, 'Current password is incorrect');
   }
 
-  user.password = newPassword;
-  await user.save();
+  admin.password = newPassword;
+  await admin.save();
 
   return true;
 };
 
 const verifyEmailPassword = async (userId, currentPassword) => {
-  const user = await User.findById(userId).select('+password');
-  if (!user) {
-    throw new ApiError(404, 'User not found');
+  const admin = await Admin.findById(userId).select('+password');
+  if (!admin) {
+    throw new ApiError(404, 'Admin not found');
   }
 
-  if (!(await user.comparePassword(currentPassword))) {
+  if (!(await admin.comparePassword(currentPassword))) {
     throw new ApiError(400, 'Current password is incorrect');
   }
 
@@ -279,9 +279,9 @@ const verifyEmailPassword = async (userId, currentPassword) => {
 const sendEmailChangeOtpService = async (userId, newEmail, meta = {}) => {
   if (timing) console.time('sendEmailChangeOtp');
   try {
-    const [user, existingUser, existingRequest] = await Promise.all([
-      User.findById(userId),
-      User.findOne({ email: newEmail, _id: { $ne: userId } }),
+    const [admin, existingAdmin, existingRequest] = await Promise.all([
+      Admin.findById(userId),
+      Admin.findOne({ email: newEmail, _id: { $ne: userId } }),
       EmailChangeRequest.findOne({
         user: userId,
         status: { $in: ['PENDING', 'OTP_PENDING'] },
@@ -289,11 +289,11 @@ const sendEmailChangeOtpService = async (userId, newEmail, meta = {}) => {
       }),
     ]);
 
-    if (!user) {
-      throw new ApiError(404, 'User not found');
+    if (!admin) {
+      throw new ApiError(404, 'Admin not found');
     }
 
-    if (existingUser) {
+    if (existingAdmin) {
       throw new ApiError(400, 'Email is already in use by another account');
     }
 
@@ -309,7 +309,6 @@ const sendEmailChangeOtpService = async (userId, newEmail, meta = {}) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + OTP_VALIDITY_MINUTES * 60 * 1000);
 
-    // Parallel: hash OTP and mark old requests as FAILED
     const [hashedOtp] = await Promise.all([
       bcrypt.hash(otp, 10),
       EmailChangeRequest.updateMany(
@@ -320,7 +319,7 @@ const sendEmailChangeOtpService = async (userId, newEmail, meta = {}) => {
 
     await EmailChangeRequest.create({
       user: userId,
-      oldEmail: user.email,
+      oldEmail: admin.email,
       newEmail,
       otp: hashedOtp,
       otpExpiry,
@@ -385,7 +384,6 @@ const verifyEmailChangeOtpService = async (userId, otp, meta = {}) => {
     throw new ApiError(400, 'Invalid OTP');
   }
 
-  // Set all final fields, then fetch user and save both in parallel
   request.verified = true;
   request.status = 'SUCCESS';
   request.step = 'COMPLETED';
@@ -394,13 +392,13 @@ const verifyEmailChangeOtpService = async (userId, otp, meta = {}) => {
   request.ipAddress = meta.ipAddress || request.ipAddress;
   request.userAgent = meta.userAgent || request.userAgent;
 
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new ApiError(404, 'User not found');
+  const admin = await Admin.findById(userId);
+  if (!admin) {
+    throw new ApiError(404, 'Admin not found');
   }
 
-  user.email = request.newEmail;
-  await Promise.all([user.save(), request.save()]);
+  admin.email = request.newEmail;
+  await Promise.all([admin.save(), request.save()]);
 
   return true;
 };
@@ -408,8 +406,8 @@ const verifyEmailChangeOtpService = async (userId, otp, meta = {}) => {
 const initiatePasswordChange = async (userId, currentPassword, meta = {}) => {
   if (timing) console.time('initiatePasswordChange');
   try {
-    const [user, existingRequest] = await Promise.all([
-      User.findById(userId).select('+password'),
+    const [admin, existingRequest] = await Promise.all([
+      Admin.findById(userId).select('+password'),
       PasswordChangeRequest.findOne({
         user: userId,
         status: { $in: ['PENDING', 'OTP_PENDING'] },
@@ -417,11 +415,11 @@ const initiatePasswordChange = async (userId, currentPassword, meta = {}) => {
       }),
     ]);
 
-    if (!user) {
-      throw new ApiError(404, 'User not found');
+    if (!admin) {
+      throw new ApiError(404, 'Admin not found');
     }
 
-    if (!(await user.comparePassword(currentPassword))) {
+    if (!(await admin.comparePassword(currentPassword))) {
       throw new ApiError(400, 'Current password is incorrect');
     }
 
@@ -437,7 +435,6 @@ const initiatePasswordChange = async (userId, currentPassword, meta = {}) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + OTP_VALIDITY_MINUTES * 60 * 1000);
 
-    // Parallel: hash OTP and mark old requests as FAILED
     const [hashedOtp] = await Promise.all([
       bcrypt.hash(otp, 10),
       PasswordChangeRequest.updateMany(
@@ -448,7 +445,7 @@ const initiatePasswordChange = async (userId, currentPassword, meta = {}) => {
 
     await PasswordChangeRequest.create({
       user: userId,
-      email: user.email,
+      email: admin.email,
       passwordVerified: true,
       otp: hashedOtp,
       otpExpiry,
@@ -459,7 +456,7 @@ const initiatePasswordChange = async (userId, currentPassword, meta = {}) => {
       userAgent: meta.userAgent || null,
     });
 
-    sendPasswordChangeOtp(user.email, otp).catch((err) => console.error('initiatePasswordChange:email send failed', err));
+    sendPasswordChangeOtp(admin.email, otp).catch((err) => console.error('initiatePasswordChange:email send failed', err));
 
     return { otpExpiry: otpExpiry.getTime() };
   } finally {
@@ -535,19 +532,19 @@ const completePasswordChange = async (userId, newPassword, meta = {}) => {
     throw new ApiError(400, 'OTP not verified. Please verify your OTP first.');
   }
 
-  const user = await User.findById(userId).select('+password');
-  if (!user) {
-    throw new ApiError(404, 'User not found');
+  const admin = await Admin.findById(userId).select('+password');
+  if (!admin) {
+    throw new ApiError(404, 'Admin not found');
   }
 
-  user.password = newPassword;
+  admin.password = newPassword;
   request.status = 'SUCCESS';
   request.step = 'COMPLETED';
   request.completedAt = new Date();
   request.ipAddress = meta.ipAddress || request.ipAddress;
   request.userAgent = meta.userAgent || request.userAgent;
 
-  await Promise.all([user.save(), request.save()]);
+  await Promise.all([admin.save(), request.save()]);
 
   return true;
 };

@@ -1,24 +1,42 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import Student from '../models/student.model.js';
 import StudentPromotion from '../models/studentPromotion.model.js';
 import AuditLog from '../models/auditLog.model.js';
 import SchoolSettings from '../models/schoolSettings.model.js';
 import { ApiError } from '../utils/apiError.js';
-import { stripBaseUrl } from '../utils/imageUrl.js';
-import { writeUploadFile } from '../middlewares/upload.middleware.js';
+import cloudinary, { configureCloudinary, CLOUDINARY_FOLDERS } from '../config/cloudinary.js';
 import classValidation from './classValidation.service.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const uploadToCloudinary = (buffer, originalname) => {
+  configureCloudinary();
+  return new Promise((resolve, reject) => {
+    const ext = originalname.split('.').pop();
+    const publicId = `student-profile-${Date.now()}`;
 
-const deleteFileAtPath = (relativePath) => {
-  if (!relativePath) return;
-  const fullPath = path.resolve(__dirname, '../..', relativePath);
-    try {
-        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-      } catch (err) { console.error('Failed to delete file at path', relativePath, err); }
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: CLOUDINARY_FOLDERS.STUDENT_PROFILE,
+        public_id: publicId,
+        resource_type: 'image',
+        format: ext,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+};
+
+const deleteFromCloudinary = async (publicId) => {
+  if (!publicId) return;
+  configureCloudinary();
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Failed to delete image from Cloudinary', publicId, err);
+  }
 };
 
 const createStudent = async (data, file, baseUrl = '') => {
@@ -41,15 +59,15 @@ const createStudent = async (data, file, baseUrl = '') => {
     },
   ];
 
-  const filename = writeUploadFile(file.buffer, 'student-images', file.originalname);
-  const imagePath = `uploads/student-images/${filename}`;
-  studentData.studentImage = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
+  const result = await uploadToCloudinary(file.buffer, file.originalname);
+  studentData.studentImage = result.secure_url;
+  studentData.studentImagePublicId = result.public_id;
 
   try {
     const savedStudent = await Student.create(studentData);
     return await Student.findById(savedStudent._id);
   } catch (error) {
-    deleteFileAtPath(imagePath);
+    await deleteFromCloudinary(result.public_id);
 
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
@@ -131,12 +149,13 @@ const updateStudent = async (studentId, updateData, file, baseUrl = '') => {
   }
 
   if (file) {
-    if (existing.studentImage) {
-      deleteFileAtPath(stripBaseUrl(existing.studentImage));
+    const oldPublicId = existing.studentImagePublicId;
+    const result = await uploadToCloudinary(file.buffer, file.originalname);
+    cleanData.studentImage = result.secure_url;
+    cleanData.studentImagePublicId = result.public_id;
+    if (oldPublicId) {
+      await deleteFromCloudinary(oldPublicId);
     }
-    const filename = writeUploadFile(file.buffer, 'student-images', file.originalname);
-    const imagePath = `uploads/student-images/${filename}`;
-    cleanData.studentImage = baseUrl ? `${baseUrl}/${imagePath}` : imagePath;
   }
 
   const classChanged = cleanData.class && cleanData.class !== existing.class;
@@ -215,8 +234,8 @@ const deleteStudent = async (studentId, performedBy) => {
     throw new ApiError(404, 'Student not found');
   }
 
-  if (existing.studentImage) {
-    deleteFileAtPath(stripBaseUrl(existing.studentImage));
+  if (existing.studentImagePublicId) {
+    await deleteFromCloudinary(existing.studentImagePublicId);
   }
 
   await Promise.all([

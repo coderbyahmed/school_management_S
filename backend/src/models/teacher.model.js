@@ -7,6 +7,10 @@ const teacherSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Teacher image is required'],
     },
+    teacherImagePublicId: {
+      type: String,
+      default: '',
+    },
     teacherId: {
       type: String,
       unique: true,

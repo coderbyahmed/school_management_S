@@ -35,7 +35,7 @@ export const SchoolConfigProvider = ({ children }) => {
           email: s.schoolEmail || '', contact: s.contactNumber || '', whatsapp: s.whatsappNumber || '',
           website: s.website || '', address: s.address || '', city: s.city || '',
           province: s.province || '', country: s.country || '',
-          mapLocation: s.googleMapLocation || '', logo: s.schoolLogo || null,
+          mapLocation: s.googleMapLocation || '', logo: s.schoolLogo?.secure_url || null,
         },
         academic: {
           currentYear: s.currentAcademicYear || '', shift: s.schoolShift || 'Morning',
@@ -44,8 +44,8 @@ export const SchoolConfigProvider = ({ children }) => {
           attendanceStartTime: s.attendanceStartTime || '', attendanceClosingTime: s.attendanceClosingTime || '',
         },
         branding: {
-          adminLogo: s.adminPanelLogo || null, smallLogo: s.smallLogo || null,
-          signature: s.principalSignature || null, stamp: s.schoolStamp || null,
+          adminLogo: s.adminPanelLogo?.secure_url || null, smallLogo: s.smallLogo?.secure_url || null,
+          signature: s.principalSignature?.secure_url || null, stamp: s.schoolStamp?.secure_url || null,
           pdfHeader: s.pdfHeader || '', pdfFooter: s.pdfFooter || '',
           reportCardHeader: s.reportCardHeader || '', certificateHeader: s.certificateHeader || '',
           idCardHeader: s.idCardHeader || '', idCardFooter: s.idCardFooter || '',

@@ -42,7 +42,7 @@ const idCardManagementSchema = new mongoose.Schema(
     },
     generatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Admin',
     },
     frontDesign: {
       cardWidth: { type: Number, default: 320 },

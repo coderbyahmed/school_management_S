@@ -192,24 +192,24 @@ const schoolSettingsSchema = new mongoose.Schema(
     // Branding & Documents
     // ──────────────────────────────────────────────
     schoolLogo: {
-      type: String,
-      default: '',
+      secure_url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
     },
     adminPanelLogo: {
-      type: String,
-      default: '',
+      secure_url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
     },
     smallLogo: {
-      type: String,
-      default: '',
+      secure_url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
     },
     principalSignature: {
-      type: String,
-      default: '',
+      secure_url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
     },
     schoolStamp: {
-      type: String,
-      default: '',
+      secure_url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
     },
     pdfHeader: {
       type: String,

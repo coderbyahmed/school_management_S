@@ -137,11 +137,11 @@ const mapApiToAcademic = (api) => ({
 });
 
 const mapApiToBranding = (api) => ({
-  schoolLogo: api.adminPanelLogo || null,
-  adminPanelLogo: api.adminPanelLogo || null,
-  smallLogo: api.smallLogo || null,
-  principalSignature: api.principalSignature || null,
-  schoolStamp: api.schoolStamp || null,
+  schoolLogo: api.schoolLogo?.secure_url || null,
+  adminPanelLogo: api.adminPanelLogo?.secure_url || null,
+  smallLogo: api.smallLogo?.secure_url || null,
+  principalSignature: api.principalSignature?.secure_url || null,
+  schoolStamp: api.schoolStamp?.secure_url || null,
   footerText: api.footerText || '',
   pdfHeader: api.pdfHeader || '',
   pdfFooter: api.pdfFooter || '',

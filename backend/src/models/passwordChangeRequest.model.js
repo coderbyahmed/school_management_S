@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const passwordChangeRequestSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true, index: true },
   email: { type: String, default: null },
   passwordVerified: { type: Boolean, default: false },
   otp: { type: String, default: null },

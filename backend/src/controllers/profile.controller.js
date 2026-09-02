@@ -1,30 +1,56 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { toFullUrl, stripBaseUrl } from '../utils/imageUrl.js';
-import { writeUploadFile } from '../middlewares/upload.middleware.js';
 import { ApiError } from '../utils/apiError.js';
-import User from '../models/user.model.js';
+import Admin from '../models/admin.model.js';
+import cloudinary, { configureCloudinary, CLOUDINARY_FOLDERS } from '../config/cloudinary.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const uploadToCloudinary = (buffer, originalname) => {
+  configureCloudinary();
+  return new Promise((resolve, reject) => {
+    const ext = originalname.split('.').pop();
+    const publicId = `admin-profile-${Date.now()}`;
+
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: CLOUDINARY_FOLDERS.ADMIN_PROFILE,
+        public_id: publicId,
+        resource_type: 'image',
+        format: ext,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+};
+
+const deleteFromCloudinary = async (publicId) => {
+  if (!publicId) return;
+  configureCloudinary();
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Failed to delete image from Cloudinary', publicId, err);
+  }
+};
 
 export const getProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const admin = await Admin.findById(req.user._id);
 
   return res.status(200).json({
     success: true,
     user: {
-      id: user._id,
-      profileImage: toFullUrl(req, user.profileImage),
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone || '',
-      role: user.role,
-      isActive: user.isActive,
-      lastLogin: user.lastLogin || null,
-      createdAt: user.createdAt,
+      id: admin._id,
+      profileImage: admin.profileImage || '',
+      fullName: admin.fullName,
+      email: admin.email,
+      phone: admin.phone || '',
+      role: admin.role,
+      isActive: admin.isActive,
+      lastLogin: admin.lastLogin || null,
+      createdAt: admin.createdAt,
     },
   });
 });
@@ -50,36 +76,66 @@ export const updateProfile = asyncHandler(async (req, res) => {
     updateData.phone = trimmed;
   }
 
-  const userToUpdate = await User.findById(req.user._id);
+  const adminToUpdate = await Admin.findById(req.user._id);
 
   if (req.file) {
-    if (userToUpdate.profileImage) {
-      const oldRelPath = stripBaseUrl(userToUpdate.profileImage);
-      const oldPath = path.resolve(__dirname, '../..', oldRelPath);
-      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch (err) { console.error('Failed to delete old profile image', oldRelPath, err); }
+    if (adminToUpdate.profileImagePublicId) {
+      await deleteFromCloudinary(adminToUpdate.profileImagePublicId);
     }
-    const filename = writeUploadFile(req.file.buffer, 'admin-profile', req.file.originalname);
-    updateData.profileImage = toFullUrl(req, `uploads/admin-profile/${filename}`);
+    const result = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+    updateData.profileImage = result.secure_url;
+    updateData.profileImagePublicId = result.public_id;
   }
 
-  if (updateData.fullName) userToUpdate.fullName = updateData.fullName;
-  if (updateData.phone !== undefined) userToUpdate.phone = updateData.phone;
-  if (updateData.profileImage) userToUpdate.profileImage = updateData.profileImage;
-  await userToUpdate.save();
+  if (updateData.fullName) adminToUpdate.fullName = updateData.fullName;
+  if (updateData.phone !== undefined) adminToUpdate.phone = updateData.phone;
+  if (updateData.profileImage) adminToUpdate.profileImage = updateData.profileImage;
+  if (updateData.profileImagePublicId) adminToUpdate.profileImagePublicId = updateData.profileImagePublicId;
+  await adminToUpdate.save();
 
   return res.status(200).json({
     success: true,
     message: 'Profile updated successfully',
     user: {
-      id: userToUpdate._id,
-      profileImage: toFullUrl(req, userToUpdate.profileImage),
-      fullName: userToUpdate.fullName,
-      email: userToUpdate.email,
-      phone: userToUpdate.phone || '',
-      role: userToUpdate.role,
-      isActive: userToUpdate.isActive,
-      lastLogin: userToUpdate.lastLogin || null,
-      createdAt: userToUpdate.createdAt,
+      id: adminToUpdate._id,
+      profileImage: adminToUpdate.profileImage || '',
+      fullName: adminToUpdate.fullName,
+      email: adminToUpdate.email,
+      phone: adminToUpdate.phone || '',
+      role: adminToUpdate.role,
+      isActive: adminToUpdate.isActive,
+      lastLogin: adminToUpdate.lastLogin || null,
+      createdAt: adminToUpdate.createdAt,
+    },
+  });
+});
+
+export const removeProfileImage = asyncHandler(async (req, res) => {
+  const adminToUpdate = await Admin.findById(req.user._id);
+
+  if (!adminToUpdate.profileImage) {
+    throw new ApiError(400, 'No profile image to remove');
+  }
+
+  await deleteFromCloudinary(adminToUpdate.profileImagePublicId);
+
+  adminToUpdate.profileImage = '';
+  adminToUpdate.profileImagePublicId = '';
+  await adminToUpdate.save();
+
+  return res.status(200).json({
+    success: true,
+    message: 'Profile image removed successfully',
+    user: {
+      id: adminToUpdate._id,
+      profileImage: '',
+      fullName: adminToUpdate.fullName,
+      email: adminToUpdate.email,
+      phone: adminToUpdate.phone || '',
+      role: adminToUpdate.role,
+      isActive: adminToUpdate.isActive,
+      lastLogin: adminToUpdate.lastLogin || null,
+      createdAt: adminToUpdate.createdAt,
     },
   });
 });
@@ -95,15 +151,15 @@ export const changePassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'New password must be at least 6 characters');
   }
 
-  const user = await User.findById(req.user._id).select('+password');
+  const admin = await Admin.findById(req.user._id).select('+password');
 
-  const isMatch = await user.comparePassword(currentPassword);
+  const isMatch = await admin.comparePassword(currentPassword);
   if (!isMatch) {
     throw new ApiError(400, 'Current password is incorrect');
   }
 
-  user.password = newPassword;
-  await user.save();
+  admin.password = newPassword;
+  await admin.save();
 
   return res.status(200).json({
     success: true,

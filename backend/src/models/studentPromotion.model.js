@@ -27,7 +27,7 @@ const studentPromotionSchema = new mongoose.Schema({
   },
   promotedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Admin',
     required: true,
   },
   promotedByName: { type: String },
@@ -37,7 +37,7 @@ const studentPromotionSchema = new mongoose.Schema({
   reversedAt: { type: Date, default: null },
   reversedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Admin',
     default: null,
   },
 }, { timestamps: true });

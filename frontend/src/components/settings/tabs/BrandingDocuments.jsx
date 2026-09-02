@@ -74,7 +74,8 @@ const BrandingDocuments = ({ data, onSave, saving }) => {
         setUploadingField(apiField);
         try {
           const res = await schoolSettingsService.uploadSchoolImage(apiField, file);
-          const uploadedUrl = res?.data?.settings?.[apiField];
+          const imageData = res?.data?.settings?.[apiField];
+          const uploadedUrl = imageData?.secure_url || imageData;
           if (uploadedUrl) {
             updatedForm = { ...updatedForm, [apiField]: uploadedUrl };
           }

@@ -1,18 +1,52 @@
 import EventGallery from '../models/eventGallery.model.js';
 import Event from '../models/event.model.js';
 import { ApiError } from '../utils/apiError.js';
-import { writeUploadFile, deleteUploadFile } from '../middlewares/upload.middleware.js';
+import cloudinary, { configureCloudinary, CLOUDINARY_FOLDERS } from '../config/cloudinary.js';
+
+const uploadToCloudinary = (buffer, originalname, folder) => {
+  configureCloudinary();
+  return new Promise((resolve, reject) => {
+    const ext = originalname.split('.').pop();
+    const publicId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        public_id: publicId,
+        resource_type: 'image',
+        format: ext,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+};
+
+const deleteFromCloudinary = async (publicId) => {
+  if (!publicId) return;
+  configureCloudinary();
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error('Failed to delete image from Cloudinary', publicId, err);
+  }
+};
 
 const upsertBanner = async (eventId, file, baseUrl, userId) => {
-  let bannerImage = null;
+  let bannerImage = { secure_url: null, public_id: null };
   if (file) {
     const existing = await EventGallery.findOne({ event: eventId }).lean();
-    if (existing?.bannerImage) {
-      deleteUploadFile(existing.bannerImage);
+    if (existing?.bannerImage?.public_id) {
+      await deleteFromCloudinary(existing.bannerImage.public_id);
     }
 
-    const filename = writeUploadFile(file.buffer, 'event-gallery', file.originalname);
-    bannerImage = `${baseUrl}/uploads/event-gallery/${filename}`;
+    const folder = `${CLOUDINARY_FOLDERS.EVENTS}/${eventId}`;
+    const result = await uploadToCloudinary(file.buffer, file.originalname, folder);
+    bannerImage = { secure_url: result.secure_url, public_id: result.public_id };
   }
 
   const gallery = await EventGallery.findOneAndUpdate(
@@ -33,7 +67,7 @@ const getGalleryByEvent = async (eventId) => {
     .lean();
 
   if (!gallery) {
-    return { bannerImage: null, galleryImages: [] };
+    return { bannerImage: { secure_url: null, public_id: null }, galleryImages: [] };
   }
 
   return gallery;
@@ -45,21 +79,22 @@ const addGalleryImage = async (eventId, file, baseUrl, userId, caption) => {
     throw new ApiError(404, 'Event not found');
   }
 
-  const filename = writeUploadFile(file.buffer, 'event-gallery', file.originalname);
-  const imageUrl = `${baseUrl}/uploads/event-gallery/${filename}`;
+  const folder = `${CLOUDINARY_FOLDERS.EVENTS}/${eventId}`;
+  const result = await uploadToCloudinary(file.buffer, file.originalname, folder);
 
   const gallery = await EventGallery.findOneAndUpdate(
     { event: eventId },
     {
       $push: {
         galleryImages: {
-          imageUrl,
+          secure_url: result.secure_url,
+          public_id: result.public_id,
           caption: caption || '',
           sortOrder: 0,
           uploadedBy: userId,
         },
       },
-      $setOnInsert: { event: eventId, uploadedBy: userId, bannerImage: null },
+      $setOnInsert: { event: eventId, uploadedBy: userId, bannerImage: { secure_url: null, public_id: null } },
     },
     { upsert: true, returnDocument: 'after' },
   ).lean();
@@ -74,17 +109,25 @@ const bulkAddGalleryImages = async (eventId, files, baseUrl, userId) => {
     throw new ApiError(404, 'Event not found');
   }
 
-  const entries = files.map((file, index) => {
-    const filename = writeUploadFile(file.buffer, 'event-gallery', file.originalname);
-    const imageUrl = `${baseUrl}/uploads/event-gallery/${filename}`;
-    return { imageUrl, caption: '', sortOrder: index, uploadedBy: userId };
-  });
+  const folder = `${CLOUDINARY_FOLDERS.EVENTS}/${eventId}`;
+  const entries = [];
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const result = await uploadToCloudinary(file.buffer, file.originalname, folder);
+    entries.push({
+      secure_url: result.secure_url,
+      public_id: result.public_id,
+      caption: '',
+      sortOrder: i,
+      uploadedBy: userId,
+    });
+  }
 
   const gallery = await EventGallery.findOneAndUpdate(
     { event: eventId },
     {
       $push: { galleryImages: { $each: entries } },
-      $setOnInsert: { event: eventId, uploadedBy: userId, bannerImage: null },
+      $setOnInsert: { event: eventId, uploadedBy: userId, bannerImage: { secure_url: null, public_id: null } },
     },
     { upsert: true, returnDocument: 'after' },
   ).lean();
@@ -125,8 +168,8 @@ const deleteGalleryImage = async (imageId) => {
   }
 
   const image = gallery.galleryImages.find((img) => img._id.toString() === imageId);
-  if (image?.imageUrl) {
-    deleteUploadFile(image.imageUrl);
+  if (image?.public_id) {
+    await deleteFromCloudinary(image.public_id);
   }
 
   await EventGallery.findOneAndUpdate(
@@ -143,14 +186,16 @@ const deleteGalleryByEvent = async (eventId) => {
     return { deletedCount: 0 };
   }
 
-  if (gallery.bannerImage) {
-    deleteUploadFile(gallery.bannerImage);
+  if (gallery.bannerImage?.public_id) {
+    await deleteFromCloudinary(gallery.bannerImage.public_id);
   }
 
   if (gallery.galleryImages?.length > 0) {
-    gallery.galleryImages.forEach((img) => {
-      if (img.imageUrl) deleteUploadFile(img.imageUrl);
-    });
+    for (const img of gallery.galleryImages) {
+      if (img.public_id) {
+        await deleteFromCloudinary(img.public_id);
+      }
+    }
   }
 
   const result = await EventGallery.deleteOne({ event: eventId });
@@ -168,7 +213,7 @@ const attachGalleryToEvents = async (events) => {
     const g = galleryMap.get(e._id.toString());
     return {
       ...e,
-      bannerImage: g?.bannerImage || null,
+      bannerImage: g?.bannerImage?.secure_url || null,
       galleryImages: g?.galleryImages || [],
     };
   });

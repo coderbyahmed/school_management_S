@@ -9,8 +9,8 @@ const fr = {
   eventsAndHolidays: 'Événements et congés',
   schoolSettings: 'Paramètres',
   timetable: 'Emploi du temps',
-  feeManagement: 'Gestion des frais',
   reports: 'Rapports',
+  outstandingDues: 'Dues en souffrance',
 
   save: 'Enregistrer',
   saving: 'Enregistrement...',
@@ -503,7 +503,6 @@ const fr = {
   idCardFooter: 'Pied de page de la carte',
   idCardFooterPlaceholder: 'Texte au dos des cartes',
   receiptHeader: 'En-tête du reçu',
-  receiptHeaderPlaceholder: 'ex. Reçu de frais',
   receiptFooter: 'Pied de page du reçu',
   receiptFooterPlaceholder: 'Texte au dos des reçus',
   footerPreview: 'Pied de page et aperçu',
@@ -570,15 +569,10 @@ const fr = {
   hoursAgo: 'h',
   daysAgo: 'j',
 
-  feeDashboard: 'Tableau des frais',
   userDashboard: 'Tableau de bord utilisateur',
   userAccounts: 'Comptes utilisateur',
   portalControl: 'Contrôle du portail',
   activityMaintenance: 'Activité et maintenance',
-  feeStructure: 'Structure des frais',
-  studentFees: 'Frais des étudiants',
-  reportsAndSettings: 'Rapports et paramètres',
-
   notifications: 'Notifications',
   markAllRead: 'Marquer tout comme lu',
   noNotifications: 'Aucune notification',

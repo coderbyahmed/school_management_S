@@ -9,8 +9,8 @@ const ur = {
   eventsAndHolidays: 'تقریبات اور چھٹیاں',
   schoolSettings: 'اسکول کی ترتیبات',
   timetable: 'ٹائم ٹیبل',
-  feeManagement: 'فیس کا انتظام',
   reports: 'رپورٹس',
+  outstandingDues: 'باقی واجبات',
 
   save: 'محفوظ کریں',
   saving: 'محفوظ ہو رہا ہے...',
@@ -503,7 +503,6 @@ const ur = {
   idCardFooter: 'آئی ڈی کارڈ فوٹر',
   idCardFooterPlaceholder: 'آئی ڈی کارڈ پر فوٹر کا متن',
   receiptHeader: 'رسید ہیڈر',
-  receiptHeaderPlaceholder: 'مثلاً فیس رسید',
   receiptFooter: 'رسید فوٹر',
   receiptFooterPlaceholder: 'رسید پر فوٹر کا متن',
   footerPreview: 'فوٹر اور پیش منظر',
@@ -570,15 +569,10 @@ const ur = {
   hoursAgo: 'گھنٹے پہلے',
   daysAgo: 'دن پہلے',
 
-  feeDashboard: 'فیس ڈیش بورڈ',
   userDashboard: 'یوزر ڈیش بورڈ',
   userAccounts: 'یوزر اکاؤنٹس',
   portalControl: 'پورٹل کنٹرول',
   activityMaintenance: 'سرگرمی اور دیکھ بھال',
-  feeStructure: 'فیس کا ڈھانچہ',
-  studentFees: 'طالب علم کی فیس',
-  reportsAndSettings: 'رپورٹس اور سیٹنگز',
-
   notifications: 'اطلاعات',
   markAllRead: 'تمام پڑھی ہوئی نشان زد کریں',
   noNotifications: 'کوئی اطلاع نہیں',

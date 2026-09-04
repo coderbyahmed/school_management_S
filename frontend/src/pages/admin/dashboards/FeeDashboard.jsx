@@ -1,7 +1,7 @@
 import FeeDashboard from '../../../components/dashboards/fee-dashboard/FeeDashboard';
 
-const DashboardPage = () => {
+const FeeDashboardPage = () => {
   return <FeeDashboard />;
 };
 
-export default DashboardPage;
+export default FeeDashboardPage;

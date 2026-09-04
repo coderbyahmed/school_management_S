@@ -54,10 +54,13 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
+        const userRole = localStorage.getItem('role');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        window.location.replace('/login');
+        localStorage.removeItem('role');
+        const loginRoutes = { admin: '/admin/login', teacher: '/teacher/login', student: '/student/login' };
+        window.location.replace(loginRoutes[userRole] || '/admin/login');
         return Promise.reject(refreshError);
       }
     }

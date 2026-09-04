@@ -9,8 +9,12 @@ import FullPageLoader from './components/common/FullPageLoader/FullPageLoader';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ADMIN_MODULES } from './constants/adminModules';
 
-import LoginPage from './pages/auth/Login';
-import ForgotPasswordPage from './pages/auth/ForgotPassword';
+import AdminLoginPage from './pages/auth/AdminAuth/AdminLogin';
+import AdminForgotPasswordPage from './pages/auth/AdminAuth/ForgotPassword';
+import AdminVerifyOTPPage from './pages/auth/AdminAuth/VerifyOTP';
+import AdminResetPasswordPage from './pages/auth/AdminAuth/ResetPassword';
+import TeacherLoginPage from './pages/auth/TeacherAuth/TeacherLogin';
+import StudentLoginPage from './pages/auth/StudentAuth/StudentLogin';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import StudentDashboard from './pages/student/StudentDashboard';
 import AdminLayout from './layouts/AdminLayout';
@@ -22,16 +26,16 @@ import SubjectManagement from './pages/admin/SubjectManagement';
 import TimetableManagement from './pages/admin/TimetableManagement';
 import AttendanceManagement from './pages/admin/AttendanceManagement';
 import EventsHolidays from './pages/admin/EventsHolidays';
-import FeeManagement from './pages/admin/FeeManagement';
-import FeeDashboard from './pages/admin/dashboards/FeeDashboard';
+import FeeDashboardPage from './pages/admin/dashboards/FeeDashboard';
+import FeeStructurePage from './pages/admin/FeeManagement/FeeStructure';
+import CollectFeePage from './pages/admin/FeeManagement/CollectFee';
+import StudentFeeDetailsPage from './pages/admin/FeeManagement/StudentFeeDetails';
+import FeeReportsPage from './pages/admin/FeeManagement/Reports';
+import OutstandingDuesPage from './pages/admin/FeeManagement/OutstandingDues';
 import UserDashboard from './pages/admin/dashboards/UserDashboard';
 import UserAccounts from './pages/admin/UserAccounts';
 import PortalControl from './pages/admin/PortalControl';
 import ActivityMaintenance from './pages/admin/ActivityMaintenance';
-import FeeStructure from './pages/admin/fee/Structure';
-import StudentFees from './pages/admin/fee/Students';
-import FeeReports from './pages/admin/fee/Reports';
-import FeeReceipts from './pages/admin/fee/Receipts';
 import SchoolSettings from './pages/admin/SchoolSettings';
 
 function IndexRedirect() {
@@ -39,10 +43,10 @@ function IndexRedirect() {
   const { loading: configLoading, preferences } = useSchoolConfig();
 
   if (authLoading) return null;
-  if (!user || !role) return <Navigate to="/login" replace />;
+  if (!user || !role) return <Navigate to="/admin/login" replace />;
 
   if (role !== 'admin') {
-    return <Navigate to={DASHBOARD_ROUTES[role] || '/login'} replace />;
+    return <Navigate to={DASHBOARD_ROUTES[role] || '/admin/login'} replace />;
   }
 
   if (configLoading) return <FullPageLoader />;
@@ -73,8 +77,13 @@ function AppContent() {
       <SplashScreen visible={splashVisible} loaderStyle={loaderStyle} />
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin/forgot-password" element={<AdminForgotPasswordPage />} />
+        <Route path="/admin/verify-otp" element={<AdminVerifyOTPPage />} />
+        <Route path="/admin/reset-password" element={<AdminResetPasswordPage />} />
+        <Route path="/teacher/login" element={<TeacherLoginPage />} />
+        <Route path="/student/login" element={<StudentLoginPage />} />
 
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminLayout />}>
@@ -86,14 +95,12 @@ function AppContent() {
             <Route path="timetable" element={<TimetableManagement />} />
             <Route path="attendance" element={<AttendanceManagement />} />
             <Route path="events" element={<EventsHolidays />} />
-            <Route path="fees" element={<FeeManagement />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<FeeDashboard />} />
-              <Route path="structure" element={<FeeStructure />} />
-              <Route path="students" element={<StudentFees />} />
-              <Route path="reports" element={<FeeReports />} />
-              <Route path="receipts" element={<FeeReceipts />} />
-            </Route>
+            <Route path="fees/dashboard" element={<FeeDashboardPage />} />
+            <Route path="fees/fee-structure" element={<FeeStructurePage />} />
+            <Route path="fees/collect-fee" element={<CollectFeePage />} />
+            <Route path="fees/student-fee-details" element={<StudentFeeDetailsPage />} />
+            <Route path="fees/reports" element={<FeeReportsPage />} />
+            <Route path="fees/outstanding-dues" element={<OutstandingDuesPage />} />
             <Route path="users/dashboard" element={<UserDashboard />} />
             <Route path="user-accounts" element={<UserAccounts />} />
             <Route path="portal-control" element={<PortalControl />} />
@@ -111,7 +118,7 @@ function AppContent() {
         </Route>
 
         <Route path="/" element={<IndexRedirect />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/admin/login" replace />} />
       </Routes>
     </>
   );

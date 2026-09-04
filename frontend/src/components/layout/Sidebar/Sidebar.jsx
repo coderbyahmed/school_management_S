@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, CurrencyDollarIcon, Cog6ToothIcon, ChevronDownIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, Cog6ToothIcon, ChevronDownIcon, Squares2X2Icon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import useSchoolBranding from '../../../hooks/useSchoolBranding';
 import { getImageUrl } from '../../../utils/imageUrl';
 import { useTranslation } from '../../../hooks/useLocalization';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const [feeOpen, setFeeOpen] = useState(false);
   const [dashboardsOpen, setDashboardsOpen] = useState(false);
+  const [feeManagementOpen, setFeeManagementOpen] = useState(false);
   const [userAccountsOpen, setUserAccountsOpen] = useState(false);
   const { t } = useTranslation();
   const { schoolBranding } = useSchoolBranding();
@@ -123,21 +123,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   {dashboardsOpen && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
                       <NavLink
-                        to="/admin/fees/dashboard"
-                        className={({ isActive }) =>
-                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                            isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                          }`
-                        }
-                        onClick={() => {
-                          if (window.innerWidth < 768) toggleSidebar();
-                        }}
-                      >
-                        {t('feeDashboard')}
-                      </NavLink>
-                      <NavLink
                         to="/admin/users/dashboard"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
@@ -152,12 +137,27 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                       >
                         {t('userDashboard')}
                       </NavLink>
+                      <NavLink
+                        to="/admin/fees/dashboard"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-500 text-white shadow-md font-medium'
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        Fee Dashboard
+                      </NavLink>
                     </div>
                   )}
                 </div>
               ) : (
                 <NavLink
-                  to="/admin/fees/dashboard"
+                  to="/admin/users/dashboard"
                   className={({ isActive }) =>
                     `flex items-center transition-all duration-200 rounded-lg ${
                       isActive
@@ -317,46 +317,98 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen ? (
                 <div className="w-[calc(100%-16px)]">
                   <button
-                    onClick={() => setFeeOpen(!feeOpen)}
+                    onClick={() => setFeeManagementOpen(!feeManagementOpen)}
                     className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <CurrencyDollarIcon className="h-5 w-5 flex-shrink-0" />
                       <span className="text-sm font-medium">{t('feeManagement')}</span>
                     </div>
-                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${feeOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${feeManagementOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  {feeOpen && (
+                  {feeManagementOpen && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
-                      {[
-                        { to: '/admin/fees/structure', label: t('feeStructure') },
-                        { to: '/admin/fees/students', label: t('studentFees') },
-                        { to: '/admin/fees/receipts', label: t('receiptHistory') },
-                        { to: '/admin/fees/reports', label: t('reportsAndSettings') },
-                      ].map((item) => (
-                        <NavLink
-                          key={item.to}
-                          to={item.to}
-                          className={({ isActive }) =>
-                            `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                              isActive
-                                ? 'bg-blue-500 text-white shadow-md font-medium'
-                                : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                            }`
-                          }
-                          onClick={() => {
-                            if (window.innerWidth < 768) toggleSidebar();
-                          }}
-                        >
-                          {item.label}
-                        </NavLink>
-                      ))}
+                      <NavLink
+                        to="/admin/fees/fee-structure"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-500 text-white shadow-md font-medium'
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t('feeStructure')}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/fees/collect-fee"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-500 text-white shadow-md font-medium'
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t('collectFee')}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/fees/student-fee-details"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-500 text-white shadow-md font-medium'
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t('studentFeeDetails')}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/fees/outstanding-dues"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-500 text-white shadow-md font-medium'
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t('outstandingDues')}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/fees/reports"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-500 text-white shadow-md font-medium'
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t('reports')}
+                      </NavLink>
                     </div>
                   )}
                 </div>
               ) : (
                 <NavLink
-                  to="/admin/fees/structure"
+                  to="/admin/fees"
                   className={({ isActive }) =>
                     `flex items-center transition-all duration-200 rounded-lg ${
                       isActive

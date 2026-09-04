@@ -9,8 +9,8 @@ const ar = {
   eventsAndHolidays: 'الفعاليات والعطلات',
   schoolSettings: 'إعدادات المدرسة',
   timetable: 'الجدول الدراسي',
-  feeManagement: 'إدارة الرسوم',
   reports: 'التقارير',
+  outstandingDues: 'المبالغ المستحقة',
 
   save: 'حفظ',
   saving: 'جاري الحفظ...',
@@ -503,7 +503,6 @@ const ar = {
   idCardFooter: 'تذييل بطاقة الهوية',
   idCardFooterPlaceholder: 'نص التذييل على بطاقات الهوية',
   receiptHeader: 'رأس الإيصال',
-  receiptHeaderPlaceholder: 'مثال: إيصال الرسوم',
   receiptFooter: 'تذييل الإيصال',
   receiptFooterPlaceholder: 'نص التذييل على الإيصالات',
   footerPreview: 'التذييل والمعاينة',
@@ -570,15 +569,10 @@ const ar = {
   hoursAgo: 'ساعات مضت',
   daysAgo: 'أيام مضت',
 
-  feeDashboard: 'لوحة الرسوم',
   userDashboard: 'لوحة المستخدمين',
   userAccounts: 'حسابات المستخدمين',
   portalControl: 'التحكم في البوابة',
   activityMaintenance: 'النشاط والصيانة',
-  feeStructure: 'هيكل الرسوم',
-  studentFees: 'رسوم الطلاب',
-  reportsAndSettings: 'التقارير والإعدادات',
-
   notifications: 'الإشعارات',
   markAllRead: 'تحديد الكل كمقروء',
   noNotifications: 'لا توجد إشعارات',

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, Cog6ToothIcon, ChevronDownIcon, Squares2X2Icon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, Cog6ToothIcon, ChevronDownIcon, Squares2X2Icon, CurrencyDollarIcon, DocumentCheckIcon } from '@heroicons/react/24/outline';
 import useSchoolBranding from '../../../hooks/useSchoolBranding';
 import { getImageUrl } from '../../../utils/imageUrl';
 import { useTranslation } from '../../../hooks/useLocalization';
@@ -9,6 +9,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [dashboardsOpen, setDashboardsOpen] = useState(false);
   const [feeManagementOpen, setFeeManagementOpen] = useState(false);
   const [userAccountsOpen, setUserAccountsOpen] = useState(false);
+  const [examinationOpen, setExaminationOpen] = useState(false);
   const { t } = useTranslation();
   const { schoolBranding } = useSchoolBranding();
   const logoUrl = schoolBranding?.adminPanelLogo ? getImageUrl(schoolBranding.adminPanelLogo) : null;
@@ -151,6 +152,21 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                         }}
                       >
                         Fee Dashboard
+                      </NavLink>
+                      <NavLink
+                        to="/admin/exams/dashboard"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-500 text-white shadow-md font-medium'
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        Examination Dashboard
                       </NavLink>
                     </div>
                   )}
@@ -312,6 +328,67 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   <span className="text-sm font-medium">{t('eventsAndHolidays')}</span>
                 )}
               </NavLink>
+            </li>
+            <li className="flex justify-center">
+              {isOpen ? (
+                <div className="w-[calc(100%-16px)]">
+                  <button
+                    onClick={() => setExaminationOpen(!examinationOpen)}
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <DocumentCheckIcon className="h-5 w-5 flex-shrink-0" />
+                      <span className="text-sm font-medium whitespace-nowrap">{t('examinationManagement')}</span>
+                    </div>
+                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${examinationOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {examinationOpen && (
+                    <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                      {[
+                        { to: '/admin/exams/setup', label: 'Exam Setup' },
+                        { to: '/admin/exams/subjects-marks', label: 'Subjects & Marks' },
+                        { to: '/admin/exams/schedule', label: 'Exam Schedule' },
+                        { to: '/admin/exams/marks-entry', label: 'Marks Entry' },
+                        { to: '/admin/exams/results', label: 'Results' },
+                        { to: '/admin/exams/result-history', label: 'Result History' },
+                      ].map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          className={({ isActive }) =>
+                            `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                              isActive
+                                ? 'bg-blue-500 text-white shadow-md font-medium'
+                                : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                            }`
+                          }
+                          onClick={() => {
+                            if (window.innerWidth < 768) toggleSidebar();
+                          }}
+                        >
+                          {item.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to="/admin/exams/setup"
+                  className={({ isActive }) =>
+                    `flex items-center transition-all duration-200 rounded-lg ${
+                      isActive
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                    } w-10 h-10 justify-center`
+                  }
+                  onClick={() => {
+                    if (window.innerWidth < 768) toggleSidebar();
+                  }}
+                >
+                  <DocumentCheckIcon className="h-5 w-5 flex-shrink-0" />
+                </NavLink>
+              )}
             </li>
             <li className="flex justify-center">
               {isOpen ? (

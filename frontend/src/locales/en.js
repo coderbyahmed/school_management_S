@@ -8,6 +8,7 @@ const en = {
   subjectManagement: 'Subject Management',
   attendanceManagement: 'Attendance Management',
   eventsAndHolidays: 'Events & Holidays',
+  examinationManagement: 'Examination Management',
   feeManagement: 'Fee Management',
   feeManagementSubtitle: 'Manage fee structures, collections, receipts and reports',
   feeStructure: 'Fee Structure',

@@ -129,30 +129,144 @@ export const studentsWithFeeStatus = [
   { id: 'STU-1018', name: 'Sanaullah Babar', class: 'Class 8', section: 'B', fatherName: 'Babar Khan', phone: '0318-1919191', gender: 'Male', fatherPhone: '0300-1919190', admissionDate: '2025-04-09', feeStatus: 'Paid', monthlyFee: 7500, admissionFee: 22000, examFee: 4500, totalDue: 7500, totalPaid: 7500, remaining: 0, lastPaymentDate: '2026-08-29', lastFeeType: 'Exam Fee' },
 ];
 
-export const feeReportData = {
-  monthlySummary: [
-    { month: 'Apr', monthly: 280000, admission: 25000, exam: 15000, total: 320000 },
-    { month: 'May', monthly: 305000, admission: 30000, exam: 15000, total: 350000 },
-    { month: 'Jun', monthly: 240000, admission: 20000, exam: 20000, total: 280000 },
-    { month: 'Jul', monthly: 270000, admission: 25000, exam: 15000, total: 310000 },
-    { month: 'Aug', monthly: 330000, admission: 30000, exam: 25000, total: 385000 },
-    { month: 'Sep', monthly: 80000, admission: 25000, exam: 15000, total: 120000 },
-  ],
-  classWiseCollection: [
-    { className: 'Grade 1', collected: 95000, pending: 5000 },
-    { className: 'Grade 2', collected: 90000, pending: 10000 },
-    { className: 'Grade 3', collected: 105000, pending: 8000 },
-    { className: 'Grade 4', collected: 100000, pending: 5500 },
-    { className: 'Grade 5', collected: 110000, pending: 12000 },
-    { className: 'Grade 6', collected: 108000, pending: 6000 },
-    { className: 'Grade 7', collected: 115000, pending: 8500 },
-    { className: 'Grade 8', collected: 112000, pending: 9000 },
-    { className: 'Grade 9', collected: 125000, pending: 14000 },
-    { className: 'Grade 10', collected: 135000, pending: 16000 },
-  ],
-  paymentMethodBreakdown: [
-    { method: 'Cash', count: 85, amount: 1450000 },
-    { method: 'Bank Transfer', count: 32, amount: 620000 },
-    { method: 'Online Payment', count: 18, amount: 295000 },
-  ],
+export const recentActivity = [
+  { id: 1, activityType: 'collected', title: 'Fee Collected', studentName: 'Ahmed Ali', feeType: 'Monthly Fee', amount: 7500, date: '2026-09-04', time: '02:35 PM' },
+  { id: 2, activityType: 'receipt', title: 'Receipt Generated', studentName: 'Sara Malik', feeType: 'Monthly Fee', amount: 7500, date: '2026-09-04', time: '01:20 PM' },
+  { id: 3, activityType: 'collected', title: 'Fee Collected', studentName: 'Fatima Noor', feeType: 'Monthly Fee', amount: 8500, date: '2026-09-04', time: '11:45 AM' },
+  { id: 4, activityType: 'updated', title: 'Fee Updated', studentName: 'Bilal Shah', feeType: 'Admission Fee', amount: 18000, date: '2026-09-04', time: '10:10 AM' },
+  { id: 5, activityType: 'collected', title: 'Fee Collected', studentName: 'Ayesha Siddiqui', feeType: 'Monthly Fee', amount: 6500, date: '2026-09-04', time: '09:30 AM' },
+  { id: 6, activityType: 'structure', title: 'Fee Structure Updated', studentName: null, feeType: 'Examination Fee', amount: null, date: '2026-09-03', time: '04:15 PM' },
+  { id: 7, activityType: 'deleted', title: 'Fee Deleted', studentName: 'Omar Farooq', feeType: 'Monthly Fee', amount: 5500, date: '2026-09-03', time: '03:00 PM' },
+  { id: 8, activityType: 'collected', title: 'Fee Collected', studentName: 'Zainab Malik', feeType: 'Monthly Fee', amount: 5000, date: '2026-09-03', time: '02:25 PM' },
+  { id: 9, activityType: 'receipt', title: 'Receipt Generated', studentName: 'Khalid Pervez', feeType: 'Monthly Fee', amount: 7000, date: '2026-09-03', time: '11:00 AM' },
+  { id: 10, activityType: 'collected', title: 'Fee Collected', studentName: 'Rabia Asif', feeType: 'Monthly Fee', amount: 5500, date: '2026-09-02', time: '03:40 PM' },
+];
+
+export const academicYears = ['2026', '2025'];
+
+const CLASS_MONTHLY_FEES = {
+  'Montessori': 3500, 'Nursery': 3500, 'KG1': 3800, 'KG2': 3800,
+  'Class 1': 4000, 'Class 2': 4500, 'Class 3': 5000, 'Class 4': 5500,
+  'Class 5': 6000, 'Class 6': 6500, 'Class 7': 7000, 'Class 8': 7500,
+  'Class 9': 8000, 'Class 10': 8500,
 };
+
+const STUDENT_ADMISSION_FEES = {
+  'STU-1001': 22000, 'STU-1002': 22000, 'STU-1003': 20000, 'STU-1004': 22000,
+  'STU-1005': 20000, 'STU-1006': 18000, 'STU-1007': 18000, 'STU-1008': 15000,
+  'STU-1009': 15000, 'STU-1010': 15000, 'STU-1011': 15000, 'STU-1012': 22000,
+  'STU-1013': 20000, 'STU-1014': 20000, 'STU-1015': 22000, 'STU-1016': 18000,
+  'STU-1017': 15000, 'STU-1018': 22000,
+};
+
+const STUDENT_EXAM_FEES = {
+  'STU-1001': 4500, 'STU-1002': 5000, 'STU-1003': 4500, 'STU-1004': 5000,
+  'STU-1005': 4000, 'STU-1006': 4000, 'STU-1007': 3500, 'STU-1008': 3500,
+  'STU-1009': 3000, 'STU-1010': 3000, 'STU-1011': 3000, 'STU-1012': 5000,
+  'STU-1013': 4500, 'STU-1014': 4000, 'STU-1015': 5000, 'STU-1016': 3500,
+  'STU-1017': 3500, 'STU-1018': 4500,
+};
+
+const DUE_MONTHS = {
+  'STU-1002': ['June', 'July'], 'STU-1003': ['June', 'July'],
+  'STU-1006': ['July'], 'STU-1007': ['June', 'July', 'August'],
+  'STU-1009': ['July', 'August'], 'STU-1011': ['June', 'July', 'August'],
+  'STU-1012': ['May', 'June', 'July'], 'STU-1014': ['June', 'July', 'August'],
+  'STU-1015': ['July'], 'STU-1017': ['June', 'July', 'August'],
+};
+
+const PARTIAL_MONTHS = {
+  'STU-1002': { 'August': { paid: 5000, discount: 0, fine: 0 } },
+  'STU-1006': { 'June': { paid: 2000, discount: 0, fine: 0 } },
+  'STU-1007': { 'August': { paid: 1500, discount: 0, fine: 0 } },
+  'STU-1012': { 'August': { paid: 4000, discount: 0, fine: 0 } },
+  'STU-1015': { 'August': { paid: 6000, discount: 500, fine: 0 } },
+};
+
+const ALL_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+export const monthlyBreakdown = (() => {
+  const records = [];
+  let id = 1;
+
+  studentsWithFeeStatus.forEach((student) => {
+    const monthlyFee = CLASS_MONTHLY_FEES[student.class] || 5000;
+    const admissionFee = STUDENT_ADMISSION_FEES[student.id] || 15000;
+    const examFee = STUDENT_EXAM_FEES[student.id] || 4000;
+    const dueMonths = DUE_MONTHS[student.id] || [];
+    const partials = PARTIAL_MONTHS[student.id] || {};
+
+    ALL_MONTHS.forEach((month) => {
+      const isDue = dueMonths.includes(month);
+      const partial = partials[month];
+
+      if (isDue && partial) {
+        records.push({
+          id: `MB-${String(id++).padStart(3, '0')}`,
+          studentId: student.id, studentName: student.name,
+          class: student.class, section: student.section,
+          month, year: '2026', feeType: 'Monthly Fee',
+          expected: monthlyFee, paid: partial.paid,
+          discount: partial.discount, fine: partial.fine,
+          netPaid: partial.paid - partial.discount + partial.fine,
+          due: monthlyFee - partial.paid + partial.discount - partial.fine,
+          status: 'Partially Paid', date: `2026-${ALL_MONTHS.indexOf(month) + 1 < 10 ? '0' : ''}${ALL_MONTHS.indexOf(month) + 1}-15`,
+        });
+      } else if (isDue) {
+        records.push({
+          id: `MB-${String(id++).padStart(3, '0')}`,
+          studentId: student.id, studentName: student.name,
+          class: student.class, section: student.section,
+          month, year: '2026', feeType: 'Monthly Fee',
+          expected: monthlyFee, paid: 0, discount: 0, fine: 0,
+          netPaid: 0, due: monthlyFee, status: 'Due', date: null,
+        });
+      } else {
+        records.push({
+          id: `MB-${String(id++).padStart(3, '0')}`,
+          studentId: student.id, studentName: student.name,
+          class: student.class, section: student.section,
+          month, year: '2026', feeType: 'Monthly Fee',
+          expected: monthlyFee, paid: monthlyFee, discount: 0, fine: 0,
+          netPaid: monthlyFee, due: 0, status: 'Paid',
+          date: `2026-${ALL_MONTHS.indexOf(month) + 1 < 10 ? '0' : ''}${ALL_MONTHS.indexOf(month) + 1}-01`,
+        });
+      }
+    });
+
+    records.push({
+      id: `MB-${String(id++).padStart(3, '0')}`,
+      studentId: student.id, studentName: student.name,
+      class: student.class, section: student.section,
+      month: 'April', year: '2026', feeType: 'Admission Fee',
+      expected: admissionFee, paid: admissionFee, discount: 2000, fine: 0,
+      netPaid: admissionFee - 2000, due: 0, status: 'Paid', date: '2026-04-10',
+    });
+
+    ['First Term', 'Mid Term', 'Final Term'].forEach((exam, i) => {
+      const examMonths = ['March', 'July', 'November'];
+      const examMonth = examMonths[i];
+      const isExamDue = (student.id === 'STU-1009' && exam === 'Mid Term')
+        || (student.id === 'STU-1015' && exam === 'Mid Term');
+
+      records.push({
+        id: `MB-${String(id++).padStart(3, '0')}`,
+        studentId: student.id, studentName: student.name,
+        class: student.class, section: student.section,
+        month: examMonth, year: '2026', feeType: 'Examination Fee',
+        expected: examFee, paid: isExamDue ? 0 : examFee,
+        discount: 0, fine: isExamDue ? 0 : 0,
+        netPaid: isExamDue ? 0 : examFee,
+        due: isExamDue ? examFee : 0,
+        status: isExamDue ? 'Due' : 'Paid',
+        date: isExamDue ? null : `2026-${String(i * 4 + 3).padStart(2, '0')}-10`,
+        exam,
+      });
+    });
+  });
+
+  return records;
+})();

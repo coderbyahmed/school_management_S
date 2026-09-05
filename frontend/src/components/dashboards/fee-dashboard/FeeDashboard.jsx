@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import {
   CurrencyDollarIcon, ArrowTrendingUpIcon, ClockIcon, UserGroupIcon,
-  CalendarDaysIcon, ArrowPathIcon,
+  CalendarDaysIcon, ArrowPathIcon, DocumentTextIcon, TrashIcon,
+  PencilIcon, Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import CardSection from '../../common/CardSection/CardSection';
-import { dashboardStats, monthlyCollectionData, feeTypeCollectionData, pendingStudents } from '../../../data/feeManagement/dummyData';
+import { dashboardStats, monthlyCollectionData, feeTypeCollectionData, pendingStudents, recentActivity } from '../../../data/feeManagement/dummyData';
 
 const formatCurrency = (val) => `Rs. ${Number(val).toLocaleString()}`;
+
+const activityConfig = {
+  collected: { icon: CurrencyDollarIcon, bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400' },
+  updated: { icon: PencilIcon, bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400' },
+  deleted: { icon: TrashIcon, bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400' },
+  receipt: { icon: DocumentTextIcon, bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400' },
+  structure: { icon: Cog6ToothIcon, bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-600 dark:text-yellow-400' },
+};
 
 const statusStyles = {
   Paid: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700',
@@ -154,6 +163,48 @@ const FeeDashboard = () => {
               <Line type="monotone" dataKey="pending" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3, fill: '#f59e0b' }} name="Pending" />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+      </CardSection>
+
+      <CardSection title="Recent Activity">
+        <div className="space-y-1">
+          {recentActivity.map((activity) => {
+            const cfg = activityConfig[activity.activityType] || activityConfig.collected;
+            const Icon = cfg.icon;
+            return (
+              <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                <div className={`flex-shrink-0 p-2 rounded-lg ${cfg.bg} ${cfg.text}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                        {activity.studentName ? (
+                          <span>{activity.studentName}{activity.feeType ? ` \u2014 ${activity.feeType}` : ''}{activity.amount != null ? ` \u2014 ${formatCurrency(activity.amount)}` : ''}</span>
+                        ) : (
+                          <span>{activity.feeType}</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {activity.feeType && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${
+                          activity.feeType === 'Admission Fee' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+                            : activity.feeType === 'Examination Fee' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                        }`}>
+                          {activity.feeType === 'Monthly Fee' ? 'M Fee' : activity.feeType === 'Admission Fee' ? 'A Fee' : 'E Fee'}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{activity.time}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </CardSection>
 

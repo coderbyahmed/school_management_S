@@ -29,6 +29,21 @@ const classSchema = new mongoose.Schema(
         message: 'Academic year must be a valid year (e.g. 2025)',
       },
     },
+    monthlyFee: {
+      type: Number,
+      default: 0,
+      min: [0, 'Monthly fee cannot be negative'],
+    },
+    admissionFee: {
+      type: Number,
+      default: 0,
+      min: [0, 'Admission fee cannot be negative'],
+    },
+    examFee: {
+      type: Number,
+      default: 0,
+      min: [0, 'Exam fee cannot be negative'],
+    },
     status: {
       type: String,
       required: [true, 'Status is required'],

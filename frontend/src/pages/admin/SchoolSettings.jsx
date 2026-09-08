@@ -1,4 +1,4 @@
-import SchoolSettings from '../../components/settings/SchoolSettings';
+import SchoolSettings from '../../components/Admin/settings/SchoolSettings';
 
 const SchoolSettingsPage = () => {
   return <SchoolSettings />;

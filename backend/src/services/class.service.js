@@ -4,7 +4,7 @@ import Teacher from '../models/teacher.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 const createClass = async (data) => {
-  const { className, academicYear, status } = data;
+  const { className, academicYear, status, monthlyFee, admissionFee, examFee } = data;
 
   const existing = await Class.findOne({ className, academicYear, isDeleted: { $ne: true } });
 
@@ -18,12 +18,15 @@ const createClass = async (data) => {
     if (deleted) {
       deleted.isDeleted = false;
       deleted.status = status;
+      deleted.monthlyFee = monthlyFee ?? 0;
+      deleted.admissionFee = admissionFee ?? 0;
+      deleted.examFee = examFee ?? 0;
       await deleted.save();
 
       return deleted;
     }
 
-    const newClass = await Class.create({ className, academicYear, status });
+    const newClass = await Class.create({ className, academicYear, status, monthlyFee: monthlyFee ?? 0, admissionFee: admissionFee ?? 0, examFee: examFee ?? 0 });
 
     return newClass;
   } catch (error) {
@@ -47,6 +50,7 @@ const CLASS_ORDER = [
 ];
 
 const classMembershipFilter = (className, academicYear) => ({
+  status: 'Active',
   $or: [
     { class: className, academicYear, enrollments: { $exists: false } },
     { class: className, academicYear, enrollments: { $size: 0 } },
@@ -65,7 +69,7 @@ const classMembershipFilter = (className, academicYear) => ({
 const getAllClasses = async () => {
   const [classes, totalStudents] = await Promise.all([
     Class.find({ isDeleted: { $ne: true } }).lean(),
-    Student.countDocuments(),
+    Student.countDocuments({ status: 'Active' }),
   ]);
 
   classes.sort((a, b) => CLASS_ORDER.indexOf(a.className) - CLASS_ORDER.indexOf(b.className));
@@ -98,7 +102,7 @@ const updateClass = async (id, data) => {
     throw new ApiError(404, 'Class not found');
   }
 
-  const { className, academicYear, status } = data;
+  const { className, academicYear, status, monthlyFee, admissionFee, examFee } = data;
 
   if (className && academicYear) {
     const duplicate = await Class.findOne({
@@ -116,7 +120,7 @@ const updateClass = async (id, data) => {
   try {
     const updated = await Class.findByIdAndUpdate(
       id,
-      { className, academicYear, status },
+      { className, academicYear, status, monthlyFee, admissionFee, examFee },
       { new: true, runValidators: true },
     );
 
@@ -171,6 +175,9 @@ const getClassDetails = async (classId) => {
       _id: classInfo._id,
       className: classInfo.className,
       academicYear: classInfo.academicYear,
+      monthlyFee: classInfo.monthlyFee,
+      admissionFee: classInfo.admissionFee,
+      examFee: classInfo.examFee,
       status: classInfo.status,
     },
     totalStudents,

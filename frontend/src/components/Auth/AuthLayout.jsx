@@ -31,7 +31,6 @@ const ROLE_STYLES = {
 
 const AuthLayout = ({ children, title, subtitle, role = 'admin', description }) => {
   const [schoolData, setSchoolData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const style = ROLE_STYLES[role] || ROLE_STYLES.admin;
   const FallbackIcon = style.fallbackIcon;
@@ -46,8 +45,6 @@ const AuthLayout = ({ children, title, subtitle, role = 'admin', description }) 
         setSchoolData(json.data || {});
       } catch {
         setSchoolData({});
-      } finally {
-        setLoading(false);
       }
     };
     fetchBranding();

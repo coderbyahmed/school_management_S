@@ -43,6 +43,10 @@ const createTeacher = async (data, file, baseUrl = '') => {
 
   const teacherData = { ...data };
   delete teacherData.teacherId;
+  delete teacherData.loginId;
+
+  teacherData.password = '42684268';
+
   if (teacherData.joiningDate === '' || teacherData.joiningDate === null || teacherData.joiningDate === undefined) {
     delete teacherData.joiningDate;
   }
@@ -119,7 +123,7 @@ const updateTeacher = async (teacherId, updateData, file, baseUrl = '') => {
     throw new ApiError(404, 'Teacher not found');
   }
 
-  const forbidden = ['teacherId', '_id'];
+  const forbidden = ['teacherId', '_id', 'loginId', 'password'];
   const cleanData = {};
   for (const key of Object.keys(updateData)) {
     if (!forbidden.includes(key)) {

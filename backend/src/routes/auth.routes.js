@@ -16,6 +16,7 @@ import {
   initiatePasswordChange,
   verifyPasswordChangeOtp,
   completePasswordChange,
+  adminPortalAccess,
 } from '../controllers/auth.controller.js';
 import {
   validateAdminLogin,
@@ -56,6 +57,9 @@ router.post('/email-change/verify-otp', protect, authorize('admin'), verifyChang
 router.post('/password-change/initiate', protect, authorize('admin'), initiatePasswordChange);
 router.post('/password-change/verify-otp', protect, authorize('admin'), verifyPasswordChangeOtp);
 router.patch('/password-change/complete', protect, authorize('admin'), completePasswordChange);
+
+// Admin portal access
+router.post('/admin-portal-access', protect, authorize('admin'), adminPortalAccess);
 
 // Password change (legacy - direct update)
 router.patch('/update-password', protect, authorize('admin'), updatePassword);

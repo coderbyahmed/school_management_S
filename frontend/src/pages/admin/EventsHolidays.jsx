@@ -1,4 +1,4 @@
-import EventsHolidays from '../../components/events/EventsHolidays';
+import EventsHolidays from '../../components/Admin/events/EventsHolidays';
 
 const EventsHolidaysPage = () => {
   return <EventsHolidays />;

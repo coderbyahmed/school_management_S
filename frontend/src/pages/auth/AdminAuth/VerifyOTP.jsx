@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import authService from '../../../services/auth/auth.service';
 import AuthLayout from '../../../components/Auth/AuthLayout';
-import StepIndicator from '../../../components/Auth/StepIndicator';
+import StepIndicator from '../../../components/common/StepIndicator/StepIndicator';
 import OtpInput from '../../../components/common/OtpInput/OtpInput';
 import Button from '../../../components/common/Button/Button';
 import Alert from '../../../components/common/Alert/Alert';

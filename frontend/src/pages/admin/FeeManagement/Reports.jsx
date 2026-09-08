@@ -1,4 +1,4 @@
-import Reports from '../../../components/feeManagement/Reports/Reports';
+import Reports from '../../../components/Admin/feeManagement/Reports/Reports';
 
 const ReportsPage = () => {
   return <Reports />;

@@ -1,4 +1,4 @@
-import AttendanceManagement from '../../components/attendance/AttendanceManagement';
+import AttendanceManagement from '../../components/Admin/attendance/AttendanceManagement';
 
 const AttendanceManagementPage = () => {
   return <AttendanceManagement />;

@@ -7,7 +7,7 @@ const Table = ({ columns, data, renderRow }) => {
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-gray-300 ${col.className || ''}`}
+                className={`px-4 py-3.5 text-left font-semibold text-gray-600 dark:text-gray-300 whitespace-nowrap ${col.className || ''}`}
               >
                 {col.label}
               </th>

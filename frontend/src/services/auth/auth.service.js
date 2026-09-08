@@ -108,6 +108,11 @@ const authService = {
     const response = await api.post('/auth/security-lock/change', { oldLock, newLock });
     return response.data;
   },
+
+  adminPortalAccess: async (targetId, targetType) => {
+    const response = await api.post('/auth/admin-portal-access', { targetId, targetType });
+    return response.data;
+  },
 };
 
 export default authService;

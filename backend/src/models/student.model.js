@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import Counter from './counter.model.js';
 
 const VALID_CLASS_NAMES = [
@@ -20,6 +21,16 @@ const studentSchema = new mongoose.Schema(
     studentId: {
       type: String,
       unique: true,
+    },
+    loginId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      select: false,
     },
     fullName: {
       type: String,
@@ -44,6 +55,19 @@ const studentSchema = new mongoose.Schema(
       type: String,
       enum: ['Active', 'Inactive'],
       default: 'Active',
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    lastLogout: {
+      type: Date,
+      default: null,
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'teacher', 'student'],
+      default: 'student',
     },
     fatherPhone: {
       type: String,
@@ -146,8 +170,19 @@ studentSchema.pre('save', async function () {
       const seq = await Counter.increment('admission');
       this.admissionNumber = `ADM-${String(seq).padStart(6, '0')}`;
     }
+    if (!this.loginId) {
+      this.loginId = this.studentId;
+    }
+  }
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
   }
 });
+
+studentSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 const Student = mongoose.model('Student', studentSchema);
 

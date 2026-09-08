@@ -1,4 +1,4 @@
-import TimetableManagement from '../../components/timetable/TimetableManagement';
+import TimetableManagement from '../../components/Admin/timetable/TimetableManagement';
 
 const TimetableManagementPage = () => {
   return <TimetableManagement />;

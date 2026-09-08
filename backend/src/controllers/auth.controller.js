@@ -45,6 +45,14 @@ const studentLogin = asyncHandler(async (req, res) => {
 
   const result = await authService.studentLogin(studentId, password);
 
+  if (!result.success) {
+    const statusCode = result.message === 'Account deactivated' ? 403 : 401;
+    return res.status(statusCode).json({
+      success: false,
+      message: result.message,
+    });
+  }
+
   return res.status(200).json({
     success: true,
     message: 'Student login successful',
@@ -88,7 +96,10 @@ const getMe = asyncHandler(async (req, res) => {
   const user = req.user;
 
   let studentData = null;
-  if (user.role === 'student' && user.referenceId) {
+  if (user.role === 'student') {
+    // Student data is the user document itself (fetched from Student collection)
+    studentData = user;
+  } else if (user.role === 'admin' && user.referenceId) {
     studentData = await Student.findById(user.referenceId);
   }
 
@@ -102,7 +113,7 @@ const getMe = asyncHandler(async (req, res) => {
       loginId: user.loginId || undefined,
       role: user.role,
       teacherId: user.teacherId || undefined,
-      studentId: studentData ? studentData.studentId : (user.studentId || undefined),
+      studentId: user.studentId,
       isActive: user.isActive !== undefined ? user.isActive : true,
       lastLogin: user.lastLogin || undefined,
       createdAt: user.createdAt || undefined,
@@ -280,6 +291,23 @@ const completePasswordChange = asyncHandler(async (req, res) => {
   });
 });
 
+const adminPortalAccess = asyncHandler(async (req, res) => {
+  const { targetId, targetType } = req.body;
+  if (!targetId || !targetType) {
+    throw new ApiError(400, 'Target ID and type are required');
+  }
+
+  const result = await authService.adminPortalAccess(req.user._id, targetId, targetType);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Admin portal access granted',
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    user: result.user,
+  });
+});
+
 export {
   adminLogin,
   teacherLogin,
@@ -297,4 +325,5 @@ export {
   initiatePasswordChange,
   verifyPasswordChangeOtp,
   completePasswordChange,
+  adminPortalAccess,
 };

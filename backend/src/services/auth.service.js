@@ -1,9 +1,11 @@
 import Admin from '../models/admin.model.js';
 import Student from '../models/student.model.js';
+import Teacher from '../models/teacher.model.js';
 import RefreshToken from '../models/refreshToken.model.js';
 import EmailChangeRequest from '../models/emailChangeRequest.model.js';
 import PasswordChangeRequest from '../models/passwordChangeRequest.model.js';
 import { ApiError } from '../utils/apiError.js';
+import axios from 'axios';
 import { sendOtpEmail, sendEmailChangeOtp, sendPasswordChangeOtp } from '../utils/email.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -16,8 +18,8 @@ const OTP_MAX_ATTEMPTS = 3;
 const OTP_MAX_REQUESTS = 3;
 const OTP_REQUEST_WINDOW_MINUTES = 10;
 
-const generateAccessToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+const generateAccessToken = (userId, role) => {
+  return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   });
 };
@@ -63,6 +65,14 @@ const rotateRefreshToken = async (oldToken) => {
   return newToken;
 };
 
+const generateAdminAccessToken = (adminId, targetId, targetRole) => {
+  return jwt.sign(
+    { id: targetId, role: targetRole, adminAccess: true, adminId },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+};
+
 const buildUserResponse = (user) => ({
   id: user._id,
   fullName: user.fullName,
@@ -71,6 +81,20 @@ const buildUserResponse = (user) => ({
   teacherId: user.teacherId || undefined,
   studentId: user.studentId || undefined,
 });
+
+const getMe = async () => {
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    const apiBase = 'http://localhost:5000/api/v1';
+    const response = await axios.get(`${apiBase}/auth/me`, {
+      headers: { Authorization: accessToken ? `Bearer ${accessToken}` : '' },
+      withCredentials: false,
+    });
+    return response.data;
+  } catch (error) {
+    throw new ApiError(401, 'Session expired or invalid');
+  }
+};
 
 const adminLogin = async (email, password) => {
   const admin = await Admin.findOne({ email, role: 'admin' }).select('+password');
@@ -84,7 +108,7 @@ const adminLogin = async (email, password) => {
   admin.lastLogin = new Date();
   await admin.save();
 
-  const accessToken = generateAccessToken(admin._id);
+  const accessToken = generateAccessToken(admin._id, 'admin');
   const refreshToken = await createRefreshToken(admin._id);
   const loggedInAdmin = await Admin.findById(admin._id);
 
@@ -92,9 +116,12 @@ const adminLogin = async (email, password) => {
 };
 
 const teacherLogin = async (teacherId, password) => {
-  const user = await Admin.findOne({ loginId: teacherId, role: 'teacher' }).select('+password');
+  const user = await Teacher.findOne({ loginId: teacherId }).select('+password');
   if (!user) {
     throw new ApiError(401, 'Teacher ID not found');
+  }
+  if (user.status !== 'Active') {
+    throw new ApiError(403, 'Account deactivated');
   }
   if (!(await user.comparePassword(password))) {
     throw new ApiError(401, 'Incorrect password');
@@ -103,38 +130,44 @@ const teacherLogin = async (teacherId, password) => {
   user.lastLogin = new Date();
   await user.save();
 
-  const accessToken = generateAccessToken(user._id);
-  const refreshToken = await createRefreshToken(user._id);
-  const loggedInUser = await Admin.findById(user._id);
-
-  return { user: buildUserResponse(loggedInUser), accessToken, refreshToken };
-};
-
-const studentLogin = async (studentId, password) => {
-  const user = await Admin.findOne({ loginId: studentId, role: 'student' }).select('+password');
-  if (!user) {
-    throw new ApiError(401, 'Student ID not found');
-  }
-  if (!user.isActive) {
-    throw new ApiError(403, 'Your account has been deactivated. Contact the administration.');
-  }
-  if (!(await user.comparePassword(password))) {
-    throw new ApiError(401, 'Incorrect password');
-  }
-
-  const student = user.referenceId ? await Student.findById(user.referenceId) : null;
-
-  const accessToken = generateAccessToken(user._id);
+  const accessToken = generateAccessToken(user._id, 'teacher');
   const refreshToken = await createRefreshToken(user._id);
 
   return {
+    success: true,
+    user: buildUserResponse(user),
+    accessToken,
+    refreshToken,
+  };
+};
+
+const studentLogin = async (studentId, password) => {
+  const user = await Student.findOne({ loginId: studentId }).select('+password');
+  if (!user) {
+    return { success: false, message: 'Student ID not found' };
+  }
+  if (user.status !== 'Active') {
+    return { success: false, message: 'Account deactivated' };
+  }
+  if (!(await user.comparePassword(password))) {
+    return { success: false, message: 'Incorrect password' };
+  }
+
+  user.lastLogin = new Date();
+  await user.save();
+
+  const accessToken = generateAccessToken(user._id, 'student');
+  const refreshToken = await createRefreshToken(user._id);
+
+  return {
+    success: true,
     user: {
       id: user._id,
       fullName: user.fullName,
       loginId: user.loginId,
       role: 'student',
-      studentId: student ? student.studentId : user.loginId,
-      student: student || null,
+      studentId: user.studentId,
+      student: user,
     },
     accessToken,
     refreshToken,
@@ -549,6 +582,36 @@ const completePasswordChange = async (userId, newPassword, meta = {}) => {
   return true;
 };
 
+const adminPortalAccess = async (adminId, targetId, targetType) => {
+  let targetUser;
+  if (targetType === 'student') {
+    targetUser = await Student.findById(targetId).select('+password');
+    if (!targetUser) throw new ApiError(404, 'Student not found');
+    if (targetUser.status !== 'Active') throw new ApiError(403, 'Student account is inactive');
+  } else if (targetType === 'teacher') {
+    targetUser = await Teacher.findById(targetId).select('+password');
+    if (!targetUser) throw new ApiError(404, 'Teacher not found');
+    if (targetUser.status !== 'Active') throw new ApiError(403, 'Teacher account is inactive');
+  } else {
+    throw new ApiError(400, 'Invalid target type');
+  }
+
+  const accessToken = generateAdminAccessToken(adminId, targetId, targetType);
+  const refreshToken = await createRefreshToken(targetId);
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: targetUser._id,
+      fullName: targetUser.fullName,
+      role: targetType,
+      studentId: targetUser.studentId || undefined,
+      teacherId: targetUser.teacherId || undefined,
+    },
+  };
+};
+
 export default {
   adminLogin,
   teacherLogin,
@@ -567,4 +630,7 @@ export default {
   revokeRefreshToken,
   rotateRefreshToken,
   generateAccessToken,
+  generateAdminAccessToken,
+  adminPortalAccess,
+  getMe,
 };

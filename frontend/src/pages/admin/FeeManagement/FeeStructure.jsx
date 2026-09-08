@@ -1,4 +1,4 @@
-import FeeStructure from '../../../components/feeManagement/FeeStructure/FeeStructure';
+import FeeStructure from '../../../components/Admin/feeManagement/FeeStructure/FeeStructure';
 
 const FeeStructurePage = () => {
   return <FeeStructure />;

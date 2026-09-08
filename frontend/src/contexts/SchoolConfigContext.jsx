@@ -24,6 +24,26 @@ export const SchoolConfigProvider = ({ children }) => {
     try {
       if (!user) throw new Error('Not authenticated');
 
+      if (user.role !== 'admin') {
+        const pubRes = await schoolSettingsService.getPublicSchoolSettings();
+        const pub = pubRes.data || {};
+        setConfig({
+          ...DEFAULTS,
+          schoolInfo: { ...DEFAULTS.schoolInfo, name: pub.schoolName || '', logo: pub.logo || null, principalName: pub.principalName || '' },
+          branding: { ...DEFAULTS.branding, adminLogo: pub.adminPanelLogo || null },
+          login: {
+            ...DEFAULTS.login,
+            showSchoolLogoOnLogin: pub.showSchoolLogoOnLogin ?? true,
+            showSchoolNameOnLogin: pub.showSchoolNameOnLogin ?? true,
+            splashEnabled: pub.splashEnabled ?? true,
+            loaderStyle: pub.loaderStyle || '',
+          },
+          loading: false,
+          loaded: true,
+        });
+        return;
+      }
+
       const res = await schoolSettingsService.getSchoolSettings();
       const s = res.data.settings || {};
       localStorage.setItem('autoLogout', s.autoLogout ? 'true' : 'false');

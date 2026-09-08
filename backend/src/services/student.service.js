@@ -2,6 +2,7 @@ import Student from '../models/student.model.js';
 import StudentPromotion from '../models/studentPromotion.model.js';
 import AuditLog from '../models/auditLog.model.js';
 import SchoolSettings from '../models/schoolSettings.model.js';
+import Admin from '../models/admin.model.js';
 import { ApiError } from '../utils/apiError.js';
 import cloudinary, { configureCloudinary, CLOUDINARY_FOLDERS } from '../config/cloudinary.js';
 import classValidation from './classValidation.service.js';
@@ -47,6 +48,9 @@ const createStudent = async (data, file, baseUrl = '') => {
   const studentData = { ...data };
   delete studentData.studentId;
   delete studentData.admissionNumber;
+  delete studentData.loginId;
+
+  studentData.password = '12345678';
 
   const settings = await SchoolSettings.getSettings();
   studentData.academicYear = settings.currentAcademicYear;
@@ -64,25 +68,25 @@ const createStudent = async (data, file, baseUrl = '') => {
   studentData.studentImagePublicId = result.public_id;
 
   try {
-    const savedStudent = await Student.create(studentData);
-    return await Student.findById(savedStudent._id);
-  } catch (error) {
-    await deleteFromCloudinary(result.public_id);
+      const savedStudent = await Student.create(studentData);
+      return await Student.findById(savedStudent._id);
+    } catch (error) {
+      await deleteFromCloudinary(result.public_id);
 
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      const fieldLabel = { studentId: 'Student ID', admissionNumber: 'Admission Number' };
-      throw new ApiError(409, `${fieldLabel[field] || field} already exists`);
+      if (error.code === 11000) {
+        const field = Object.keys(error.keyPattern)[0];
+        const fieldLabel = { studentId: 'Student ID', admissionNumber: 'Admission Number' };
+        throw new ApiError(409, `${fieldLabel[field] || field} already exists`);
+      }
+
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map((e) => e.message);
+        throw new ApiError(400, messages.join('. '));
+      }
+
+      throw error;
     }
-
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      throw new ApiError(400, messages.join('. '));
-    }
-
-    throw error;
-  }
-};
+  };
 
 const getAllStudents = async (query) => {
   const { page: rawPage, limit: rawLimit, class: classFilter, status, academicYear, search, studentId } = query;
@@ -140,7 +144,7 @@ const updateStudent = async (studentId, updateData, file, baseUrl = '') => {
     throw new ApiError(404, 'Student not found');
   }
 
-  const forbidden = ['studentId', 'admissionNumber', '_id'];
+  const forbidden = ['studentId', 'admissionNumber', '_id', 'loginId', 'password'];
   const cleanData = {};
   for (const key of Object.keys(updateData)) {
     if (!forbidden.includes(key)) {

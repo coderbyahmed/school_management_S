@@ -1,4 +1,4 @@
-import ClassManagement from '../../components/class/ClassManagement';
+import ClassManagement from '../../components/Admin/class/ClassManagement';
 
 const ClassManagementPage = () => {
   return <ClassManagement />;

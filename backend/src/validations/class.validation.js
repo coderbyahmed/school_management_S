@@ -9,7 +9,7 @@ const VALID_CLASS_NAMES = [
 const ACADEMIC_YEAR_REGEX = /^\d{4}$/;
 
 const validateCreateClass = (req, res, next) => {
-  const { className, academicYear, status } = req.body;
+  const { className, academicYear, status, monthlyFee, admissionFee, examFee } = req.body;
 
   if (!className || !className.trim()) {
     throw new ApiError(400, 'Class name is required');
@@ -27,6 +27,18 @@ const validateCreateClass = (req, res, next) => {
     throw new ApiError(400, 'Invalid academic year format. Use a valid year (e.g. 2025)');
   }
 
+  if (monthlyFee !== undefined && monthlyFee !== '' && (isNaN(Number(monthlyFee)) || Number(monthlyFee) < 0)) {
+    throw new ApiError(400, 'Monthly fee must be a non-negative number');
+  }
+
+  if (admissionFee !== undefined && admissionFee !== '' && (isNaN(Number(admissionFee)) || Number(admissionFee) < 0)) {
+    throw new ApiError(400, 'Admission fee must be a non-negative number');
+  }
+
+  if (examFee !== undefined && examFee !== '' && (isNaN(Number(examFee)) || Number(examFee) < 0)) {
+    throw new ApiError(400, 'Exam fee must be a non-negative number');
+  }
+
   if (!status || !status.trim()) {
     throw new ApiError(400, 'Status is required');
   }
@@ -40,16 +52,19 @@ const validateCreateClass = (req, res, next) => {
 
   req.body.className = className.trim();
   req.body.academicYear = academicYear.trim();
+  req.body.monthlyFee = monthlyFee !== undefined && monthlyFee !== '' ? Number(monthlyFee) : 0;
+  req.body.admissionFee = admissionFee !== undefined && admissionFee !== '' ? Number(admissionFee) : 0;
+  req.body.examFee = examFee !== undefined && examFee !== '' ? Number(examFee) : 0;
   req.body.status = normalizedStatus;
 
   next();
 };
 
 const validateUpdateClass = (req, res, next) => {
-  const { className, academicYear, status } = req.body;
+  const { className, academicYear, status, monthlyFee, admissionFee, examFee } = req.body;
 
-  if (!className && !academicYear && !status) {
-    throw new ApiError(400, 'At least one field (className, academicYear, status) must be provided');
+  if (!className && !academicYear && !status && monthlyFee === undefined && admissionFee === undefined && examFee === undefined) {
+    throw new ApiError(400, 'At least one field (className, academicYear, monthlyFee, admissionFee, examFee, status) must be provided');
   }
 
   if (className !== undefined) {
@@ -89,6 +104,27 @@ const validateUpdateClass = (req, res, next) => {
     }
 
     req.body.status = normalizedStatus;
+  }
+
+  if (monthlyFee !== undefined) {
+    if (monthlyFee !== '' && (isNaN(Number(monthlyFee)) || Number(monthlyFee) < 0)) {
+      throw new ApiError(400, 'Monthly fee must be a non-negative number');
+    }
+    req.body.monthlyFee = monthlyFee !== '' ? Number(monthlyFee) : 0;
+  }
+
+  if (admissionFee !== undefined) {
+    if (admissionFee !== '' && (isNaN(Number(admissionFee)) || Number(admissionFee) < 0)) {
+      throw new ApiError(400, 'Admission fee must be a non-negative number');
+    }
+    req.body.admissionFee = admissionFee !== '' ? Number(admissionFee) : 0;
+  }
+
+  if (examFee !== undefined) {
+    if (examFee !== '' && (isNaN(Number(examFee)) || Number(examFee) < 0)) {
+      throw new ApiError(400, 'Exam fee must be a non-negative number');
+    }
+    req.body.examFee = examFee !== '' ? Number(examFee) : 0;
   }
 
   next();

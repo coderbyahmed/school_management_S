@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from '../components/layout/Sidebar/Sidebar';
-import Header from '../components/layout/Header/Header';
+import Sidebar from '../components/Admin/layout/Sidebar';
+import Header from '../components/Admin/layout/Header';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);

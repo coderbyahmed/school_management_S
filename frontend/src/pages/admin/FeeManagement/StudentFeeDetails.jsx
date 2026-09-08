@@ -1,4 +1,4 @@
-import StudentFeeDetails from '../../../components/feeManagement/StudentFeeDetails/StudentFeeDetails';
+import StudentFeeDetails from '../../../components/Admin/feeManagement/StudentFeeDetails/StudentFeeDetails';
 
 const StudentFeeDetailsPage = () => {
   return <StudentFeeDetails />;

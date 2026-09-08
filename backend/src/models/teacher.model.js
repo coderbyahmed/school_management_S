@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import Counter from './counter.model.js';
 
 const teacherSchema = new mongoose.Schema(
@@ -14,6 +15,16 @@ const teacherSchema = new mongoose.Schema(
     teacherId: {
       type: String,
       unique: true,
+    },
+    loginId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      select: false,
     },
     fullName: {
       type: String,
@@ -97,10 +108,23 @@ const teacherSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    role: {
+      type: String,
+      enum: ['admin', 'teacher', 'student'],
+      default: 'teacher',
+    },
     status: {
       type: String,
       enum: ['Active', 'Inactive'],
       default: 'Active',
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    lastLogout: {
+      type: Date,
+      default: null,
     },
     academicYear: {
       type: String,
@@ -124,11 +148,24 @@ teacherSchema.index({ status: 1 });
 teacherSchema.index({ cnic: 1 });
 
 teacherSchema.pre('save', async function () {
-  if (this.isNew && !this.teacherId) {
-    const seq = await Counter.increment('teacherId');
-    this.teacherId = `TCH-${String(seq).padStart(6, '0')}`;
+  if (this.isNew) {
+    if (!this.teacherId) {
+      const seq = await Counter.increment('teacherId');
+      this.teacherId = `TCH-${String(seq).padStart(6, '0')}`;
+    }
+    if (!this.loginId) {
+      this.loginId = this.teacherId;
+    }
+  }
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
   }
 });
+
+teacherSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 const Teacher = mongoose.model('Teacher', teacherSchema);
 

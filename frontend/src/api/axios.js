@@ -2,6 +2,10 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
 
+const isPortalTab = () => sessionStorage.getItem('isAdminAccess') === 'true';
+
+const getStorage = () => isPortalTab() ? sessionStorage : localStorage;
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -9,10 +13,10 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor: Attach Token + Handle FormData
 api.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem('accessToken');
+    const storage = getStorage();
+    const accessToken = storage.getItem('accessToken');
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -24,19 +28,18 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle Token Expiration
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Skip refresh logic for login requests (public endpoints)
     const isLoginRequest = originalRequest?.url?.includes('/login');
     if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
+        const storage = getStorage();
+        const refreshToken = storage.getItem('refreshToken');
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
@@ -46,19 +49,21 @@ api.interceptors.response.use(
         });
 
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
-        localStorage.setItem('accessToken', newAccessToken);
+        storage.setItem('accessToken', newAccessToken);
         if (newRefreshToken) {
-          localStorage.setItem('refreshToken', newRefreshToken);
+          storage.setItem('refreshToken', newRefreshToken);
         }
 
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        const userRole = localStorage.getItem('role');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('role');
+        const storage = getStorage();
+        const userRole = storage.getItem('role');
+        storage.removeItem('accessToken');
+        storage.removeItem('refreshToken');
+        storage.removeItem('user');
+        storage.removeItem('role');
+        storage.removeItem('isAdminAccess');
         const loginRoutes = { admin: '/admin/login', teacher: '/teacher/login', student: '/student/login' };
         window.location.replace(loginRoutes[userRole] || '/admin/login');
         return Promise.reject(refreshError);

@@ -124,7 +124,7 @@ const updateEvent = async (id, data, userId) => {
 
   try {
     const updated = await Event.findByIdAndUpdate(id, { ...data, createdBy: userId }, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
 

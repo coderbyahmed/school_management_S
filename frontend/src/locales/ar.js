@@ -11,6 +11,7 @@ const ar = {
   allAccounts: 'جميع الحسابات',
   passwordManagement: 'إدارة كلمات المرور',
   timetable: 'الجدول الدراسي',
+  timetableManagement: 'إدارة الجدول الدراسي',
   reports: 'التقارير',
   outstandingDues: 'المبالغ المستحقة',
 

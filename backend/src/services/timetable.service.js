@@ -341,7 +341,7 @@ const updateTimetable = async (id, data, userId) => {
 
   try {
     const updated = await Timetable.findByIdAndUpdate(id, updateFields, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
 

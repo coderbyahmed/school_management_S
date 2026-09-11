@@ -21,6 +21,7 @@ import studentService from '../../../../services/student/student.service';
 import authService from '../../../../services/auth/auth.service';
 import { CLASS_NAMES } from '../../../../utils/classNames';
 import Spinner from '../../../common/Spinner/Spinner';
+import Pagination from '../../../common/Pagination/Pagination';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -221,77 +222,7 @@ const AllStudents = () => {
     </>
   ), [t]);
 
-  const renderPagination = () => {
-    if (pagination.totalPages <= 1) return null;
 
-    const pages = [];
-    const totalPages = pagination.totalPages;
-    const safeCurrentPage = pagination.currentPage;
-
-    let start = Math.max(1, safeCurrentPage - 2);
-    let end = Math.min(totalPages, safeCurrentPage + 2);
-    if (end - start < 4) {
-      if (start === 1) end = Math.min(totalPages, start + 4);
-      else start = Math.max(1, end - 4);
-    }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-
-    const startRecord = (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1;
-    const endRecord = Math.min(safeCurrentPage * ITEMS_PER_PAGE, pagination.totalStudents);
-
-    return (
-      <div className="flex items-center justify-between pt-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t('showing')} {startRecord}–{endRecord} {t('of')} {pagination.totalStudents}
-        </p>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
-            disabled={safeCurrentPage === 1 || loading}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-          >
-            {t('previous')}
-          </button>
-          {start > 1 && (
-            <>
-              <button onClick={() => setCurrentPage(1)} className="w-9 h-9 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">1</button>
-              {start > 2 && <span className="px-1 text-gray-400">...</span>}
-            </>
-          )}
-          {pages.map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              disabled={loading}
-              className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                safeCurrentPage === page
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          {end < totalPages && (
-            <>
-              {end < totalPages - 1 && <span className="px-1 text-gray-400">...</span>}
-              <button onClick={() => setCurrentPage(totalPages)} className="w-9 h-9 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">{totalPages}</button>
-            </>
-          )}
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
-            disabled={safeCurrentPage === totalPages || loading}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-          >
-            {t('next')}
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -367,7 +298,14 @@ const AllStudents = () => {
           {view === 'table' ? (
             <>
               <Table columns={tableColumns} data={students} renderRow={renderTableRow} />
-              {renderPagination()}
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalStudents}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+                disabled={loading}
+              />
             </>
           ) : (
             <>
@@ -389,7 +327,14 @@ const AllStudents = () => {
                   ))
                 )}
               </div>
-              {renderPagination()}
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalStudents}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+                disabled={loading}
+              />
             </>
           )}
         </>

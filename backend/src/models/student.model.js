@@ -64,6 +64,15 @@ const studentSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    lastPasswordReset: {
+      type: Date,
+      default: null,
+    },
+    passwordResetBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      default: null,
+    },
     role: {
       type: String,
       enum: ['admin', 'teacher', 'student'],

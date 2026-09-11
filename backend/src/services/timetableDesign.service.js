@@ -9,7 +9,7 @@ const saveDesign = async (data, userId) => {
   const design = await TimetableDesign.findOneAndUpdate(
     {},
     { ...data, updatedBy: userId },
-    { upsert: true, new: true, runValidators: true },
+    { upsert: true, returnDocument: 'after', runValidators: true },
   );
   return design;
 };

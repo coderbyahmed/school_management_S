@@ -6,6 +6,7 @@ import {
   refreshToken,
   logout,
   getMe,
+  getTeacherProfile,
   forgotPassword,
   verifyOtp,
   resetPassword,
@@ -16,6 +17,8 @@ import {
   initiatePasswordChange,
   verifyPasswordChangeOtp,
   completePasswordChange,
+  verifyTeacherPassword,
+  teacherChangePassword,
   adminPortalAccess,
 } from '../controllers/auth.controller.js';
 import {
@@ -25,6 +28,7 @@ import {
   validateForgotPassword,
   validateVerifyOtp,
   validateResetPassword,
+  validateTeacherChangePassword,
 } from '../validations/auth.validation.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
@@ -47,6 +51,11 @@ router.post('/admin/reset-password', validateResetPassword, resetPassword);
 // Protected routes
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
+router.get('/teacher-profile', protect, authorize('teacher'), getTeacherProfile);
+
+// Teacher password change
+router.post('/teacher/verify-password', protect, authorize('teacher'), verifyTeacherPassword);
+router.put('/teacher/change-password', protect, authorize('teacher'), validateTeacherChangePassword, teacherChangePassword);
 
 // Email change flow (admin)
 router.post('/email-change/verify-password', protect, authorize('admin'), verifyEmailPassword);

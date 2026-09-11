@@ -144,7 +144,7 @@ const updateHoliday = async (id, data) => {
 
   try {
     const updated = await Holiday.findByIdAndUpdate(id, updateFields, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
 

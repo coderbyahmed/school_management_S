@@ -13,6 +13,7 @@ import StatCard from "../../../common/StatCard/StatCard";
 import SelectInput from "../../../common/SelectInput/SelectInput";
 import SearchInput from "../../../common/SearchInput/SearchInput";
 import Table from "../../../common/Table/Table";
+import Pagination from "../../../common/Pagination/Pagination";
 import Button from "../../../common/Button/Button";
 import ConfirmationModal from "../../../common/ConfirmationModal/ConfirmationModal";
 import { getImageUrl } from "../../../../utils/imageUrl";
@@ -20,12 +21,17 @@ import studentService from "../../../../services/student/student.service";
 import { CLASS_NAMES } from "../../../../utils/classNames";
 import Spinner from "../../../common/Spinner/Spinner";
 
+const ITEMS_PER_PAGE = 10;
+
 const PromotionHistory = () => {
   const { t } = useTranslation();
   const [yearFilter, setYearFilter] = useState(t("all"));
   const [classFilter, setClassFilter] = useState(t("allClasses"));
   const [nameSearch, setNameSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [promotions, setPromotions] = useState([]);
+  const [pagination, setPagination] = useState({ totalRecords: 0, totalPages: 0, currentPage: 1, limit: ITEMS_PER_PAGE });
+  const [cards, setCards] = useState({ total: 0, thisYear: 0, thisMonth: 0, latest: 'N/A' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
@@ -37,7 +43,11 @@ const PromotionHistory = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await studentService.getStudentPromotions();
+      const params = { page: currentPage, limit: ITEMS_PER_PAGE };
+      if (yearFilter !== t("all")) params.toAcademicYear = yearFilter;
+      if (classFilter !== t("allClasses")) params.toClass = classFilter;
+
+      const data = await studentService.getStudentPromotions(params);
       if (data.success) {
         const mapped = (data.data?.promotions || []).map((h) => ({
           id: h._id,
@@ -61,6 +71,12 @@ const PromotionHistory = () => {
           promotedAt: h.promotedAt,
         }));
         setPromotions(mapped);
+        if (data.data?.pagination) {
+          setPagination(data.data.pagination);
+        }
+        if (data.data?.cards) {
+          setCards(data.data.cards);
+        }
       } else {
         setError(data.message || t("failedToLoad"));
         setPromotions([]);
@@ -73,7 +89,7 @@ const PromotionHistory = () => {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, currentPage, yearFilter, classFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -140,54 +156,19 @@ const PromotionHistory = () => {
     setYearFilter(t("all"));
     setClassFilter(t("allClasses"));
     setNameSearch("");
-    fetchHistory();
-  }, [fetchHistory, t]);
+    setCurrentPage(1);
+  }, [t]);
 
   const yearOptions = useMemo(() => {
-    const years = new Set(
-      promotions.map((p) => p.newYear).filter((y) => y && y !== "—"),
-    );
-    return [t("all"), ...Array.from(years).sort()];
-  }, [promotions, t]);
+    return [t("all")];
+  }, [t]);
 
   const filteredPromotions = useMemo(() => {
-    return promotions.filter((p) => {
-      if (yearFilter !== t("all") && p.newYear !== yearFilter) return false;
-      if (classFilter !== t("allClasses") && p.newClass !== classFilter)
-        return false;
-      if (
-        nameSearch &&
-        !p.studentName.toLowerCase().includes(nameSearch.toLowerCase())
-      )
-        return false;
-      return true;
-    });
-  }, [promotions, yearFilter, classFilter, nameSearch, t]);
-
-  const now = new Date();
-  const currentMonth = now.getMonth();
-
-  const totalPromotions = promotions.length;
-  const thisYearPromotions = promotions.filter((p) => {
-    if (!p.promotedAt) return false;
-    const d = new Date(p.promotedAt);
-    return d.getFullYear() === now.getFullYear();
-  }).length;
-  const thisMonthPromotions = promotions.filter((p) => {
-    if (!p.promotedAt) return false;
-    const d = new Date(p.promotedAt);
-    return (
-      d.getFullYear() === now.getFullYear() && d.getMonth() === currentMonth
+    if (!nameSearch) return promotions;
+    return promotions.filter((p) =>
+      p.studentName.toLowerCase().includes(nameSearch.toLowerCase())
     );
-  }).length;
-  const latestPromotion =
-    promotions.length > 0
-      ? new Date(promotions[0].promotedAt).toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })
-      : t("notAvailable");
+  }, [promotions, nameSearch]);
 
   const columns = [
     { key: "student", label: t("student") },
@@ -310,25 +291,25 @@ const PromotionHistory = () => {
         <StatCard
           icon={ArrowTrendingUpIcon}
           label={t("totalPromotions")}
-          value={totalPromotions}
+          value={cards.total}
           color="blue"
         />
         <StatCard
           icon={AcademicCapIcon}
           label={t("promotionsThisYear")}
-          value={thisYearPromotions}
+          value={cards.thisYear}
           color="green"
         />
         <StatCard
           icon={ClockIcon}
           label={t("promotionsThisMonth")}
-          value={thisMonthPromotions}
+          value={cards.thisMonth}
           color="yellow"
         />
         <StatCard
           icon={StarIcon}
           label={t("latestPromotion")}
-          value={latestPromotion}
+          value={cards.latest}
           color="blue"
         />
       </div>
@@ -339,7 +320,7 @@ const PromotionHistory = () => {
             label={t("academicYear")}
             name="yearFilter"
             value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
+            onChange={(e) => { setYearFilter(e.target.value); setCurrentPage(1); }}
             options={yearOptions}
           />
         </div>
@@ -348,7 +329,7 @@ const PromotionHistory = () => {
             label={t("class")}
             name="classFilter"
             value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
+            onChange={(e) => { setClassFilter(e.target.value); setCurrentPage(1); }}
             options={[t("allClasses"), ...CLASS_NAMES]}
           />
         </div>
@@ -385,11 +366,21 @@ const PromotionHistory = () => {
           <p className="text-sm">{t("loading")}</p>
         </div>
       ) : filteredPromotions.length > 0 ? (
-        <Table
-          columns={columns}
-          data={filteredPromotions}
-          renderRow={renderRow}
-        />
+        <>
+          <Table
+            columns={columns}
+            data={filteredPromotions}
+            renderRow={renderRow}
+          />
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalRecords}
+            itemsPerPage={pagination.limit}
+            onPageChange={setCurrentPage}
+            disabled={loading}
+          />
+        </>
       ) : (
         <div className="text-center py-10 text-gray-400 dark:text-gray-500">
           <p className="text-sm">{t("noPromotions")}</p>

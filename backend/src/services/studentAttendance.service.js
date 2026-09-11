@@ -404,7 +404,7 @@ const resetCheckIn = async (studentId, date, academicYear, checkIn) => {
     await StudentAttendance.findByIdAndUpdate(
       record._id,
       { $unset: { checkIn: '' } },
-      { new: true },
+      { returnDocument: 'after' },
     );
   }
 

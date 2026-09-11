@@ -17,9 +17,12 @@ import AdminVerifyOTPPage from "./pages/auth/AdminAuth/VerifyOTP";
 import AdminResetPasswordPage from "./pages/auth/AdminAuth/ResetPassword";
 import TeacherLoginPage from "./pages/auth/TeacherAuth/TeacherLogin";
 import StudentLoginPage from "./pages/auth/StudentAuth/StudentLogin";
-import TeacherDashboard from "./pages/teacher/TeacherDashboard";
+import TeacherDashboard from "./pages/teacher/Dashboard/TeacherDashboard";
+import TeacherMore from "./pages/teacher/More/TeacherMore";
+import TeacherProfilePage from "./pages/teacher/Profile/TeacherProfile";
 import StudentDashboard from "./pages/student/StudentDashboard";
-import AdminLayout from "./layouts/AdminLayout";
+import AdminLayout from "./layouts/Admin/AdminLayout";
+import TeacherLayout from "./layouts/Teacher/TeacherLayout";
 import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard";
 import AllStudentsPage from "./pages/admin/StudentManagement/AllStudents";
 import AddStudentPage from "./pages/admin/StudentManagement/AddStudent";
@@ -28,9 +31,16 @@ import PromotionHistoryPage from "./pages/admin/StudentManagement/PromotionHisto
 import AllTeachersPage from "./pages/admin/TeacherManagement/AllTeachers";
 import AddTeacherPage from "./pages/admin/TeacherManagement/AddTeacher";
 import TeacherSubjectAssignmentPage from "./pages/admin/TeacherManagement/TeacherSubjectAssignment";
-import ClassManagement from "./pages/admin/ClassManagement";
-import SubjectManagement from "./pages/admin/SubjectManagement";
-import TimetableManagement from "./pages/admin/TimetableManagement";
+import AllClassesPage from "./pages/admin/ClassManagement/AllClasses";
+import AddNewClassPage from "./pages/admin/ClassManagement/AddNewClass";
+import ClassDetailsPage from "./pages/admin/ClassManagement/ClassDetails";
+import AllSubjectsPage from "./pages/admin/SubjectManagement/AllSubjects";
+import AddSubjectPage from "./pages/admin/SubjectManagement/AddSubject";
+import ClassSubjectAssignmentPage from "./pages/admin/SubjectManagement/ClassSubjectAssignment";
+import AllClassesTimetablePage from "./pages/admin/TimeTableManagement/AllClassesTimetable";
+import CreateTimetablePage from "./pages/admin/TimeTableManagement/CreateTimetable";
+import ViewTimetablePage from "./pages/admin/TimeTableManagement/ViewTimetable";
+import TimetableDesignerPage from "./pages/admin/TimeTableManagement/TimetableDesigner";
 import AttendanceManagement from "./pages/admin/AttendanceManagement";
 import EventsHolidays from "./pages/admin/EventsHolidays";
 import FeeStructurePage from "./pages/admin/FeeManagement/FeeStructure";
@@ -126,9 +136,19 @@ function AppContent() {
               path="teachers/subject-assignment"
               element={<TeacherSubjectAssignmentPage />}
             />
-            <Route path="classes" element={<ClassManagement />} />
-            <Route path="subjects" element={<SubjectManagement />} />
-            <Route path="timetable" element={<TimetableManagement />} />
+            <Route path="classes" element={<Navigate to="/admin/classes/all" replace />} />
+            <Route path="classes/all" element={<AllClassesPage />} />
+            <Route path="classes/add" element={<AddNewClassPage />} />
+            <Route path="classes/details/:classId" element={<ClassDetailsPage />} />
+            <Route path="subjects" element={<Navigate to="/admin/subjects/all" replace />} />
+            <Route path="subjects/all" element={<AllSubjectsPage />} />
+            <Route path="subjects/add" element={<AddSubjectPage />} />
+            <Route path="subjects/class-subject-assignment" element={<ClassSubjectAssignmentPage />} />
+            <Route path="timetable" element={<Navigate to="/admin/timetable/all-classes" replace />} />
+            <Route path="timetable/all-classes" element={<AllClassesTimetablePage />} />
+            <Route path="timetable/create" element={<CreateTimetablePage />} />
+            <Route path="timetable/view" element={<ViewTimetablePage />} />
+            <Route path="timetable/designer" element={<TimetableDesignerPage />} />
             <Route path="attendance" element={<AttendanceManagement />} />
             <Route path="events" element={<EventsHolidays />} />
             <Route path="fees/fee-structure" element={<FeeStructurePage />} />
@@ -150,7 +170,11 @@ function AppContent() {
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
-          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+          <Route path="/teacher" element={<TeacherLayout />}>
+            <Route path="dashboard" element={<TeacherDashboard />} />
+            <Route path="profile" element={<TeacherProfilePage />} />
+            <Route path="more" element={<TeacherMore />} />
+          </Route>
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["student"]} />}>

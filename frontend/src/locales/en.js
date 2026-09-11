@@ -24,6 +24,7 @@ const en = {
   allAccounts: 'All Accounts',
   passwordManagement: 'Password Management',
   timetable: 'Timetable',
+  timetableManagement: 'Timetable Management',
   reports: 'Reports',
   outstandingDues: 'Outstanding Dues',
 
@@ -383,8 +384,8 @@ const en = {
   subjectDetails: 'Subject Details',
   allSubjects: 'All Subjects',
   addNewSubject: 'Add New Subject',
-  classSubjectAssignment: 'Class Subject Assignment',
-  teacherSubjectAssignment: 'Teacher Subject Assignment',
+  classSubjectAssignment: 'Class Subject Assign',
+  teacherSubjectAssignment: 'Teacher Subject Assign',
   assigned: 'Assigned',
   unassigned: 'Unassigned',
 

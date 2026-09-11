@@ -7,6 +7,7 @@ import FilterDropdown from '../../common/FilterDropdown/FilterDropdown';
 import SearchInput from '../../common/SearchInput/SearchInput';
 import ViewToggle from '../../common/ViewToggle/ViewToggle';
 import Table from '../../common/Table/Table';
+import Pagination from '../../common/Pagination/Pagination';
 import StatusBadge from '../../common/StatusBadge/StatusBadge';
 import ActionButtons from '../../common/ActionButtons/ActionButtons';
 import TeacherCard from './TeacherCard';
@@ -43,7 +44,6 @@ const AllTeachers = ({ onSuccess }) => {
   const navigate = useNavigate();
   const statusOptions = useMemo(() => [t('all'), t('active'), t('inactive')], [t]);
   const [view, setView] = useState('table');
-  const [teacherIdSearch, setTeacherIdSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(t('all'));
   const [nameSearch, setNameSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,6 +51,7 @@ const AllTeachers = ({ onSuccess }) => {
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [deletingTeacher, setDeletingTeacher] = useState(null);
   const [teachers, setTeachers] = useState([]);
+  const [pagination, setPagination] = useState({ totalTeachers: 0, totalPages: 0, currentPage: 1 });
   const [loading, setLoading] = useState(true);
   const [createdCredentials, setCreatedCredentials] = useState(() =>
     location.state?.teacherCreated
@@ -69,6 +70,9 @@ const AllTeachers = ({ onSuccess }) => {
     try {
       const result = await teacherService.getAllTeachers({ page: currentPage, limit: ITEMS_PER_PAGE, status: statusFilter !== 'All' ? statusFilter : undefined, search: nameSearch || undefined });
       setTeachers(result.data?.teachers || []);
+      if (result.data?.pagination) {
+        setPagination(result.data.pagination);
+      }
     } catch (err) {
       const msg = err.response?.data?.message || tRef.current('failedToLoad');
       toast.error(msg);
@@ -90,17 +94,6 @@ const AllTeachers = ({ onSuccess }) => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const filteredTeachers = teachers.filter((t) => {
-    if (teacherIdSearch && !t.teacherId?.toLowerCase().includes(teacherIdSearch.toLowerCase())) return false;
-    return true;
-  });
-
-  const totalPages = Math.ceil(filteredTeachers.length / ITEMS_PER_PAGE);
-  const paginatedTeachers = filteredTeachers.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const handleOpenPanel = async (teacher) => {
     if (teacher.status !== 'Active') return;
@@ -126,7 +119,7 @@ const AllTeachers = ({ onSuccess }) => {
     setCurrentPage(1);
   };
 
-  const totalTeachers = teachers.length;
+  const totalTeachers = pagination.totalTeachers || 0;
   const activeTeachers = teachers.filter((t) => t.status === 'Active').length;
   const inactiveTeachers = teachers.filter((t) => t.status === 'Inactive').length;
   const newTeachers = teachers.filter((t) => isCurrentMonth(t.joiningDate)).length;
@@ -229,63 +222,10 @@ const AllTeachers = ({ onSuccess }) => {
     );
   }, [t]);
 
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
-    const pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
-    }
-
-    return (
-      <div className="flex items-center justify-between pt-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t('page')} {Math.min(filteredTeachers.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}&ndash;{Math.min(currentPage * ITEMS_PER_PAGE, filteredTeachers.length)} {t('of')} {filteredTeachers.length}
-        </p>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-          >
-            {t('previous')}
-          </button>
-          {pages.map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                currentPage === page
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-          >
-            {t('next')}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('manageTeachers')}</h1>
-        <div className="w-full sm:w-64">
-          <SearchInput
-            placeholder={t('enterTeacherId')}
-            value={teacherIdSearch}
-            onChange={(v) => { setTeacherIdSearch(v); setCurrentPage(1); }}
-          />
-        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -334,27 +274,34 @@ const AllTeachers = ({ onSuccess }) => {
         <>
           {view === 'table' ? (
             <>
-              {filteredTeachers.length === 0 ? (
+              {teachers.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <Table columns={tableColumns} data={paginatedTeachers} renderRow={renderTableRow} />
+                  <Table columns={tableColumns} data={teachers} renderRow={renderTableRow} />
                 </div>
               ) : (
                 <>
-                  <Table columns={tableColumns} data={paginatedTeachers} renderRow={renderTableRow} />
-                  {renderPagination()}
+                  <Table columns={tableColumns} data={teachers} renderRow={renderTableRow} />
+                  <Pagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    totalItems={pagination.totalTeachers}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={setCurrentPage}
+                    disabled={loading}
+                  />
                 </>
               )}
             </>
           ) : (
             <>
-              {paginatedTeachers.length === 0 ? (
+              {teachers.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                   <p className="text-sm">{t('noTeachersFound')}</p>
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {paginatedTeachers.map((teacher) => (
+                    {teachers.map((teacher) => (
                       <TeacherCard
                         key={teacher.teacherId}
                         teacher={teacher}
@@ -365,7 +312,14 @@ const AllTeachers = ({ onSuccess }) => {
                       />
                     ))}
                   </div>
-                  {renderPagination()}
+                  <Pagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    totalItems={pagination.totalTeachers}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={setCurrentPage}
+                    disabled={loading}
+                  />
                 </>
               )}
             </>

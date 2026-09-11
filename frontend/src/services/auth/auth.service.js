@@ -113,6 +113,20 @@ const authService = {
     const response = await api.post('/auth/admin-portal-access', { targetId, targetType });
     return response.data;
   },
+
+  teacherChangePassword: async (currentPassword, newPassword, confirmPassword) => {
+    const response = await api.put('/auth/teacher/change-password', {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
+    return response.data;
+  },
+
+  verifyTeacherPassword: async (currentPassword) => {
+    const response = await api.post('/auth/teacher/verify-password', { currentPassword });
+    return response.data;
+  },
 };
 
 export default authService;

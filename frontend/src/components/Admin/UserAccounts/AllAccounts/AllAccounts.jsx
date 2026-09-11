@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../../../hooks/useLocalization';
 import { UsersIcon, UserGroupIcon, AcademicCapIcon, UserMinusIcon, ArrowPathIcon, KeyIcon } from '@heroicons/react/24/outline';
@@ -6,22 +6,29 @@ import StatCard from '../../../common/StatCard/StatCard';
 import SearchInput from '../../../common/SearchInput/SearchInput';
 import FilterDropdown from '../../../common/FilterDropdown/FilterDropdown';
 import Table from '../../../common/Table/Table';
+import Pagination from '../../../common/Pagination/Pagination';
 import StatusBadge from '../../../common/StatusBadge/StatusBadge';
 import Modal from '../../../common/Modal/Modal';
 import Input from '../../../common/Input/Input';
+import toast from 'react-hot-toast';
+import userAccountsService from '../../../../services/userAccounts/userAccounts.service';
 
-const DUMMY_ACCOUNTS = [
-  { id: 1, loginId: 'STD-000001', fullName: 'Ahmed Raza', type: 'Student', status: 'Active', lastLogin: '2026-09-05 08:30 AM', lastLogout: '2026-09-05 02:45 PM', image: null },
-  { id: 2, loginId: 'STD-000002', fullName: 'Fatima Noor', type: 'Student', status: 'Active', lastLogin: '2026-09-05 08:15 AM', lastLogout: '2026-09-05 03:00 PM', image: null },
-  { id: 3, loginId: 'TCH-000001', fullName: 'Muhammad Ali', type: 'Teacher', status: 'Active', lastLogin: '2026-09-05 07:45 AM', lastLogout: '2026-09-05 03:30 PM', image: null },
-  { id: 4, loginId: 'STD-000003', fullName: 'Sara Khan', type: 'Student', status: 'Active', lastLogin: '2026-09-04 08:20 AM', lastLogout: '2026-09-04 02:50 PM', image: null },
-  { id: 5, loginId: 'TCH-000002', fullName: 'Ayesha Siddiqui', type: 'Teacher', status: 'Inactive', lastLogin: '2026-08-20 08:00 AM', lastLogout: '2026-08-20 02:30 PM', image: null },
-  { id: 6, loginId: 'STD-000004', fullName: 'Hassan Malik', type: 'Student', status: 'Active', lastLogin: '2026-09-05 08:10 AM', lastLogout: '2026-09-05 02:55 PM', image: null },
-  { id: 7, loginId: 'TCH-000003', fullName: 'Zainab Bibi', type: 'Teacher', status: 'Active', lastLogin: '2026-09-05 07:50 AM', lastLogout: '2026-09-05 03:15 PM', image: null },
-  { id: 8, loginId: 'STD-000005', fullName: 'Omar Farooq', type: 'Student', status: 'Inactive', lastLogin: '2026-07-15 08:25 AM', lastLogout: '2026-07-15 02:40 PM', image: null },
-  { id: 9, loginId: 'STD-000006', fullName: 'Maryam Aziz', type: 'Student', status: 'Active', lastLogin: '2026-09-05 08:05 AM', lastLogout: '2026-09-05 03:10 PM', image: null },
-  { id: 10, loginId: 'TCH-000004', fullName: 'Bilal Ahmed', type: 'Teacher', status: 'Active', lastLogin: '2026-09-05 07:55 AM', lastLogout: '2026-09-05 03:20 PM', image: null },
-];
+const ITEMS_PER_PAGE = 10;
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '-';
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = pad(d.getDate());
+  const month = pad(d.getMonth() + 1);
+  const year = d.getFullYear();
+  let hours = d.getHours();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  const mins = pad(d.getMinutes());
+  return `${year}-${month}-${day} ${pad(hours)}:${mins} ${ampm}`;
+};
 
 const AllAccounts = () => {
   const { t } = useTranslation();
@@ -29,32 +36,79 @@ const AllAccounts = () => {
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All Types');
-  const [statusFilter, setStatusFilter] = useState('All Statuses');
+  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [currentPage, setCurrentPage] = useState(1);
   const [resetModalAccount, setResetModalAccount] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
+
+  const [accounts, setAccounts] = useState([]);
+  const [stats, setStats] = useState({ total: 0, students: 0, teachers: 0, inactive: 0 });
+  const [pagination, setPagination] = useState({ totalRecords: 0, totalPages: 0, currentPage: 1, limit: ITEMS_PER_PAGE });
+  const [loading, setLoading] = useState(true);
 
   const typeOptions = ['All Types', 'Student', 'Teacher'];
-  const statusOptions = ['All Statuses', 'Active', 'Inactive'];
+  const statusOptions = ['All Status', 'Active', 'Inactive'];
 
-  const filtered = DUMMY_ACCOUNTS.filter((a) => {
-    if (search.trim()) {
-      const term = search.trim().toLowerCase();
-      if (!a.fullName.toLowerCase().includes(term) && !a.loginId.toLowerCase().includes(term)) return false;
+  const fetchAccounts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = { page: currentPage, limit: ITEMS_PER_PAGE };
+      if (search.trim()) params.search = search.trim();
+      if (typeFilter !== 'All Types') params.type = typeFilter;
+      if (statusFilter !== 'All Status') params.status = statusFilter;
+
+      const result = await userAccountsService.getAllAccounts(params);
+      if (result.success) {
+        setAccounts(result.data.accounts);
+        setStats(result.data.stats);
+        if (result.data.pagination) {
+          setPagination(result.data.pagination);
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to load accounts');
+    } finally {
+      setLoading(false);
     }
-    if (typeFilter !== 'All Types' && a.type !== typeFilter) return false;
-    if (statusFilter !== 'All Statuses' && a.status !== statusFilter) return false;
-    return true;
-  });
+  }, [search, typeFilter, statusFilter, currentPage]);
 
-  const totalAccounts = DUMMY_ACCOUNTS.length;
-  const studentAccounts = DUMMY_ACCOUNTS.filter((a) => a.type === 'Student').length;
-  const teacherAccounts = DUMMY_ACCOUNTS.filter((a) => a.type === 'Teacher').length;
-  const inactiveAccounts = DUMMY_ACCOUNTS.filter((a) => a.status === 'Inactive').length;
+  useEffect(() => {
+    const debounce = setTimeout(fetchAccounts, 300);
+    return () => clearTimeout(debounce);
+  }, [fetchAccounts]);
 
   const handleReset = () => {
     setSearch('');
     setTypeFilter('All Types');
-    setStatusFilter('All Statuses');
+    setStatusFilter('All Status');
+    setCurrentPage(1);
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword.trim()) {
+      toast.error('Please enter a new password');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setResetting(true);
+    try {
+      await userAccountsService.resetPassword(
+        resetModalAccount._id,
+        resetModalAccount.type,
+        newPassword.trim()
+      );
+      toast.success('Password reset successfully');
+      setResetModalAccount(null);
+      setNewPassword('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setResetting(false);
+    }
   };
 
   const tableColumns = [
@@ -74,9 +128,13 @@ const AllAccounts = () => {
         <td className="px-4 py-3 text-sm font-mono text-gray-700 dark:text-gray-300">{account.loginId}</td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0">
-              {initials}
-            </div>
+            {account.image ? (
+              <img src={account.image} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-yellow-400/50 flex-shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0">
+                {initials}
+              </div>
+            )}
             <span className="text-sm font-medium text-gray-900 dark:text-white">{account.fullName}</span>
           </div>
         </td>
@@ -92,8 +150,8 @@ const AllAccounts = () => {
         <td className="px-4 py-3">
           <StatusBadge status={account.status} />
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{account.lastLogin}</td>
-        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{account.lastLogout}</td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(account.lastLogin)}</td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(account.lastLogout)}</td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-1">
             <button
@@ -122,10 +180,10 @@ const AllAccounts = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={UsersIcon} label={t('totalAccounts')} value={totalAccounts} color="blue" />
-        <StatCard icon={UserGroupIcon} label={t('studentAccounts')} value={studentAccounts} color="green" />
-        <StatCard icon={AcademicCapIcon} label={t('teacherAccounts')} value={teacherAccounts} color="purple" />
-        <StatCard icon={UserMinusIcon} label={t('inactiveAccounts')} value={inactiveAccounts} color="red" />
+        <StatCard icon={UsersIcon} label={t('totalAccounts')} value={stats.total} color="blue" />
+        <StatCard icon={UserGroupIcon} label={t('studentAccounts')} value={stats.students} color="green" />
+        <StatCard icon={AcademicCapIcon} label={t('teacherAccounts')} value={stats.teachers} color="purple" />
+        <StatCard icon={UserMinusIcon} label={t('inactiveAccounts')} value={stats.inactive} color="red" />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
@@ -136,7 +194,7 @@ const AllAccounts = () => {
           <SearchInput
             placeholder={t('search')}
             value={search}
-            onChange={(v) => setSearch(v)}
+            onChange={(v) => { setSearch(v); setCurrentPage(1); }}
           />
         </div>
         <div className="w-full sm:w-40">
@@ -144,7 +202,7 @@ const AllAccounts = () => {
             label={t('userType')}
             options={typeOptions}
             value={typeFilter}
-            onChange={setTypeFilter}
+            onChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}
           />
         </div>
         <div className="w-full sm:w-40">
@@ -152,7 +210,7 @@ const AllAccounts = () => {
             label={t('accountStatus')}
             options={statusOptions}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
           />
         </div>
         <button
@@ -164,7 +222,27 @@ const AllAccounts = () => {
         </button>
       </div>
 
-      <Table columns={tableColumns} data={filtered} renderRow={renderTableRow} />
+      {loading ? (
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+          <p className="text-sm">Loading accounts...</p>
+        </div>
+      ) : accounts.length === 0 ? (
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+          <p className="text-sm">No accounts found</p>
+        </div>
+      ) : (
+        <>
+          <Table columns={tableColumns} data={accounts} renderRow={renderTableRow} />
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalRecords}
+            itemsPerPage={pagination.limit}
+            onPageChange={setCurrentPage}
+            disabled={loading}
+          />
+        </>
+      )}
 
       <Modal
         isOpen={!!resetModalAccount}
@@ -187,15 +265,17 @@ const AllAccounts = () => {
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               onClick={() => { setResetModalAccount(null); setNewPassword(''); }}
+              disabled={resetting}
               className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer"
             >
               {t('cancel')}
             </button>
             <button
-              onClick={() => { setResetModalAccount(null); setNewPassword(''); }}
-              className="px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
+              onClick={handleResetPassword}
+              disabled={resetting}
+              className="px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50"
             >
-              {t('resetPassword')}
+              {resetting ? 'Resetting...' : t('resetPassword')}
             </button>
           </div>
         </div>

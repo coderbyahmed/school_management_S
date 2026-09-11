@@ -2,6 +2,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 import authService from '../services/auth.service.js';
 import Student from '../models/student.model.js';
+import Teacher from '../models/teacher.model.js';
 
 const adminLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -84,6 +85,11 @@ const logout = asyncHandler(async (req, res) => {
   const { refreshToken: token } = req.body;
   if (token) {
     await authService.revokeRefreshToken(token);
+  }
+
+  if (req.user && (req.user.role === 'student' || req.user.role === 'teacher')) {
+    const Model = req.user.role === 'student' ? Student : Teacher;
+    await Model.findByIdAndUpdate(req.user._id, { lastLogout: new Date() });
   }
 
   return res.status(200).json({
@@ -291,6 +297,67 @@ const completePasswordChange = asyncHandler(async (req, res) => {
   });
 });
 
+const getTeacherProfile = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'teacher') {
+    throw new ApiError(403, 'Only teachers can access this endpoint');
+  }
+
+  const teacher = await Teacher.findById(req.user._id).select('-password -__v -teacherImagePublicId -passwordResetBy');
+  if (!teacher) {
+    throw new ApiError(404, 'Teacher not found');
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: 'Teacher profile retrieved',
+    data: teacher,
+  });
+});
+
+const verifyTeacherPassword = asyncHandler(async (req, res) => {
+  const { currentPassword } = req.body;
+  if (!currentPassword) {
+    throw new ApiError(400, 'Current password is required');
+  }
+
+  const teacher = await Teacher.findById(req.user._id).select('+password');
+  if (!teacher) {
+    throw new ApiError(404, 'Teacher not found');
+  }
+
+  const isMatch = await teacher.comparePassword(currentPassword);
+  if (!isMatch) {
+    throw new ApiError(400, 'Current password is incorrect');
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: 'Password verified successfully',
+  });
+});
+
+const teacherChangePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const teacher = await Teacher.findById(req.user._id).select('+password');
+  if (!teacher) {
+    throw new ApiError(404, 'Teacher not found');
+  }
+
+  const isMatch = await teacher.comparePassword(currentPassword);
+  if (!isMatch) {
+    throw new ApiError(400, 'Current password is incorrect');
+  }
+
+  teacher.password = newPassword;
+  await teacher.save();
+
+  return res.status(200).json({
+    success: true,
+    message: 'Password updated successfully',
+  });
+});
+
 const adminPortalAccess = asyncHandler(async (req, res) => {
   const { targetId, targetType } = req.body;
   if (!targetId || !targetType) {
@@ -315,6 +382,7 @@ export {
   refreshToken,
   logout,
   getMe,
+  getTeacherProfile,
   forgotPassword,
   verifyOtp,
   resetPassword,
@@ -325,5 +393,7 @@ export {
   initiatePasswordChange,
   verifyPasswordChangeOtp,
   completePasswordChange,
+  verifyTeacherPassword,
+  teacherChangePassword,
   adminPortalAccess,
 };

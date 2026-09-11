@@ -11,6 +11,7 @@ const fr = {
   allAccounts: 'Tous les comptes',
   passwordManagement: 'Gestion des mots de passe',
   timetable: 'Emploi du temps',
+  timetableManagement: 'Gestion des emplois du temps',
   reports: 'Rapports',
   outstandingDues: 'Dues en souffrance',
 

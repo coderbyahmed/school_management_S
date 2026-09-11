@@ -219,25 +219,36 @@ const getPromotionHistory = async (query) => {
 };
 
 const getStudentPromotions = async (query) => {
+  const { page = 1, limit = 10, ...filters } = query;
   const filter = {};
-  if (query.fromClass) filter.fromClass = query.fromClass;
-  if (query.toClass) filter.toClass = query.toClass;
-  if (query.fromAcademicYear) filter.fromAcademicYear = query.fromAcademicYear;
-  if (query.toAcademicYear) filter.toAcademicYear = query.toAcademicYear;
+  if (filters.fromClass) filter.fromClass = filters.fromClass;
+  if (filters.toClass) filter.toClass = filters.toClass;
+  if (filters.fromAcademicYear) filter.fromAcademicYear = filters.fromAcademicYear;
+  if (filters.toAcademicYear) filter.toAcademicYear = filters.toAcademicYear;
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+  const skip = (pageNum - 1) * limitNum;
+
+  const totalRecords = await StudentPromotion.countDocuments(filter);
 
   let promotions = await StudentPromotion.find(filter)
     .populate('promotedBy', 'fullName')
     .select('studentId studentCode studentName studentImage fromClass toClass fromAcademicYear toAcademicYear promotedAt promotedBy promotedByName status reversed reversedAt')
     .sort({ promotedAt: -1 })
+    .skip(skip)
+    .limit(limitNum)
     .lean();
 
   promotions = await enrichPromotions(promotions);
+
+  const totalPages = Math.ceil(totalRecords / limitNum);
 
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const total = await StudentPromotion.countDocuments(filter);
+  const total = totalRecords;
   const thisYear = await StudentPromotion.countDocuments({
     ...filter,
     promotedAt: { $gte: startOfYear },
@@ -256,6 +267,12 @@ const getStudentPromotions = async (query) => {
   return {
     promotions,
     cards: { total, thisYear, thisMonth, latest },
+    pagination: {
+      totalRecords,
+      totalPages,
+      currentPage: pageNum,
+      limit: limitNum,
+    },
   };
 };
 
@@ -309,7 +326,7 @@ const reversePromotion = async (id, adminId, adminName) => {
     const updated = await StudentPromotion.findByIdAndUpdate(
       id,
       { reversed: true, reversedAt: new Date(), reversedBy: adminId },
-      { new: true, session },
+      { returnDocument: 'after', session },
     );
 
     const studentDoc = await Student.findById(student._id).session(session);

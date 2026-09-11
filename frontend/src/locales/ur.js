@@ -11,6 +11,7 @@ const ur = {
   allAccounts: 'تمام اکاؤنٹس',
   passwordManagement: 'پاس ورڈ مینجمنٹ',
   timetable: 'ٹائم ٹیبل',
+  timetableManagement: 'ٹائم ٹیبل کا انتظام',
   reports: 'رپورٹس',
   outstandingDues: 'باقی واجبات',
 

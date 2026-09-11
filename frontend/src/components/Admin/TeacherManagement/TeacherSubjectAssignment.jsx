@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from '../../../hooks/useLocalization';
 import subjectService from '../../../services/subject/subject.service';
 import teacherService from '../../../services/teacher/teacher.service';
+import { getImageUrl } from '../../../utils/imageUrl';
 
 const TeacherSubjectAssignment = () => {
   const { t } = useTranslation();
@@ -15,6 +16,44 @@ const TeacherSubjectAssignment = () => {
   const [loading, setLoading] = useState(false);
   const [fetchingSubjects, setFetchingSubjects] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+        setSearchQuery('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (dropdownOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [dropdownOpen]);
+
+  const filteredTeachers = teachers.filter((teacher) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      teacher.fullName?.toLowerCase().includes(q) ||
+      teacher.teacherId?.toLowerCase().includes(q)
+    );
+  });
+
+  const selectedTeacherObj = teachers.find((t) => t.teacherId === selectedTeacherId) || null;
+
+  const handleTeacherSelect = (teacherId) => {
+    setSelectedTeacherId(teacherId);
+    setDropdownOpen(false);
+    setSearchQuery('');
+  };
 
   const fetchTeachersAndSubjects = useCallback(async () => {
     setFetchingSubjects(true);
@@ -31,7 +70,7 @@ const TeacherSubjectAssignment = () => {
     } finally {
       setFetchingSubjects(false);
     }
-  }, [t]);
+  }, []);
 
   const fetchAssignments = useCallback(async () => {
     if (selectedTeacherId) {
@@ -54,7 +93,7 @@ const TeacherSubjectAssignment = () => {
       setAssignedIds([]);
       setSelectedIds([]);
     }
-  }, [selectedTeacherId, t]);
+  }, [selectedTeacherId]);
 
   useEffect(() => {
     Promise.resolve().then(() => fetchTeachersAndSubjects());
@@ -118,23 +157,131 @@ const TeacherSubjectAssignment = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               {t('teacherLabel')}
             </label>
-            <select
-              value={selectedTeacherId}
-              onChange={(e) => setSelectedTeacherId(e.target.value)}
-              className="appearance-none w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            >
-              <option value="">{t('select')}</option>
-              {teachers.map((t) => (
-                <option key={t._id} value={t.teacherId}>{t.fullName} ({t.teacherId})</option>
-              ))}
-            </select>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => { setDropdownOpen((prev) => !prev); setSearchQuery(''); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer text-left"
+                aria-haspopup="listbox"
+                aria-expanded={dropdownOpen}
+              >
+                {selectedTeacherObj ? (
+                  <>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-[10px] ring-1 ring-yellow-400/50 flex-shrink-0 overflow-hidden">
+                      {getImageUrl(selectedTeacherObj.teacherImage) ? (
+                        <img
+                          src={getImageUrl(selectedTeacherObj.teacherImage)}
+                          alt={selectedTeacherObj.fullName}
+                          className="w-full h-full rounded-full object-cover"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : null}
+                      <span className={`${getImageUrl(selectedTeacherObj.teacherImage) ? 'hidden' : ''} select-none`}>
+                        {selectedTeacherObj.fullName?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'T'}
+                      </span>
+                    </div>
+                    <span className="truncate font-medium">{selectedTeacherObj.fullName}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400 dark:text-gray-500">{t('select')}</span>
+                )}
+                <svg className={`absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-72 overflow-hidden flex flex-col">
+                  <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder={`${t('search')}...`}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500"
+                    />
+                  </div>
+                  <ul className="overflow-y-auto max-h-60 p-1" role="listbox">
+                    <li
+                      role="option"
+                      aria-selected={!selectedTeacherId}
+                      onClick={() => handleTeacherSelect('')}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                        !selectedTeacherId ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-11">{t('select')}</span>
+                    </li>
+                    {filteredTeachers.length === 0 && (
+                      <li className="px-3 py-4 text-center text-sm text-gray-400 dark:text-gray-500">
+                        {t('noData')}
+                      </li>
+                    )}
+                    {filteredTeachers.map((teacher) => {
+                      const isSelected = teacher.teacherId === selectedTeacherId;
+                      const imgSrc = getImageUrl(teacher.teacherImage);
+                      const initials = teacher.fullName?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'T';
+                      return (
+                        <li
+                          key={teacher._id}
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => handleTeacherSelect(teacher.teacherId)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                          }`}
+                        >
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-[11px] ring-1 ring-yellow-400/50 flex-shrink-0 overflow-hidden">
+                            {imgSrc ? (
+                              <img
+                                src={imgSrc}
+                                alt={teacher.fullName}
+                                className="w-full h-full rounded-full object-cover"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            ) : null}
+                            <span className={`${imgSrc ? 'hidden' : ''} select-none`}>
+                              {initials}
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-sm font-medium truncate ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                              {teacher.fullName}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                              {teacher.teacherId}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <svg className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
           {selectedTeacher && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0">
-                  {selectedTeacher.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T'}
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/50 flex-shrink-0 overflow-hidden">
+                  {getImageUrl(selectedTeacher.teacherImage) ? (
+                    <img
+                      src={getImageUrl(selectedTeacher.teacherImage)}
+                      alt={selectedTeacher.fullName}
+                      className="w-full h-full rounded-full object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  ) : null}
+                  <span className={`${getImageUrl(selectedTeacher.teacherImage) ? 'hidden' : ''} select-none`}>
+                    {selectedTeacher.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T'}
+                  </span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{selectedTeacher.fullName}</p>

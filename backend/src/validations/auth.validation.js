@@ -1,5 +1,47 @@
 import { ApiError } from '../utils/apiError.js';
 
+const validateTeacherChangePassword = (req, res, next) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (!currentPassword || !currentPassword.trim()) {
+    throw new ApiError(400, 'Current password is required');
+  }
+
+  if (!newPassword || !newPassword.trim()) {
+    throw new ApiError(400, 'New password is required');
+  }
+
+  if (!confirmPassword || !confirmPassword.trim()) {
+    throw new ApiError(400, 'Confirm password is required');
+  }
+
+  if (/\s/.test(newPassword)) {
+    throw new ApiError(400, 'Spaces are not allowed in the password');
+  }
+
+  if (newPassword.length > 10) {
+    throw new ApiError(400, 'Password cannot be more than 10 characters');
+  }
+
+  if (!/[a-zA-Z]/.test(newPassword)) {
+    throw new ApiError(400, 'Password must contain at least one letter');
+  }
+
+  if (!/[0-9]/.test(newPassword)) {
+    throw new ApiError(400, 'Password must contain at least one number');
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
+    throw new ApiError(400, 'Password must contain at least one special character');
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, 'Passwords do not match');
+  }
+
+  next();
+};
+
 const validateAdminLogin = (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -65,4 +107,5 @@ export {
   validateForgotPassword,
   validateVerifyOtp,
   validateResetPassword,
+  validateTeacherChangePassword,
 };

@@ -126,6 +126,15 @@ const teacherSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    lastPasswordReset: {
+      type: Date,
+      default: null,
+    },
+    passwordResetBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      default: null,
+    },
     academicYear: {
       type: String,
       required: [true, 'Academic year is required'],

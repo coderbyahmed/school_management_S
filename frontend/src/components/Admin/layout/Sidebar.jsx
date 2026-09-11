@@ -1,9 +1,23 @@
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { XMarkIcon, Bars3Icon, UserGroupIcon, AcademicCapIcon, BookOpenIcon, ClipboardDocumentListIcon, CalendarDaysIcon, CheckCircleIcon, SparklesIcon, Cog6ToothIcon, ChevronDownIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/24/outline';
-import useSchoolBranding from '../../../hooks/useSchoolBranding';
-import { getImageUrl } from '../../../utils/imageUrl';
-import { useTranslation } from '../../../hooks/useLocalization';
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import {
+  XMarkIcon,
+  Bars3Icon,
+  UserGroupIcon,
+  AcademicCapIcon,
+  BookOpenIcon,
+  ClipboardDocumentListIcon,
+  CalendarDaysIcon,
+  CheckCircleIcon,
+  SparklesIcon,
+  Cog6ToothIcon,
+  ChevronDownIcon,
+  CurrencyDollarIcon,
+  UsersIcon,
+} from "@heroicons/react/24/outline";
+import useSchoolBranding from "../../../hooks/useSchoolBranding";
+import { getImageUrl } from "../../../utils/imageUrl";
+import { useTranslation } from "../../../hooks/useLocalization";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [feeManagementOpen, setFeeManagementOpen] = useState(false);
@@ -11,10 +25,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const [studentManagementOpen, setStudentManagementOpen] = useState(false);
   const [teacherManagementOpen, setTeacherManagementOpen] = useState(false);
+  const [classManagementOpen, setClassManagementOpen] = useState(false);
+  const [subjectManagementOpen, setSubjectManagementOpen] = useState(false);
+  const [timetableManagementOpen, setTimetableManagementOpen] = useState(false);
   const { t } = useTranslation();
   const { schoolBranding } = useSchoolBranding();
-  const logoUrl = schoolBranding?.adminPanelLogo ? getImageUrl(schoolBranding.adminPanelLogo) : null;
-  const principalName = schoolBranding?.principalName || 'Admin Panel';
+  const logoUrl = schoolBranding?.adminPanelLogo
+    ? getImageUrl(schoolBranding.adminPanelLogo)
+    : null;
+  const principalName = schoolBranding?.principalName || "Admin Panel";
   return (
     <>
       {!isOpen && (
@@ -40,7 +59,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           md:relative md:top-0 md:bottom-auto md:min-h-full md:z-0
           bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg
           transition-all duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-16'}
+          ${isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-16"}
           flex flex-col flex-shrink-0
         `}
       >
@@ -50,7 +69,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-sm ring-1 ring-yellow-400/70 flex-shrink-0 overflow-hidden">
                   {logoUrl ? (
-                    <img src={logoUrl} alt={principalName} className="w-full h-full object-cover" />
+                    <img
+                      src={logoUrl}
+                      alt={principalName}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span>{principalName.charAt(0).toUpperCase()}</span>
                   )}
@@ -72,10 +95,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <button
                 onClick={toggleSidebar}
                 className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-xs ring-1 ring-yellow-400/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-          aria-label="Open sidebar"
+                aria-label="Open sidebar"
               >
                 {logoUrl ? (
-                  <img src={logoUrl} alt={principalName} className="w-full h-full object-cover" />
+                  <img
+                    src={logoUrl}
+                    alt={principalName}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <span>{principalName.charAt(0).toUpperCase()}</span>
                 )}
@@ -93,19 +120,29 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 className={({ isActive }) =>
                   `flex items-center transition-all duration-200 rounded-lg ${
                     isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
+                      ? "bg-blue-500 text-white shadow-md"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                  } ${isOpen ? "px-3 py-2.5 gap-3 w-[calc(100%-16px)]" : "w-10 h-10 justify-center"}`
                 }
                 onClick={() => {
                   if (window.innerWidth < 768) toggleSidebar();
                 }}
               >
-                <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                <svg
+                  className="h-5 w-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
                 </svg>
                 {isOpen && (
-                  <span className="text-sm font-medium">{t('dashboard')}</span>
+                  <span className="text-sm font-medium">{t("dashboard")}</span>
                 )}
               </NavLink>
             </li>
@@ -113,14 +150,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen ? (
                 <div className="w-[calc(100%-16px)]">
                   <button
-                    onClick={() => setStudentManagementOpen(!studentManagementOpen)}
+                    onClick={() =>
+                      setStudentManagementOpen(!studentManagementOpen)
+                    }
                     className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <UserGroupIcon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">{t('studentManagement')}</span>
+                      <span className="text-sm font-medium">
+                        {t("studentManagement")}
+                      </span>
                     </div>
-                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${studentManagementOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-200 ${studentManagementOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
                   {studentManagementOpen && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
@@ -129,60 +172,60 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('allStudents')}
+                        {t("allStudents")}
                       </NavLink>
                       <NavLink
                         to="/admin/students/add"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('addStudent')}
+                        {t("addStudent")}
                       </NavLink>
                       <NavLink
                         to="/admin/students/promotion"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('studentPromotion')}
+                        {t("studentPromotion")}
                       </NavLink>
                       <NavLink
                         to="/admin/students/promotion-history"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('promotionHistory')}
+                        {t("promotionHistory")}
                       </NavLink>
                     </div>
                   )}
@@ -193,8 +236,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   className={({ isActive }) =>
                     `flex items-center transition-all duration-200 rounded-lg ${
                       isActive
-                        ? 'bg-blue-500 text-white shadow-md'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                     } w-10 h-10 justify-center`
                   }
                   onClick={() => {
@@ -209,14 +252,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen ? (
                 <div className="w-[calc(100%-16px)]">
                   <button
-                    onClick={() => setTeacherManagementOpen(!teacherManagementOpen)}
+                    onClick={() =>
+                      setTeacherManagementOpen(!teacherManagementOpen)
+                    }
                     className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <AcademicCapIcon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">{t('teacherManagement')}</span>
+                      <span className="text-sm font-medium">
+                        {t("teacherManagement")}
+                      </span>
                     </div>
-                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${teacherManagementOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-200 ${teacherManagementOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
                   {teacherManagementOpen && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
@@ -225,45 +274,45 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('allTeachers')}
+                        {t("allTeachers")}
                       </NavLink>
                       <NavLink
                         to="/admin/teachers/add"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('addTeacher')}
+                        {t("addTeacher")}
                       </NavLink>
                       <NavLink
                         to="/admin/teachers/subject-assignment"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('teacherSubjectAssignment')}
+                        {t("teacherSubjectAssignment")}
                       </NavLink>
                     </div>
                   )}
@@ -274,8 +323,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   className={({ isActive }) =>
                     `flex items-center transition-all duration-200 rounded-lg ${
                       isActive
-                        ? 'bg-blue-500 text-white shadow-md'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                     } w-10 h-10 justify-center`
                   }
                   onClick={() => {
@@ -287,64 +336,261 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               )}
             </li>
             <li className="flex justify-center">
-              <NavLink
-                to="/admin/classes"
-                className={({ isActive }) =>
-                  `flex items-center transition-all duration-200 rounded-lg ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
-                }
-                onClick={() => {
-                  if (window.innerWidth < 768) toggleSidebar();
-                }}
-              >
-                <BookOpenIcon className="h-5 w-5 flex-shrink-0" />
-                {isOpen && (
-                  <span className="text-sm font-medium">{t('classManagement')}</span>
-                )}
-              </NavLink>
+              {isOpen ? (
+                <div className="w-[calc(100%-16px)]">
+                  <button
+                    onClick={() => setClassManagementOpen(!classManagementOpen)}
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <BookOpenIcon className="h-5 w-5 flex-shrink-0" />
+                      <span className="text-sm font-medium">
+                        {t("classManagement")}
+                      </span>
+                    </div>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-200 ${classManagementOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {classManagementOpen && (
+                    <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                      <NavLink
+                        to="/admin/classes/all"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("allClasses")}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/classes/add"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("addNewClass")}
+                      </NavLink>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to="/admin/classes/all"
+                  className={({ isActive }) =>
+                    `flex items-center transition-all duration-200 rounded-lg ${
+                      isActive
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                    } w-10 h-10 justify-center`
+                  }
+                  onClick={() => {
+                    if (window.innerWidth < 768) toggleSidebar();
+                  }}
+                >
+                  <BookOpenIcon className="h-5 w-5 flex-shrink-0" />
+                </NavLink>
+              )}
             </li>
             <li className="flex justify-center">
-              <NavLink
-                to="/admin/subjects"
-                className={({ isActive }) =>
-                  `flex items-center transition-all duration-200 rounded-lg ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
-                }
-                onClick={() => {
-                  if (window.innerWidth < 768) toggleSidebar();
-                }}
-              >
-                <ClipboardDocumentListIcon className="h-5 w-5 flex-shrink-0" />
-                {isOpen && (
-                  <span className="text-sm font-medium">{t('subjectManagement')}</span>
-                )}
-              </NavLink>
+              {isOpen ? (
+                <div className="w-[calc(100%-16px)]">
+                  <button
+                    onClick={() =>
+                      setSubjectManagementOpen(!subjectManagementOpen)
+                    }
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ClipboardDocumentListIcon className="h-5 w-5 flex-shrink-0" />
+                      <span className="text-sm font-medium">
+                        {t("subjectManagement")}
+                      </span>
+                    </div>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-200 ${subjectManagementOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {subjectManagementOpen && (
+                    <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                      <NavLink
+                        to="/admin/subjects/all"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("allSubjects")}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/subjects/add"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("addSubject")}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/subjects/class-subject-assignment"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("classSubjectAssignment")}
+                      </NavLink>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to="/admin/subjects/all"
+                  className={({ isActive }) =>
+                    `flex items-center transition-all duration-200 rounded-lg ${
+                      isActive
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                    } w-10 h-10 justify-center`
+                  }
+                  onClick={() => {
+                    if (window.innerWidth < 768) toggleSidebar();
+                  }}
+                >
+                  <ClipboardDocumentListIcon className="h-5 w-5 flex-shrink-0" />
+                </NavLink>
+              )}
             </li>
             <li className="flex justify-center">
-              <NavLink
-                to="/admin/timetable"
-                className={({ isActive }) =>
-                  `flex items-center transition-all duration-200 rounded-lg ${
-                    isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
-                }
-                onClick={() => {
-                  if (window.innerWidth < 768) toggleSidebar();
-                }}
-              >
-                <CalendarDaysIcon className="h-5 w-5 flex-shrink-0" />
-                {isOpen && (
-                  <span className="text-sm font-medium">{t('timetable')}</span>
-                )}
-              </NavLink>
+              {isOpen ? (
+                <div className="w-[calc(100%-16px)]">
+                  <button
+                    onClick={() => setTimetableManagementOpen(!timetableManagementOpen)}
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <CalendarDaysIcon className="h-5 w-5 flex-shrink-0" />
+                      <span className="text-sm font-medium">
+                        {t("timetableManagement")}
+                      </span>
+                    </div>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-200 ${timetableManagementOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {timetableManagementOpen && (
+                    <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                      <NavLink
+                        to="/admin/timetable/all-classes"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("allClassesTimetable")}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/timetable/create"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("createTimetable")}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/timetable/view"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("timetableView")}
+                      </NavLink>
+                      <NavLink
+                        to="/admin/timetable/designer"
+                        className={({ isActive }) =>
+                          `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                          }`
+                        }
+                        onClick={() => {
+                          if (window.innerWidth < 768) toggleSidebar();
+                        }}
+                      >
+                        {t("timetableDesigner")}
+                      </NavLink>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to="/admin/timetable/all-classes"
+                  className={({ isActive }) =>
+                    `flex items-center transition-all duration-200 rounded-lg ${
+                      isActive
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                    } w-10 h-10 justify-center`
+                  }
+                  onClick={() => {
+                    if (window.innerWidth < 768) toggleSidebar();
+                  }}
+                >
+                  <CalendarDaysIcon className="h-5 w-5 flex-shrink-0" />
+                </NavLink>
+              )}
             </li>
             <li className="flex justify-center">
               <NavLink
@@ -352,9 +598,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 className={({ isActive }) =>
                   `flex items-center transition-all duration-200 rounded-lg ${
                     isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
+                      ? "bg-blue-500 text-white shadow-md"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                  } ${isOpen ? "px-3 py-2.5 gap-3 w-[calc(100%-16px)]" : "w-10 h-10 justify-center"}`
                 }
                 onClick={() => {
                   if (window.innerWidth < 768) toggleSidebar();
@@ -362,7 +608,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <CheckCircleIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">{t('attendanceManagement')}</span>
+                  <span className="text-sm font-medium">
+                    {t("attendanceManagement")}
+                  </span>
                 )}
               </NavLink>
             </li>
@@ -372,9 +620,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 className={({ isActive }) =>
                   `flex items-center transition-all duration-200 rounded-lg ${
                     isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
+                      ? "bg-blue-500 text-white shadow-md"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                  } ${isOpen ? "px-3 py-2.5 gap-3 w-[calc(100%-16px)]" : "w-10 h-10 justify-center"}`
                 }
                 onClick={() => {
                   if (window.innerWidth < 768) toggleSidebar();
@@ -382,7 +630,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <SparklesIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">{t('eventsAndHolidays')}</span>
+                  <span className="text-sm font-medium">
+                    {t("eventsAndHolidays")}
+                  </span>
                 )}
               </NavLink>
             </li>
@@ -395,9 +645,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   >
                     <div className="flex items-center gap-3">
                       <CurrencyDollarIcon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">{t('feeManagement')}</span>
+                      <span className="text-sm font-medium">
+                        {t("feeManagement")}
+                      </span>
                     </div>
-                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${feeManagementOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-200 ${feeManagementOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
                   {feeManagementOpen && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
@@ -406,75 +660,75 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('feeStructure')}
+                        {t("feeStructure")}
                       </NavLink>
                       <NavLink
                         to="/admin/fees/collect-fee"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('collectFee')}
+                        {t("collectFee")}
                       </NavLink>
                       <NavLink
                         to="/admin/fees/student-fee-details"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('studentFeeDetails')}
+                        {t("studentFeeDetails")}
                       </NavLink>
                       <NavLink
                         to="/admin/fees/outstanding-dues"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('outstandingDues')}
+                        {t("outstandingDues")}
                       </NavLink>
                       <NavLink
                         to="/admin/fees/reports"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('reports')}
+                        {t("reports")}
                       </NavLink>
                     </div>
                   )}
@@ -485,8 +739,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   className={({ isActive }) =>
                     `flex items-center transition-all duration-200 rounded-lg ${
                       isActive
-                        ? 'bg-blue-500 text-white shadow-md'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                     } w-10 h-10 justify-center`
                   }
                   onClick={() => {
@@ -506,9 +760,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   >
                     <div className="flex items-center gap-3">
                       <UsersIcon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">{t('userAccounts')}</span>
+                      <span className="text-sm font-medium">
+                        {t("userAccounts")}
+                      </span>
                     </div>
-                    <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${userAccountsOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon
+                      className={`h-4 w-4 transition-transform duration-200 ${userAccountsOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
                   {userAccountsOpen && (
                     <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
@@ -517,30 +775,30 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('allAccounts')}
+                        {t("allAccounts")}
                       </NavLink>
                       <NavLink
                         to="/admin/user-accounts/password-management"
                         className={({ isActive }) =>
                           `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-500 text-white shadow-md font-medium'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                              ? "bg-blue-500 text-white shadow-md font-medium"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                           }`
                         }
                         onClick={() => {
                           if (window.innerWidth < 768) toggleSidebar();
                         }}
                       >
-                        {t('passwordManagement')}
+                        {t("passwordManagement")}
                       </NavLink>
                     </div>
                   )}
@@ -551,8 +809,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   className={({ isActive }) =>
                     `flex items-center transition-all duration-200 rounded-lg ${
                       isActive
-                        ? 'bg-blue-500 text-white shadow-md'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
                     } w-10 h-10 justify-center`
                   }
                   onClick={() => {
@@ -569,9 +827,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 className={({ isActive }) =>
                   `flex items-center transition-all duration-200 rounded-lg ${
                     isActive
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
-                  } ${isOpen ? 'px-3 py-2.5 gap-3 w-[calc(100%-16px)]' : 'w-10 h-10 justify-center'}`
+                      ? "bg-blue-500 text-white shadow-md"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400"
+                  } ${isOpen ? "px-3 py-2.5 gap-3 w-[calc(100%-16px)]" : "w-10 h-10 justify-center"}`
                 }
                 onClick={() => {
                   if (window.innerWidth < 768) toggleSidebar();
@@ -579,7 +837,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <Cog6ToothIcon className="h-5 w-5 flex-shrink-0" />
                 {isOpen && (
-                  <span className="text-sm font-medium">{t('schoolSettings')}</span>
+                  <span className="text-sm font-medium">
+                    {t("schoolSettings")}
+                  </span>
                 )}
               </NavLink>
             </li>

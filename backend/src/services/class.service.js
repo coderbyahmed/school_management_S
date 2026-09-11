@@ -121,7 +121,7 @@ const updateClass = async (id, data) => {
     const updated = await Class.findByIdAndUpdate(
       id,
       { className, academicYear, status, monthlyFee, admissionFee, examFee },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     return updated;

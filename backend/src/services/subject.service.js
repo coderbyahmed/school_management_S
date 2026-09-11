@@ -66,7 +66,7 @@ const updateSubject = async (id, data) => {
   }
 
   try {
-    const updated = await Subject.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+    const updated = await Subject.findByIdAndUpdate(id, data, { returnDocument: 'after', runValidators: true });
 
     return updated;
   } catch (error) {

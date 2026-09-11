@@ -1,18 +1,23 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from '../../../../hooks/useLocalization';
 import { ArrowLeftIcon, UserIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+import userAccountsService from '../../../../services/userAccounts/userAccounts.service';
 
-const DUMMY_ACCOUNTS = {
-  'STD-000001': { loginId: 'STD-000001', fullName: 'Ahmed Raza', type: 'Student', status: 'Active', createdDate: '2026-01-15', lastLogin: '2026-09-05 08:30 AM', lastLogout: '2026-09-05 02:45 PM', image: null, fatherName: 'Raza Hussain', class: 'Class 5', phone: '0301-1234567' },
-  'STD-000002': { loginId: 'STD-000002', fullName: 'Fatima Noor', type: 'Student', status: 'Active', createdDate: '2026-01-15', lastLogin: '2026-09-05 08:15 AM', lastLogout: '2026-09-05 03:00 PM', image: null, fatherName: 'Noor Ahmed', class: 'Class 3', phone: '0321-7654321' },
-  'STD-000003': { loginId: 'STD-000003', fullName: 'Sara Khan', type: 'Student', status: 'Active', createdDate: '2026-02-01', lastLogin: '2026-09-04 08:20 AM', lastLogout: '2026-09-04 02:50 PM', image: null, fatherName: 'Khan Muhammad', class: 'Class 7', phone: '0333-1112233' },
-  'STD-000004': { loginId: 'STD-000004', fullName: 'Hassan Malik', type: 'Student', status: 'Active', createdDate: '2026-02-10', lastLogin: '2026-09-05 08:10 AM', lastLogout: '2026-09-05 02:55 PM', image: null, fatherName: 'Malik Akbar', class: 'Class 2', phone: '0345-9988776' },
-  'STD-000005': { loginId: 'STD-000005', fullName: 'Omar Farooq', type: 'Student', status: 'Inactive', createdDate: '2026-01-20', lastLogin: '2026-07-15 08:25 AM', lastLogout: '2026-07-15 02:40 PM', image: null, fatherName: 'Farooq Ahmed', class: 'Class 4', phone: '0300-5544332' },
-  'STD-000006': { loginId: 'STD-000006', fullName: 'Maryam Aziz', type: 'Student', status: 'Active', createdDate: '2026-03-01', lastLogin: '2026-09-05 08:05 AM', lastLogout: '2026-09-05 03:10 PM', image: null, fatherName: 'Azizullah Khan', class: 'Class 6', phone: '0311-2233445' },
-  'TCH-000001': { loginId: 'TCH-000001', fullName: 'Muhammad Ali', type: 'Teacher', status: 'Active', createdDate: '2025-08-01', lastLogin: '2026-09-05 07:45 AM', lastLogout: '2026-09-05 03:30 PM', image: null, phone: '0321-1234567', qualification: 'M.Ed', subjects: 'Mathematics, Physics' },
-  'TCH-000002': { loginId: 'TCH-000002', fullName: 'Ayesha Siddiqui', type: 'Teacher', status: 'Inactive', createdDate: '2025-08-15', lastLogin: '2026-08-20 08:00 AM', lastLogout: '2026-08-20 02:30 PM', image: null, phone: '0333-9876543', qualification: 'B.Ed', subjects: 'English, Urdu' },
-  'TCH-000003': { loginId: 'TCH-000003', fullName: 'Zainab Bibi', type: 'Teacher', status: 'Active', createdDate: '2025-09-01', lastLogin: '2026-09-05 07:50 AM', lastLogout: '2026-09-05 03:15 PM', image: null, phone: '0345-5566778', qualification: 'BS Education', subjects: 'Science, Biology' },
-  'TCH-000004': { loginId: 'TCH-000004', fullName: 'Bilal Ahmed', type: 'Teacher', status: 'Active', createdDate: '2026-01-10', lastLogin: '2026-09-05 07:55 AM', lastLogout: '2026-09-05 03:20 PM', image: null, phone: '0300-1122334', qualification: 'M.A Education', subjects: 'Social Studies, History' },
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '-';
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = pad(d.getDate());
+  const month = pad(d.getMonth() + 1);
+  const year = d.getFullYear();
+  let hours = d.getHours();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  const mins = pad(d.getMinutes());
+  return `${year}-${month}-${day} ${pad(hours)}:${mins} ${ampm}`;
 };
 
 const AccountDetails = () => {
@@ -20,9 +25,46 @@ const AccountDetails = () => {
   const navigate = useNavigate();
   const { loginId } = useParams();
 
-  const account = DUMMY_ACCOUNTS[loginId];
+  const [account, setAccount] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!account) {
+  useEffect(() => {
+    const fetchAccount = async () => {
+      setLoading(true);
+      try {
+        const result = await userAccountsService.getAccountByLoginId(loginId);
+        if (result.success) {
+          setAccount(result.data);
+        }
+      } catch (err) {
+        if (err.response?.status === 404) {
+          setNotFound(true);
+        } else {
+          toast.error(err.response?.data?.message || 'Failed to load account');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAccount();
+  }, [loginId]);
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <button onClick={() => navigate('/admin/user-accounts/all')} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+          <ArrowLeftIcon className="h-4 w-4" />
+          {t('backToAccounts')}
+        </button>
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+          <p className="text-sm">Loading account details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound || !account) {
     return (
       <div className="space-y-4">
         <button onClick={() => navigate('/admin/user-accounts/all')} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
@@ -37,6 +79,7 @@ const AccountDetails = () => {
   }
 
   const initials = account.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const profileImage = account.studentImage || account.teacherImage || account.profileImage || null;
 
   return (
     <div className="space-y-6">
@@ -49,8 +92,8 @@ const AccountDetails = () => {
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8">
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-2xl ring-2 ring-yellow-400/50 overflow-hidden">
-              {account.image ? (
-                <img src={account.image} alt="" className="w-full h-full object-cover" />
+              {profileImage ? (
+                <img src={profileImage} alt="" className="w-full h-full object-cover" />
               ) : (
                 initials
               )}
@@ -107,16 +150,16 @@ const AccountDetails = () => {
                     <span className="text-sm font-medium text-gray-900 dark:text-white">{account.qualification}</span>
                   </div>
                 )}
-                {account.type === 'Teacher' && account.subjects && (
-                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('subjects')}</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{account.subjects}</span>
-                  </div>
-                )}
-                {account.phone && (
+                {(account.fatherPhone || account.phoneNumber) && (
                   <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                     <span className="text-sm text-gray-500 dark:text-gray-400">{t('phoneNumber')}</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{account.phone}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{account.fatherPhone || account.phoneNumber}</span>
+                  </div>
+                )}
+                {account.email && (
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('email')}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{account.email}</span>
                   </div>
                 )}
               </div>
@@ -140,15 +183,15 @@ const AccountDetails = () => {
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('accountCreatedDate')}</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{account.createdDate}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{formatDate(account.createdAt)}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('lastLogin')}</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{account.lastLogin}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{formatDate(account.lastLogin)}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('lastLogout')}</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{account.lastLogout}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{formatDate(account.lastLogout)}</span>
                 </div>
               </div>
             </div>
